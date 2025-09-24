@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-/**
- * Enhanced changeset generator from conventional commits
- * Based on patterns from @bob-obringer/conventional-changesets and changeset-conventional-commits
- */
 /* eslint-disable no-console */
 
 import { execSync } from 'node:child_process';

@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Create GitHub App Token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ vars.AUTOMATED_COMMIT_SIGNER_APP_ID }}

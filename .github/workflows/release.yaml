@@ -21,7 +21,6 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
-  id-token: write
 
 env:
   ACTIONS_STEP_DEBUG: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_debug }}
@@ -48,3 +47,4 @@ jobs:
           version: pnpm changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

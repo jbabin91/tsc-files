@@ -1,5 +1,11 @@
 # @jbabin91/tsc-files
 
+## 0.1.2
+
+### Patch Changes
+
+- [`7a1bff3`](https://github.com/jbabin91/tsc-files/commit/7a1bff3d3183712efd9c1c527616d7a9ed1679fb) Thanks [@jbabin91](https://github.com/jbabin91)! - Minimal test to verify trusted publishing works correctly
+
 ## 0.1.1
 
 ### Patch Changes

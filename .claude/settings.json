@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "includeCoAuthoredBy": false,
+  "cleanupPeriodDays": 30,
+  "spinnerTipsEnabled": false,
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.production)",
+      "Read(.env.development)",
+      "Read(*.key)",
+      "Read(*.pem)",
+      "Read(.ssh/**)",
+      "Read(secrets/**)",
+      "Write(.env)",
+      "Write(.env.local)",
+      "Write(.env.production)",
+      "Write(.env.development)",
+      "Write(*.key)",
+      "Write(*.pem)",
+      "Write(.ssh/**)",
+      "Write(package-lock.json)",
+      "Write(yarn.lock)",
+      "Write(bun.lockb)",
+      "Write(node_modules/**)",
+      "Edit(node_modules/**)",
+      "Bash(rm -rf :*)",
+      "Bash(sudo :*)",
+      "Bash(npm publish:*)",
+      "Bash(pnpm publish:*)",
+      "Bash(yarn publish:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(npm install -g:*)",
+      "Bash(pnpm add -g:*)",
+      "Bash(yarn global:*)"
+    ]
+  },
+  "sandbox": {
+    "network": {
+      "allow": [
+        "registry.npmjs.org:443",
+        "github.com:443",
+        "api.github.com:443",
+        "codecov.io:443",
+        "raw.githubusercontent.com:443"
+      ],
+      "allowUnixSockets": []
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit(**/*.ts)|Edit(**/*.tsx)|Write(**/*.ts)|Write(**/*.tsx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run typecheck",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Edit(**/*.md)|Edit(**/*.mdx)|Write(**/*.md)|Write(**/*.mdx)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run lint:md:fix",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Edit(**/*.ts)|Edit(**/*.tsx)|Edit(**/*.js)|Edit(**/*.jsx)|Edit(**/*.json)|Write(**/*.ts)|Write(**/*.tsx)|Write(**/*.js)|Write(**/*.jsx)|Write(**/*.json)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run format",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "pnpm run lint:fix",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🚀 Claude Code session started for tsc-files project'"
+          },
+          {
+            "type": "command",
+            "command": "git status --porcelain | wc -l | xargs echo 'Uncommitted files:'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '✅ Claude Code session ended - remember to commit your changes'"
+          }
+        ]
+      }
+    ]
+  }
+}

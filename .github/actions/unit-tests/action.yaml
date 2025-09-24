@@ -19,10 +19,3 @@ runs:
       uses: codecov/test-results-action@v1
       with:
         token: ${{ env.CODECOV_TOKEN }}
-
-    - name: Coverage Comment
-      uses: romeovs/lcov-reporter-action@v0.3.1
-      if: github.event_name == 'pull_request'
-      with:
-        github-token: ${{ env.GITHUB_TOKEN }}
-        lcov-file: coverage/lcov.info

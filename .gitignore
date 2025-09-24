@@ -126,7 +126,7 @@ dist
 .vscode-test
 
 # Test reports
-test-report.*
+reports/
 
 # yarn v3
 .pnp.*

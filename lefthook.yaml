@@ -1,0 +1,27 @@
+pre-commit:
+  parallel: true
+  commands:
+    typecheck:
+      glob: '*.{ts,tsx}'
+      run: pnpm typecheck
+    lint:
+      glob: '*.{ts,tsx,js,jsx,cjs,mjs}'
+      run: pnpm eslint {staged_files} --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/.eslintcache
+      stage_fixed: true # Auto-stage ESLint fixes!
+    lint-md:
+      glob: '*.{md,mdx}'
+      run: pnpm markdownlint-cli2 {staged_files}
+    format:
+      glob: '*.{ts,tsx,js,jsx,cjs,mjs,json,md,mdx}'
+      run: pnpm prettier -uw {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm dlx commitlint --edit "$1"
+
+pre-push:
+  commands:
+    test:
+      run: pnpm test

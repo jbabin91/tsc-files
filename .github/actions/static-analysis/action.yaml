@@ -1,0 +1,28 @@
+name: Static Analysis
+description: Action to check code consistency
+
+runs:
+  using: composite
+  steps:
+    - name: Check Formatting
+      shell: bash
+      run: pnpm format:check
+
+    - name: Lint Code
+      shell: bash
+      run: pnpm lint
+
+    - name: Type Check
+      shell: bash
+      run: pnpm typecheck
+
+    - name: Lint Markdown
+      shell: bash
+      run: pnpm lint:md
+
+    - name: Security Audit
+      shell: bash
+      run: pnpm audit --audit-level moderate
+
+    # Add additional branch checks here.
+    # i.e. Translations, security, and any other additional checks

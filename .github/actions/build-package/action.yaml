@@ -1,0 +1,13 @@
+name: Build Package
+description: Build package
+
+runs:
+  using: composite
+  steps:
+    - name: Build Package
+      shell: bash
+      run: pnpm build
+
+    - name: Check Package Exports
+      shell: bash
+      run: pnpm check-exports

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "group:allNonMajor",
+    "schedule:nonOfficeHours",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":labels(dependencies)"
+  ],
+  "packageRules": [
+    {
+      "description": "Group linting and formatting tools",
+      "matchPackageNames": [
+        "prettier",
+        "markdownlint-cli2",
+        "prettier-plugin-packagejson",
+        "/^eslint/",
+        "/^@eslint\\//",
+        "/^typescript-eslint/"
+      ],
+      "groupName": "linting and formatting",
+      "labels": ["linting"],
+      "automerge": true
+    },
+    {
+      "description": "Group testing packages",
+      "matchPackageNames": ["vitest", "@vitest/coverage-v8", "@types/node"],
+      "groupName": "testing",
+      "labels": ["testing"],
+      "automerge": true
+    },
+    {
+      "description": "Group build tools",
+      "matchPackageNames": ["tsdown", "typescript"],
+      "groupName": "build tools",
+      "labels": ["build"],
+      "automerge": true
+    },
+    {
+      "description": "Group git/commit tools",
+      "matchPackageNames": [
+        "lefthook",
+        "commitizen",
+        "cz-git",
+        "@commitlint/cli",
+        "@commitlint/config-conventional"
+      ],
+      "groupName": "git tools",
+      "labels": ["git-tools"],
+      "automerge": true
+    },
+    {
+      "description": "Group changesets",
+      "matchPackageNames": ["@changesets/cli"],
+      "groupName": "changesets",
+      "labels": ["release"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge remaining dev dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge non-major production dependencies",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Major updates require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["major-update"]
+    }
+  ],
+  "updateInternalDeps": true,
+  "rangeStrategy": "bump",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "timezone": "America/Chicago",
+  "prHourlyLimit": 3,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 4am on monday"],
+    "automerge": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": true
+  },
+  "osvVulnerabilityAlerts": true,
+  "prConcurrentLimit": 5,
+  "dependencyDashboard": true,
+  "minimumReleaseAge": "3 days",
+  "abandonmentThreshold": null
+}

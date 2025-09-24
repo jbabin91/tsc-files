@@ -21,6 +21,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 env:
   ACTIONS_STEP_DEBUG: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_debug }}

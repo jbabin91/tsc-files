@@ -152,9 +152,10 @@ The project uses a sophisticated CI/CD setup:
 ### Workflows
 
 - **CI** (`ci.yaml`) - Static analysis → tests → build (sequential with dependencies)
+- **Security** (`security.yaml`) - Dependency audits, secrets scanning, package integrity validation
 - **Integration** (`integration.yaml`) - Cross-platform CLI testing (Ubuntu/macOS/Windows)
-- **Release** (`release.yaml`) - Waits for CI success, then uses Changesets for automated releases
-- **CodeQL** (`codeql.yaml`) - Security scanning
+- **Release** (`release.yaml`) - Waits for CI success, uses trusted publishing with npm provenance
+- **CodeQL** (`codeql.yaml`) - Weekly security scanning
 
 ### Release Process
 

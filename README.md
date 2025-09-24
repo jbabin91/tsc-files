@@ -2,6 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@jbabin91/tsc-files.svg)](https://www.npmjs.com/package/@jbabin91/tsc-files)
 [![CI](https://github.com/jbabin91/tsc-files/workflows/CI/badge.svg)](https://github.com/jbabin91/tsc-files/actions)
+[![Security](https://github.com/jbabin91/tsc-files/workflows/Security/badge.svg)](https://github.com/jbabin91/tsc-files/actions)
 [![codecov](https://codecov.io/gh/jbabin91/tsc-files/branch/main/graph/badge.svg)](https://codecov.io/gh/jbabin91/tsc-files)
 
 > A modern TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration.
@@ -32,6 +33,7 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 - ✅ **Package manager detection** - Works with npm, yarn, pnpm, and bun
 - ✅ **Fast & lightweight** - Minimal dependencies, maximum performance
 - ✅ **CI/CD optimized** - Designed for continuous integration workflows
+- ✅ **Supply chain security** - npm provenance and trusted publishing enabled
 - ✅ **Dual package** - Supports both ESM and CommonJS
 
 ## 🎯 Why tsc-files?
@@ -179,9 +181,9 @@ No configuration needed - it just works!
 
 ## 🏗️ Development Status
 
-**Infrastructure**: ✅ Complete (enterprise-grade CI/CD, testing, security, release automation)
-**Implementation**: 🚧 In Progress (core CLI functionality)
-**Quality Gates**: ✅ Enforced (zero-tolerance policy for all quality metrics)
+- **Infrastructure**: ✅ Complete (enterprise-grade CI/CD, testing, security, release automation)
+- **Implementation**: 🚧 In Progress (core CLI functionality)
+- **Quality Gates**: ✅ Enforced (zero-tolerance policy for all quality metrics)
 
 ## 📚 Documentation
 

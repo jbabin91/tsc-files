@@ -5,7 +5,7 @@ Follow the cz-git configuration from `.commitlintrc.js` with emojis enabled.
 ## Commit Format
 
 ```text
-<emoji> <type>(<scope>): <description>
+<type>(<scope>): <emoji> <description>
 
 [optional body]
 
@@ -44,24 +44,24 @@ From `.commitlintrc.js` configuration:
 
 ```bash
 # Features
-git commit -m "✨ feat(cli): add --verbose flag for detailed output"
-git commit -m "✨ feat(core): implement TypeScript file detection"
+git commit -m "feat(cli): ✨ add --verbose flag for detailed output"
+git commit -m "feat(core): ✨ implement TypeScript file detection"
 
 # Bug fixes
-git commit -m "🐛 fix(core): handle missing tsconfig.json gracefully"
-git commit -m "🐛 fix(cli): correct exit code for type errors"
+git commit -m "fix(core): 🐛 handle missing tsconfig.json gracefully"
+git commit -m "fix(cli): 🐛 correct exit code for type errors"
 
 # Chores
-git commit -m "🔧 chore(deps): bump typescript to v5.2.0"
-git commit -m "🔧 chore(build): update tsdown configuration"
+git commit -m "chore(deps): 🔧 bump typescript to v5.2.0"
+git commit -m "chore(build): 🔧 update tsdown configuration"
 
 # CI/CD
-git commit -m "👷 ci(build): add automated testing workflow"
-git commit -m "👷 ci: fix release workflow permissions"
+git commit -m "ci(build): 👷 add automated testing workflow"
+git commit -m "ci: 👷 fix release workflow permissions"
 
 # Documentation
-git commit -m "📝 docs: update README with installation instructions"
-git commit -m "📝 docs(api): add examples for programmatic usage"
+git commit -m "docs: 📝 update README with installation instructions"
+git commit -m "docs(api): 📝 add examples for programmatic usage"
 ```
 
 ## Rules Summary

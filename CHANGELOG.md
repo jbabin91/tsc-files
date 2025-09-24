@@ -1,5 +1,11 @@
 # @jbabin91/tsc-files
 
+## 0.1.4
+
+### Patch Changes
+
+- [`23f99e5`](https://github.com/jbabin91/tsc-files/commit/23f99e5a0af12a16f6a84f161cf056b7edfdac54) Thanks [@jbabin91](https://github.com/jbabin91)! - Test complete GitHub App automation with signed commits
+
 ## 0.1.3
 
 ### Patch Changes

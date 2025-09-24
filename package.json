@@ -1,6 +1,6 @@
 {
   "name": "@jbabin91/tsc-files",
-  "version": "0.5.0",
+  "version": "0.1.4",
   "description": "Run TypeScript compiler on specific files without ignoring tsconfig.json",
   "keywords": [
     "typescript",
@@ -47,7 +47,7 @@
     "build": "tsdown && pnpm format",
     "changeset:auto": "node scripts/generate-changeset.ts",
     "changeset:local-release": "pnpm changeset:version && pnpm changeset:release",
-    "changeset:release": "pnpm build && changeset publish --access public",
+    "changeset:release": "pnpm build && changeset publish",
     "changeset:version": "changeset version && pnpm format && pnpm lint:md:fix",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm no-resolution",
     "commit": "cz",

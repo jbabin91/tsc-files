@@ -11,11 +11,13 @@
   "packageRules": [
     {
       "description": "Group linting and formatting tools",
-      "matchPackagePatterns": ["^eslint", "^@eslint/", "^typescript-eslint"],
       "matchPackageNames": [
         "prettier",
         "markdownlint-cli2",
-        "prettier-plugin-packagejson"
+        "prettier-plugin-packagejson",
+        "/^eslint/",
+        "/^@eslint//",
+        "/^typescript-eslint/"
       ],
       "groupName": "linting and formatting",
       "labels": ["linting"],

@@ -32,7 +32,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Create GitHub App Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.AUTOMATED_COMMIT_SIGNER_APP_ID }}
+          private-key: ${{ secrets.AUTOMATED_COMMIT_SIGNER_PRIVATE_KEY }}
+
       - uses: actions/checkout@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup
         uses: ./.github/actions/setup
@@ -40,11 +49,15 @@ jobs:
       - name: Build Package
         uses: ./.github/actions/build-package
 
-      - name: Create Release Pull Request or Publish
+      - name: Create Release Pull Request or Publish to npm
+        # https://github.com/changesets/action
         uses: changesets/action@v1
         with:
+          # this expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: pnpm release
-          version: pnpm changeset version
+          version: pnpm version
+          commit: 'chore(release): version package'
+          title: 'chore(release): version package'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

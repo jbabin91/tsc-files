@@ -131,6 +131,23 @@ npx husky install
 npx husky add .husky/pre-commit "npx lint-staged"
 ```
 
+#### With lefthook
+
+```yaml
+# lefthook.yml
+pre-commit:
+  commands:
+    type-check:
+      glob: '*.{ts,tsx}'
+      run: tsc-files {staged_files}
+```
+
+```bash
+# Install lefthook
+npm install --save-dev lefthook
+npx lefthook install
+```
+
 ### Programmatic API
 
 ```typescript
@@ -225,3 +242,4 @@ MIT © [Jace Babin](https://github.com/jbabin91)
 - [TypeScript](https://www.typescriptlang.org/) - The TypeScript language
 - [lint-staged](https://github.com/okonet/lint-staged) - Run linters on git staged files
 - [husky](https://github.com/typicode/husky) - Git hooks made easy
+- [lefthook](https://github.com/evilmartians/lefthook) - Fast and powerful Git hooks manager

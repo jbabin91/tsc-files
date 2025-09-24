@@ -69,6 +69,26 @@ npx husky install
 npx husky add .husky/pre-commit "npx lint-staged"
 ```
 
+#### With lefthook
+
+1. Install lefthook:
+
+```bash
+npm install --save-dev lefthook
+npx lefthook install
+```
+
+2. Create `lefthook.yml`:
+
+```yaml
+# lefthook.yml
+pre-commit:
+  commands:
+    type-check:
+      glob: '*.{ts,tsx}'
+      run: tsc-files {staged_files}
+```
+
 ## Why tsc-files?
 
 ### The Problem

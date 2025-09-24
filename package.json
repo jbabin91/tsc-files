@@ -46,6 +46,7 @@
   "scripts": {
     "build": "tsdown && pnpm format",
     "changeset": "changeset",
+    "changeset:auto": "node scripts/generate-changeset.js",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm no-resolution",
     "commit": "cz",
     "commit:lint": "commitlint --edit",

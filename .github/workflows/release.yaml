@@ -46,6 +46,11 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
+      - name: Setup Git User
+        run: |
+          git config user.name "automated-commit-signer[bot]"
+          git config user.email "175816895+automated-commit-signer[bot]@users.noreply.github.com"
+
       - name: Create Release Pull Request or Publish to npm
         # https://github.com/changesets/action
         uses: changesets/action@v1
@@ -55,6 +60,7 @@ jobs:
           version: pnpm run version
           commit: 'chore(release): version package'
           title: 'chore(release): version package'
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

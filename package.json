@@ -19,7 +19,7 @@
     "url": "git+https://github.com/jbabin91/tsc-files.git"
   },
   "license": "MIT",
-  "author": "Jarrett Babin <jarrett.babin@gmail.com>",
+  "author": "Jace Babin <jbabin91@gmail.com>",
   "sideEffects": false,
   "type": "module",
   "exports": {
@@ -107,6 +107,7 @@
     "node": ">=22.20.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

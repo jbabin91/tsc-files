@@ -1,8 +1,22 @@
 # Security Policy
 
-## Supported Versions
+## Package Security Features
 
-We actively support the following versions of @jbabin91/tsc-files with security updates:
+- **npm Provenance**: Published packages include cryptographic attestation proving they were built from this GitHub repository
+- **Automated CI/CD**: All releases go through automated testing and validation
+- **Dependency Auditing**: Regular security audits of dependencies
+- **Multi-Platform Testing**: Tested on Ubuntu, macOS, and Windows
+
+## Verifying Package Authenticity
+
+You can verify published packages come from this repository:
+
+```bash
+# View provenance information (npm 9.5.0+)
+npm view @jbabin91/tsc-files --json | jq .dist.attestations
+```
+
+## Supported Versions
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -10,21 +24,39 @@ We actively support the following versions of @jbabin91/tsc-files with security 
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please report it responsibly:
+We take security seriously. If you discover a security vulnerability, please follow these steps:
 
-1. **Use GitHub's Security Advisory feature** to privately report the vulnerability
-2. **Do not open a public issue** for security-related problems
-3. Include as much detail as possible in your report
+### For Security Issues
 
-**Response timeline:**
+**DO NOT** create a public GitHub issue for security vulnerabilities.
 
-- We will acknowledge your report within 1-2 weeks
-- We will provide a detailed response as soon as possible (this is a side project with limited maintenance time)
-- We will work on fixes when time permits and keep you updated on progress
-- We will coordinate with you on the disclosure timeline
+Instead, please:
 
-**What to expect:**
+1. **GitHub Security Advisory**: Use GitHub's private security advisory feature (preferred)
+2. **GitHub Issue**: Create a private security issue if security advisory is not available
+3. **Include**:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+   - Suggested fix (if any)
 
-- If the vulnerability is accepted, we will work on a fix and release a security update
-- If the vulnerability is declined, we will provide a detailed explanation
-- We will give appropriate credit to reporters (unless anonymity is requested)
+### Response Timeline
+
+- **Initial Response**: Within 48 hours
+- **Status Update**: Within 7 days
+- **Resolution**: Target 30 days for non-critical, 7 days for critical
+
+### What to Expect
+
+1. **Acknowledgment**: We'll confirm receipt of your report
+2. **Investigation**: We'll investigate and validate the issue
+3. **Resolution**: We'll develop and test a fix
+4. **Disclosure**: We'll coordinate responsible disclosure with you
+5. **Credit**: You'll be credited in the security advisory (if desired)
+
+## Questions?
+
+For security-related questions that don't involve vulnerabilities:
+
+- 🐛 GitHub Issues: [Create an issue](https://github.com/jbabin91/tsc-files/issues)
+- 📚 Documentation: Check our [README](README.md) and [docs/](docs/)

@@ -46,7 +46,7 @@
   "scripts": {
     "build": "tsdown && pnpm format",
     "changeset": "changeset",
-    "changeset:auto": "node scripts/generate-changeset.js",
+    "changeset:auto": "node scripts/generate-changeset.ts",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm no-resolution",
     "commit": "cz",
     "commit:lint": "commitlint --edit",
@@ -63,7 +63,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "version": "changeset version"
+    "version": "changeset version && pnpm format"
   },
   "config": {
     "commitizen": {

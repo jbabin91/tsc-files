@@ -1,6 +1,6 @@
 # @jbabin91/tsc-files
 
-[![npm version](https://badge.fury.io/js/%40jbabin91%2Ftsc-files.svg)](https://badge.fury.io/js/%40jbabin91%2Ftsc-files)
+[![npm version](https://img.shields.io/npm/v/@jbabin91/tsc-files.svg)](https://www.npmjs.com/package/@jbabin91/tsc-files)
 [![CI](https://github.com/jbabin91/tsc-files/workflows/CI/badge.svg)](https://github.com/jbabin91/tsc-files/actions)
 [![codecov](https://codecov.io/gh/jbabin91/tsc-files/branch/main/graph/badge.svg)](https://codecov.io/gh/jbabin91/tsc-files)
 

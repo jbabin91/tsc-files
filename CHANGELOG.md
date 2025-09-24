@@ -1,5 +1,43 @@
 # @jbabin91/tsc-files
 
+## 0.2.0
+
+### Minor Changes
+
+- [`48019ef`](https://github.com/jbabin91/tsc-files/commit/48019ef3bad7ed9b0244da455a43f38d010e2ef4) Thanks [@jbabin91](https://github.com/jbabin91)! - ### ✨ Features
+  - **ci**: 🎸 add changeset:local-release and update GitHub workflow
+  - **tools**: 🎸 enhance changeset generation with professional patterns
+  - **tools**: 🎸 add custom automatic changeset generation
+  - **config**: 🎸 re-enable npm provenance for security attestation
+
+  ### ♻️ Code Refactoring
+
+  - **config**: ♻️ reorganize changeset scripts for better grouping
+  - **tools**: ♻️ convert changeset script to TypeScript with native Node.js support
+
+  ### 🐛 Bug Fixes
+
+  - **config**: 🐛 update to actual project emoji mappings
+  - **config**: 🐛 correct emoji placement in commit format
+  - use proper npm authentication approach
+
+- [`f4dd8b5`](https://github.com/jbabin91/tsc-files/commit/f4dd8b55cfdfca61cb77d8cdccbf61624d9b6b19) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 📝 Documentation
+  - ✏️ update documentation with latest infrastructure improvements
+
+  ### ✨ Features
+
+  - **config**: 🎸 re-enable npm provenance for security attestation
+
+  ### 🐛 Bug Fixes
+
+  - **config**: 🐛 update to actual project emoji mappings
+  - **config**: 🐛 correct emoji placement in commit format
+  - use proper npm authentication approach
+
+  ### 🔧 Chores
+
+  - **config**: 🔧 add commit conventions with emoji mapping
+
 ## 0.1.4
 
 ### Patch Changes

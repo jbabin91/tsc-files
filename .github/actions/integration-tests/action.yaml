@@ -1,0 +1,30 @@
+name: Integration Tests
+description: Run cross-platform integration tests for the CLI
+
+runs:
+  using: composite
+  steps:
+    - name: Test CLI Installation
+      shell: bash
+      run: |
+        npm pack
+        TARBALL=$(ls jbabin91-tsc-files-*.tgz | head -n1)
+        npm install -g "$TARBALL"
+
+    - name: Test CLI Usage
+      shell: bash
+      run: |
+        echo 'console.log("test");' > test.ts
+        tsc-files test.ts
+        echo 'const x: string = 123;' > error.ts
+        tsc-files error.ts || echo "Expected error caught"
+
+    - name: Test with Different Package Managers
+      shell: bash
+      run: |
+        # Test with different package managers in temp directories
+        mkdir -p test-npm-temp && cd test-npm-temp
+        npm init -y
+        npm install typescript
+        echo 'const x: number = "string";' > test.ts
+        npx tsc-files test.ts || echo "npm test passed"

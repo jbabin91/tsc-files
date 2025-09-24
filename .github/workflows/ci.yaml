@@ -1,9 +1,10 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
     branches: [main]
   merge_group:
 
@@ -25,7 +26,7 @@ jobs:
       - name: Static Analysis
         uses: ./.github/actions/static-analysis
 
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,9 +38,26 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  integration:
+    if: github.event_name != 'merge_group'
+    runs-on: ${{ matrix.os }}
+    needs: [static-analysis, unit-tests] # Run in parallel with build
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Build Package
+        uses: ./.github/actions/build-package
+      - name: Integration Tests
+        uses: ./.github/actions/integration-tests
+
   build:
     runs-on: ubuntu-latest
-    needs: [static-analysis, test]
+    needs: [static-analysis, unit-tests]
     steps:
       - uses: actions/checkout@v4
       - name: Setup

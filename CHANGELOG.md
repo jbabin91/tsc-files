@@ -1,5 +1,11 @@
 # @jbabin91/tsc-files
 
+## 0.1.3
+
+### Patch Changes
+
+- [`5981292`](https://github.com/jbabin91/tsc-files/commit/5981292e2849c4b80d84d746c1f94de049648b87) Thanks [@jbabin91](https://github.com/jbabin91)! - Test that trusted publishing works now that registry issues are resolved
+
 ## 0.1.2
 
 ### Patch Changes

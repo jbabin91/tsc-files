@@ -5,6 +5,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📋 Project References
+
+For commit conventions, see @.claude/commit-conventions.md for emoji usage and scoping rules.
+
 ## 🎯 Project Mission
 
 Build a TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration. Designed for git hooks, lint-staged, and CI/CD workflows.

@@ -14,18 +14,18 @@ Follow the cz-git configuration from `.commitlintrc.js` with emojis enabled.
 
 ## Type → Emoji Mapping
 
-Based on cz-git conventions when `useEmoji: true`:
+Based on your actual cz-git configuration:
 
-- **feat**: ✨ - New features
-- **fix**: 🐛 - Bug fixes
-- **docs**: 📝 - Documentation changes
-- **style**: 💄 - Code style changes (formatting, etc.)
-- **refactor**: ♻️ - Code changes that neither fix bugs nor add features
-- **perf**: ⚡ - Performance improvements
-- **test**: ✅ - Adding or correcting tests
-- **chore**: 🔧 - Dependencies, tooling, etc.
-- **ci**: 👷 - CI configuration changes
-- **revert**: ⏪ - Revert a previous commit
+- **feat**: 🎸 - A new feature
+- **fix**: 🐛 - A bug fix
+- **docs**: ✏️ - Documentation only changes
+- **style**: 💄 - Markup, white-space, formatting, missing semi-colons...
+- **refactor**: 💡 - A code change that neither fixes a bug or adds a feature
+- **perf**: ⚡️ - A code change that improves performance
+- **test**: 💍 - Adding missing tests
+- **chore**: 🤖 - Build process or auxiliary tool changes
+- **ci**: 🎡 - CI related changes
+- **release**: 🏹 - Create a release commit
 
 ## Available Scopes
 
@@ -44,24 +44,39 @@ From `.commitlintrc.js` configuration:
 
 ```bash
 # Features
-git commit -m "feat(cli): ✨ add --verbose flag for detailed output"
-git commit -m "feat(core): ✨ implement TypeScript file detection"
+git commit -m "feat(cli): 🎸 add --verbose flag for detailed output"
+git commit -m "feat(core): 🎸 implement TypeScript file detection"
 
 # Bug fixes
 git commit -m "fix(core): 🐛 handle missing tsconfig.json gracefully"
 git commit -m "fix(cli): 🐛 correct exit code for type errors"
 
 # Chores
-git commit -m "chore(deps): 🔧 bump typescript to v5.2.0"
-git commit -m "chore(build): 🔧 update tsdown configuration"
+git commit -m "chore(deps): 🤖 bump typescript to v5.2.0"
+git commit -m "chore(build): 🤖 update tsdown configuration"
 
 # CI/CD
-git commit -m "ci(build): 👷 add automated testing workflow"
-git commit -m "ci: 👷 fix release workflow permissions"
+git commit -m "ci(build): 🎡 add automated testing workflow"
+git commit -m "ci: 🎡 fix release workflow permissions"
 
 # Documentation
-git commit -m "docs: 📝 update README with installation instructions"
-git commit -m "docs(api): 📝 add examples for programmatic usage"
+git commit -m "docs: ✏️ update README with installation instructions"
+git commit -m "docs(api): ✏️ add examples for programmatic usage"
+
+# Performance
+git commit -m "perf(core): ⚡️ optimize TypeScript file parsing"
+
+# Style
+git commit -m "style: 💄 fix code formatting and missing semicolons"
+
+# Refactor
+git commit -m "refactor(cli): 💡 reorganize argument parsing logic"
+
+# Tests
+git commit -m "test(core): 💍 add unit tests for file detection"
+
+# Release
+git commit -m "release: 🏹 bump version to 0.2.0"
 ```
 
 ## Rules Summary

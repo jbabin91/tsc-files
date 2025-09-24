@@ -1,6 +1,6 @@
 {
   "name": "@jbabin91/tsc-files",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run TypeScript compiler on specific files without ignoring tsconfig.json",
   "keywords": [
     "typescript",
@@ -69,6 +69,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
+    "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.7",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",

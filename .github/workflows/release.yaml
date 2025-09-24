@@ -39,6 +39,10 @@ jobs:
         with:
           app-id: ${{ vars.AUTOMATED_COMMIT_SIGNER_APP_ID }}
           private-key: ${{ secrets.AUTOMATED_COMMIT_SIGNER_PRIVATE_KEY }}
+          # Explicit permissions required for v2
+          permission-contents: write
+          permission-pull-requests: write
+          permission-metadata: read
 
       - uses: actions/checkout@v5
         with:

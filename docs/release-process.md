@@ -220,11 +220,12 @@ When a PR with changeset version bumps is merged to main:
    - Build process validation
    - Package validation
 
-2. **Release Automation**:
-   - Publishes to npm registry
-   - Creates GitHub release
-   - Generates release notes
-   - Updates GitHub Pages docs
+2. **Release Automation** (GitHub Actions):
+   - **Signed Commits**: Uses GitHub App for verified signatures
+   - **npm Provenance**: Publishes with cryptographic attestation (SLSA Build Level 2)
+   - **Publishes to npm registry**: Automated with proper authentication
+   - **Creates GitHub release**: With auto-generated release notes
+   - **Security Validation**: Dependency audits and vulnerability scanning
 
 #### **Manual Release** (Emergency/Hotfix)
 

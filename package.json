@@ -45,7 +45,10 @@
   ],
   "scripts": {
     "build": "tsdown && pnpm format",
-    "changeset": "changeset",
+    "changeset:auto": "node scripts/generate-changeset.ts",
+    "changeset:local-release": "pnpm changeset:version && pnpm changeset:release",
+    "changeset:release": "pnpm build && changeset publish",
+    "changeset:version": "changeset version && pnpm format && pnpm lint:md:fix",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm no-resolution",
     "commit": "cz",
     "commit:lint": "commitlint --edit",
@@ -57,12 +60,10 @@
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
     "prepublishOnly": "pnpm test && pnpm build",
-    "release": "pnpm build && changeset publish",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "version": "changeset version"
+    "typecheck": "tsc --noEmit"
   },
   "config": {
     "commitizen": {

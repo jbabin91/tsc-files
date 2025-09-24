@@ -574,7 +574,7 @@ pnpm changeset
 pnpm changeset status
 
 # Version packages (maintainers only)
-pnpm changeset version
+pnpm changeset:version
 ```
 
 ### **Versioning**

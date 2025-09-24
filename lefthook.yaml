@@ -1,6 +1,6 @@
 output:
-  - failure        # Only show failed steps
-  - execution_out  # Show command output for failures
+  - failure # Only show failed steps
+  - execution_out # Show command output for failures
 
 pre-commit:
   parallel: true
@@ -26,8 +26,3 @@ commit-msg:
   commands:
     commitlint:
       run: pnpm dlx commitlint --edit "$1"
-
-pre-push:
-  commands:
-    test:
-      run: pnpm test

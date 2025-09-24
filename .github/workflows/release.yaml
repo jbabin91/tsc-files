@@ -65,8 +65,8 @@ jobs:
         uses: changesets/action@v1.5.3
         with:
           # this expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: pnpm release
-          version: pnpm run version
+          publish: pnpm changeset:release
+          version: pnpm changeset:version
           commit: 'chore(release): version package'
           title: 'chore(release): version package'
           createGithubReleases: true

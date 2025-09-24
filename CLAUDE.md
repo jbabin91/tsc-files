@@ -5,6 +5,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📋 Project References
+
+For commit conventions, see @.claude/commit-conventions.md for emoji usage and scoping rules.
+
 ## 🎯 Project Mission
 
 Build a TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration. Designed for git hooks, lint-staged, and CI/CD workflows.
@@ -81,8 +85,11 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 
 ### 🚀 Release Management
 
-- `pnpm changeset` - Create a changeset for next release
-- `pnpm release` - Build and publish package (used by CI)
+- `pnpm changeset:auto` - Generate changesets from conventional commits
+- `pnpm changeset:version` - Bump versions and update CHANGELOG.md
+- `pnpm changeset:release` - Build and publish package (used by CI)
+- `pnpm changeset:local-release` - Complete local release workflow (version + release)
+- `npx changeset` - Create a changeset manually (standard changesets CLI)
 - `pnpm commit` - Interactive commit with commitizen
 
 ### 🔍 Troubleshooting & Debugging

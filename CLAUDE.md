@@ -85,8 +85,10 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 
 ### 🚀 Release Management
 
-- `pnpm changeset` - Create a changeset for next release
-- `pnpm release` - Build and publish package (used by CI)
+- `pnpm changeset:auto` - Generate changesets from conventional commits
+- `pnpm changeset:version` - Bump versions and update CHANGELOG.md
+- `pnpm changeset:release` - Build and publish package (used by CI)
+- `npx changeset` - Create a changeset manually (standard changesets CLI)
 - `pnpm commit` - Interactive commit with commitizen
 
 ### 🔍 Troubleshooting & Debugging

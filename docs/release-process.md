@@ -48,7 +48,7 @@ pnpm changeset
 pnpm changeset status
 
 # Preview what the next release will look like
-pnpm changeset version --dry-run
+pnpm changeset:version --dry-run
 ```
 
 #### **Changeset Types**
@@ -104,7 +104,7 @@ jobs:
       - name: Create Release Pull Request or Publish
         uses: changesets/action@v1
         with:
-          publish: pnpm run release
+          publish: pnpm run changeset:release
           title: 'chore: version packages'
           commit: 'chore: version packages'
         env:
@@ -164,7 +164,7 @@ npm pack --dry-run
 pnpm changeset status
 
 # Generate version bumps and changelog
-pnpm changeset version
+pnpm changeset:version
 
 # Review generated changes
 git diff
@@ -238,14 +238,14 @@ git pull origin main
 pnpm changeset add --type patch
 
 # Version bump
-pnpm changeset version
+pnpm changeset:version
 
 # Build and test
 pnpm build
 pnpm test
 
 # Publish manually
-pnpm run release
+pnpm changeset:release
 ```
 
 ### **5. Post-Release Activities**
@@ -346,9 +346,9 @@ git checkout -b security/CVE-YYYY-XXXXX
 
 # Emergency release
 pnpm changeset add --type patch
-pnpm changeset version
+pnpm changeset:version
 pnpm build && pnpm test
-pnpm run release
+pnpm changeset:release
 ```
 
 #### **Communication (T+2 hours)**
@@ -411,13 +411,13 @@ npm deprecate @jbabin91/tsc-files@X.Y.Z "Critical issue, please upgrade to X.Y.Z
 npm deprecate @jbabin91/tsc-files@X.Y.Z "Critical issue found, use version X.Y.Z-1"
 
 # Publish hotfix
-pnpm run release
+pnpm changeset:release
 
 # Or republish previous version with patch increment
 git checkout vX.Y.Z-1
 pnpm changeset add --type patch
-pnpm changeset version
-pnpm run release
+pnpm changeset:version
+pnpm changeset:release
 ```
 
 ### **GitHub Release Rollback**

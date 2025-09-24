@@ -42,6 +42,7 @@ export default defineConfig({
     alias: {
       fd: 'docs: fix typos',
       b: 'chore(repo): :hammer: bump dependencies',
+      cs: 'chore(repo): :hammer: add changeset',
     },
     useEmoji: true,
     scopes: [

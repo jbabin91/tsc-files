@@ -46,9 +46,6 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Build Package
-        uses: ./.github/actions/build-package
-
       - name: Create Release Pull Request or Publish to npm
         # https://github.com/changesets/action
         uses: changesets/action@v1

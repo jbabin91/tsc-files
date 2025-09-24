@@ -1,5 +1,28 @@
 # @jbabin91/tsc-files
 
+## 0.3.0
+
+### Minor Changes
+
+- [`76683cc`](https://github.com/jbabin91/tsc-files/commit/76683cca8bbbd54f12df8968cebf55e854d99154) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🐛 Bug Fixes
+  - **ci**: 🐛 correct GitHub App token v2 permissions for npm publishing
+  - **config**: 🐛 update to actual project emoji mappings
+  - **config**: 🐛 correct emoji placement in commit format
+  - use proper npm authentication approach
+
+  ### ✨ Features
+
+  - **release**: 🎸 add comprehensive changeset for v0.2.0 release
+  - **ci**: 🎸 add changeset:local-release and update GitHub workflow
+  - **tools**: 🎸 enhance changeset generation with professional patterns
+  - **tools**: 🎸 add custom automatic changeset generation
+  - **config**: 🎸 re-enable npm provenance for security attestation
+
+  ### ♻️ Code Refactoring
+
+  - **config**: ♻️ reorganize changeset scripts for better grouping
+  - **tools**: ♻️ convert changeset script to TypeScript with native Node.js support
+
 ## 0.2.0
 
 ### Minor Changes

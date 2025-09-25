@@ -1,40 +1,67 @@
 # tsc-files Implementation Strategy
 
-This document outlines the systematic implementation strategy for the tsc-files TypeScript CLI tool, leveraging ClaudeLog foundation mechanics for optimal development efficiency.
+This document outlines the systematic implementation strategy for the tsc-files TypeScript CLI tool, incorporating critical insights from analysis of the original tsc-files community PRs and leveraging ClaudeLog foundation mechanics for optimal development efficiency.
 
-## Phase 1: Research & Architecture (Plan Mode)
+## Phase 1: Research & Architecture ✅ COMPLETE
 
-**Trigger Plan Mode** for these critical decisions:
+**Research Complete** - Critical insights from original tsc-files PR analysis:
 
-- TypeScript compiler API integration patterns
-- Package manager detection algorithms (npm/yarn/pnpm/bun)
-- Temporary tsconfig.json generation strategies
-- Command execution security models (execFile vs spawn)
-- Error parsing and formatting approaches
+- **Monorepo Support**: Per-file tsconfig resolution using directory traversal (PR #66)
+- **Error Handling**: Proper spawn error propagation prevents silent failures (PR #49)
+- **Cross-Platform**: Windows path quoting and shell mode, pnpm detection (PRs #62, #75)
+- **TypeScript Config**: Preserve original tsconfig.files and extends property support
+- **Package Managers**: Lock file detection patterns for npm/yarn/pnpm/bun
 
-## Phase 2: Parallel Implementation (Sub-Agent Delegation)
+## Phase 1.5: Infrastructure Enhancement ✅ COMPLETE
 
-**Deploy specialized sub-agents** for concurrent development:
+**Modern Tooling Foundation**:
 
-### Package Manager Detection Team
+- **execa** for reliable cross-platform process execution
+- **fast-glob** for efficient file pattern matching
+- **TypeScript path aliases** for clean import structure
+- **Enterprise-grade CI/CD** with security scanning and automated releases
 
-- **Lock File Detector**: Parse package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb
-- **Environment Detector**: Check package manager environment variables
-- **Binary Detector**: Locate package manager executables in PATH
+## Phase 2: Critical Issues Resolution 🎯 READY TO START
 
-### TypeScript Integration Team
+**Priority Implementation** based on original tsc-files community pain points with enhanced dependency support.
 
-- **Compiler Locator**: Find TypeScript installation (local vs global)
-- **Config Generator**: Create temporary tsconfig.json files
-- **Execution Engine**: Safe command execution with proper error handling
-- **Output Parser**: Parse TypeScript compiler output into structured errors
+📋 **See [Phase 2 Dependencies Guide](./phase2-dependencies.md)** for comprehensive coverage of all new packages and their integration patterns.
 
-### Security & Validation Team
+### 1. Monorepo Support (Priority #1 - Issue #37)
 
-- **Temp File Manager**: Cryptographically secure temporary file handling
-- **Command Sanitizer**: Prevent command injection vulnerabilities
-- **Permission Validator**: Ensure restrictive file permissions
-- **Cleanup Manager**: Guarantee temp file cleanup on exit
+**Implementation Strategy** (from PR #66):
+
+- `getTsConfigForTypeScriptFile()` - Directory traversal to find nearest tsconfig.json
+- Group files by their associated tsconfig.json path
+- Process each group separately with individual temp configs
+- Map file paths relative to each tsconfig directory
+
+### 2. Enhanced Error Reporting (Priority #2 - Issue #74)
+
+**Implementation Strategy** (from PR #49):
+
+- Capture both `status` and `error` from process execution
+- Propagate spawn errors: `if (error) throw error`
+- Implement verbose logging mode with detailed error context
+- Provide actionable error messages for common failure scenarios
+
+### 3. Cross-Platform Compatibility (Priority #3)
+
+**Implementation Strategy** (from PRs #62, #75):
+
+- Package manager detection via lock file presence
+- Windows path handling with proper quoting for spaces
+- pnpm path adjustments (`../../../` prefix for nested structure)
+- Shell mode configuration for Windows .cmd execution
+
+### 4. TypeScript Configuration Respect (Priority #4)
+
+**Implementation Strategy** (from multiple PRs):
+
+- Preserve original `tsconfig.files`: `[...tsconfig.files, ...files]`
+- Support `extends` property resolution chain
+- Handle `checkJs`/`allowJs` for JavaScript file inclusion
+- Detect `emitDeclarationOnly` conflicts with `--noEmit`
 
 ## Phase 3: Quality Assurance (Multi-Role Validation)
 
@@ -92,27 +119,33 @@ src/
 
 ## Implementation Checklist
 
-### Phase 1 Deliverables
+### Phase 1 & 1.5 Deliverables ✅ COMPLETE
 
-- [ ] TypeScript compiler integration research complete
-- [ ] Package manager detection strategy finalized
-- [ ] Security model architecture approved
-- [ ] Temporary file handling approach validated
+- ✅ TypeScript compiler integration research complete (PR analysis)
+- ✅ Package manager detection strategy finalized (lock file + execa patterns)
+- ✅ Security model architecture approved (execa + fast-glob foundation)
+- ✅ Temporary file handling approach validated (secure temp file patterns)
+- ✅ Modern tooling foundation implemented (execa, fast-glob, path aliases)
+- ✅ Enterprise CI/CD infrastructure operational
 
-### Phase 2 Deliverables
+### Phase 2 Deliverables 🎯 READY TO START
 
-- [ ] Package manager detection components implemented
-- [ ] TypeScript integration components implemented
-- [ ] Security and validation components implemented
-- [ ] Unit tests for all components
+**Critical Issues Resolution (Community-Driven Priorities)**:
 
-### Phase 3 Deliverables
+- [ ] **Monorepo Support**: Per-file tsconfig resolution implementation
+- [ ] **Error Handling**: Spawn error propagation and verbose logging
+- [ ] **Cross-Platform**: Windows compatibility and package manager detection
+- [ ] **Config Preservation**: tsconfig.files and extends property support
+- [ ] **JavaScript Support**: checkJs/allowJs file handling
+- [ ] **UX Enhancement**: Commander, kleur, ora integration
+- [ ] **Unit Tests**: Comprehensive coverage for all components
 
-- [ ] Security validation complete
-- [ ] Performance optimization complete
-- [ ] Type safety validation complete
-- [ ] CLI UX validation complete
-- [ ] Integration tests passing
-- [ ] Documentation updated
+### Phase 3 Deliverables 🔮 PLANNED
+
+- [ ] **Advanced Features**: Dependent file checking with cosmiconfig
+- [ ] **Performance Optimization**: Benchmarking and optimization
+- [ ] **Enterprise Features**: Advanced caching and parallel processing
+- [ ] **Integration Tests**: Real-world monorepo testing scenarios
+- [ ] **Documentation**: Complete API and usage documentation
 
 This systematic approach ensures secure, high-quality implementation while leveraging all ClaudeLog foundation mechanics for optimal development efficiency.

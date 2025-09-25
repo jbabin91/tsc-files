@@ -32,15 +32,38 @@ graph TB
 
 **Responsibilities:**
 
-- Parse command-line arguments
-- Validate input files
+- Parse command-line arguments with **commander.js**
+- Validate input files using **zod** schemas
 - Handle help/version commands
+- Provide colored output with **kleur**
+- Show progress indicators with **ora**
 - Forward to core checker
 
 **Key Files:**
 
 - `cli.ts` - Entry point, argument parsing
 - `cli-parser.ts` - Parse and validate arguments
+
+**Dependencies:**
+
+```typescript
+import { Command } from 'commander';
+import kleur from 'kleur';
+import ora from 'ora';
+import { z } from 'zod';
+
+// CLI argument schema
+const CliArgsSchema = z.object({
+  files: z.array(z.string()),
+  project: z.string().optional(),
+  verbose: z.boolean().default(false),
+  json: z.boolean().default(false),
+});
+
+// Enhanced CLI with colors and progress
+const spinner = ora('Type checking files...').start();
+console.log(kleur.green('✓ Type check completed'));
+```
 
 ### 2. Core Checker
 
@@ -104,9 +127,14 @@ async function detectTypeScript(): Promise<string> {
 
 #### TSConfig Generation
 
-**Strategy:**
+**Strategy with Enhanced Dependencies:**
 
 ```typescript
+import { cosmiconfigSync } from 'cosmiconfig';
+import deepmerge from 'deepmerge';
+import { loadConfig } from 'tsconfig-paths';
+import { ensureDir, writeJSON } from 'fs-extra';
+
 interface TempTSConfig {
   // Always extend the original
   extends: string;
@@ -121,9 +149,54 @@ interface TempTSConfig {
     [key: string]: any; // User options
   };
 }
+
+// Enhanced configuration resolution with cosmiconfig
+const explorer = cosmiconfigSync('tsconfig', {
+  searchPlaces: ['tsconfig.json', 'tsconfig.build.json'],
+});
+
+async function resolveConfig(configPath?: string): Promise<TSConfig> {
+  const result = configPath ? explorer.load(configPath) : explorer.search();
+
+  if (!result) throw new Error('TypeScript config not found');
+
+  // Handle extends chain with deepmerge
+  return resolveExtendsChain(result.config);
+}
+
+// Monorepo support: per-file tsconfig resolution (Issue #37)
+function getTsConfigForFile(filePath: string): string {
+  let currentDir = dirname(filePath);
+
+  while (currentDir !== '/' && currentDir !== '.') {
+    const tsconfigPath = join(currentDir, 'tsconfig.json');
+    if (existsSync(tsconfigPath)) return tsconfigPath;
+    currentDir = dirname(currentDir);
+  }
+
+  return 'tsconfig.json'; // fallback
+}
+
+// Path mapping resolution with tsconfig-paths
+const { absoluteBaseUrl, paths } = loadConfig('.');
 ```
 
 #### Cache Management
+
+**Enhanced with fs-extra:**
+
+```typescript
+import { ensureDir, remove, writeJSON, readJSON } from 'fs-extra';
+
+// Directory structure
+const cacheDir = 'node_modules/.cache/@jbabin91/tsc-files/';
+
+await ensureDir(join(cacheDir, 'configs'));
+await ensureDir(join(cacheDir, 'locks'));
+
+// Atomic operations with fs-extra
+await writeJSON(tempConfigPath, tsconfig, { spaces: 2 });
+```
 
 **Directory Structure:**
 
@@ -143,6 +216,7 @@ node_modules/.cache/@jbabin91/tsc-files/
 - Cleanup on error via finally block
 - Stale file detection (>1 hour old)
 - Process lock files for concurrent usage
+- Atomic file operations with fs-extra
 
 ### 5. Execution Layer
 

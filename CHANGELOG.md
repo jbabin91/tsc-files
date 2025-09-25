@@ -16,6 +16,7 @@
   - **config**: 🎸 re-enable npm provenance for security attestation
 
   ### 🐛 Bug Fixes
+
   - 🔧 simplify pnpm cache setup for Windows compatibility
   - **config**: 🐛 disable provenance to isolate npm publishing issue
   - **ci**: 🐛 add --access public flag and restore npm token for provenance publishing
@@ -25,6 +26,7 @@
   - use proper npm authentication approach
 
   ### ♻️ Code Refactoring
+
   - **config**: ♻️ reorganize changeset scripts for better grouping
   - **tools**: ♻️ convert changeset script to TypeScript with native Node.js support
 

@@ -212,21 +212,49 @@ function parseTypeScriptOutput(output: string): TypeScriptError[] {
 }
 
 /**
- * Check TypeScript files for type errors
- *
- * @param files - Array of file paths to check
- * @param options - Configuration options
- * @returns Promise resolving to check results
+ * Group files by their associated tsconfig.json path
  */
-export async function checkFiles(
+function groupFilesByTsConfig(
   files: string[],
-  options: CheckOptions = {},
-): Promise<CheckResult> {
-  const startTime = performance.now();
+  options: CheckOptions,
+): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
   const cwd = options.cwd ?? process.cwd();
 
-  // Find tsconfig.json first - this will throw if not found
-  const tsconfigPath = findTsConfig(cwd, options.project);
+  for (const file of files) {
+    try {
+      // Find tsconfig for this specific file by using its directory
+      const fileDir = path.dirname(path.resolve(cwd, file));
+      const tsconfigPath = options.project
+        ? findTsConfig(cwd, options.project) // Use explicit project for all files
+        : findTsConfig(fileDir); // Find nearest tsconfig for each file
+
+      // Group files by their tsconfig path
+      const existingFiles = groups.get(tsconfigPath) ?? [];
+      existingFiles.push(file);
+      groups.set(tsconfigPath, existingFiles);
+    } catch (error) {
+      // If we can't find tsconfig for a file, group it under a fallback
+      const errorKey = `__ERROR__${error instanceof Error ? error.message : String(error)}`;
+      const existingFiles = groups.get(errorKey) ?? [];
+      existingFiles.push(file);
+      groups.set(errorKey, existingFiles);
+    }
+  }
+
+  return groups;
+}
+
+/**
+ * Check files for a single tsconfig.json configuration
+ */
+async function checkFilesWithSingleConfig(
+  files: string[],
+  tsconfigPath: string,
+  options: CheckOptions,
+  startTime: number,
+): Promise<CheckResult> {
+  const cwd = options.cwd ?? process.cwd();
 
   // Resolve files using fast-glob (supports patterns and individual files)
   const resolvedFiles = await resolveFiles(files, cwd);
@@ -399,4 +427,128 @@ export async function checkFiles(
       }
     }
   }
+}
+
+/**
+ * Check TypeScript files for type errors
+ *
+ * @param files - Array of file paths to check
+ * @param options - Configuration options
+ * @returns Promise resolving to check results
+ */
+export async function checkFiles(
+  files: string[],
+  options: CheckOptions = {},
+): Promise<CheckResult> {
+  const startTime = performance.now();
+  const cwd = options.cwd ?? process.cwd();
+
+  // Early validation: if explicit project is specified, validate it exists
+  if (options.project) {
+    findTsConfig(cwd, options.project);
+  }
+
+  // Resolve files using fast-glob (supports patterns and individual files)
+  const resolvedFiles = await resolveFiles(files, cwd);
+
+  if (resolvedFiles.length === 0) {
+    // If no files found, we should still validate tsconfig exists (unless explicit project already validated)
+    if (!options.project) {
+      // Always throw tsconfig errors when files are provided but no tsconfig found
+      findTsConfig(cwd);
+    }
+
+    if (options.verbose) {
+      // eslint-disable-next-line no-console
+      console.log('No TypeScript files to check');
+    }
+    return {
+      success: true,
+      errorCount: 0,
+      warningCount: 0,
+      errors: [],
+      warnings: [],
+      duration: Math.round(performance.now() - startTime),
+      checkedFiles: [],
+    };
+  }
+
+  // Group files by their associated tsconfig.json
+  const fileGroups = groupFilesByTsConfig(resolvedFiles, options);
+
+  // Handle error cases where files couldn't be grouped
+  const errorGroups = [...fileGroups.keys()].filter((key) =>
+    key.startsWith('__ERROR__'),
+  );
+  if (errorGroups.length > 0) {
+    // Throw the first error encountered
+    const errorMessage = errorGroups[0].replace('__ERROR__', '');
+    throw new Error(errorMessage);
+  }
+
+  // If we have only one group, use the optimized single-config path
+  if (fileGroups.size === 1) {
+    const [tsconfigPath, groupFiles] = [...fileGroups.entries()][0];
+    return await checkFilesWithSingleConfig(
+      groupFiles,
+      tsconfigPath,
+      options,
+      startTime,
+    );
+  }
+
+  // Multi-group monorepo handling
+  const allResults: CheckResult[] = [];
+  const allCheckedFiles: string[] = [];
+  const allErrors: TypeScriptError[] = [];
+  const allWarnings: TypeScriptError[] = [];
+
+  if (options.verbose) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `Monorepo detected: processing ${fileGroups.size} different tsconfig groups`,
+    );
+  }
+
+  // Process each group in parallel for better performance
+  const groupPromises = [...fileGroups.entries()].map(
+    async ([tsconfigPath, groupFiles]) => {
+      if (options.verbose) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `Processing group with ${groupFiles.length} files using ${tsconfigPath}`,
+        );
+      }
+
+      return await checkFilesWithSingleConfig(
+        groupFiles,
+        tsconfigPath,
+        options,
+        startTime,
+      );
+    },
+  );
+
+  const groupResults = await Promise.all(groupPromises);
+
+  // Aggregate results from all groups
+  for (const result of groupResults) {
+    allResults.push(result);
+    allCheckedFiles.push(...result.checkedFiles);
+    allErrors.push(...result.errors);
+    allWarnings.push(...result.warnings);
+  }
+
+  // Calculate overall success (all groups must succeed)
+  const overallSuccess = allResults.every((result) => result.success);
+
+  return {
+    success: overallSuccess,
+    errorCount: allErrors.length,
+    warningCount: allWarnings.length,
+    errors: allErrors,
+    warnings: allWarnings,
+    duration: Math.round(performance.now() - startTime),
+    checkedFiles: allCheckedFiles,
+  };
 }

@@ -5,5 +5,5 @@
  * compiler against specific files instead of the entire project.
  */
 
-export { checkFiles } from './core/checker.js';
-export type { CheckOptions, CheckResult, TypeScriptError } from './types.js';
+export { checkFiles } from '@/core/checker.js';
+export type { CheckOptions, CheckResult, TypeScriptError } from '@/types';

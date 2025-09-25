@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { checkFiles } from '../../src/core/checker.js';
+import { checkFiles } from '@/core/checker.js';
 
 // Test utilities
 const createTempDir = () => {
@@ -54,7 +54,7 @@ describe('checkFiles', () => {
     ({ srcDir } = createTestProject(tempDir));
   });
 
-  describe('file filtering', () => {
+  describe('file resolution', () => {
     it('should handle empty file list', async () => {
       const result = await checkFiles([], { cwd: tempDir });
       expect(result.success).toBe(true);
@@ -62,7 +62,7 @@ describe('checkFiles', () => {
       expect(result.errorCount).toBe(0);
     });
 
-    it('should filter out non-TypeScript files', async () => {
+    it('should resolve individual TypeScript files', async () => {
       // Create test files
       writeFileSync(path.join(srcDir, 'test.js'), 'console.log("hello");');
       writeFileSync(path.join(srcDir, 'test.txt'), 'some text');
@@ -77,7 +77,7 @@ describe('checkFiles', () => {
       expect(result.checkedFiles[0]).toMatch(/test\.ts$/);
     });
 
-    it('should include both .ts and .tsx files', async () => {
+    it('should handle both .ts and .tsx files', async () => {
       writeFileSync(
         path.join(srcDir, 'component.tsx'),
         'const x: string = "hello";',
@@ -88,6 +88,42 @@ describe('checkFiles', () => {
       );
 
       const result = await checkFiles(['src/component.tsx', 'src/utils.ts'], {
+        cwd: tempDir,
+      });
+
+      expect(result.checkedFiles).toHaveLength(2);
+      expect(result.success).toBe(true);
+    });
+
+    it('should support glob patterns', async () => {
+      // Create test files in different subdirectories
+      writeFileSync(path.join(srcDir, 'index.ts'), 'const x = "hello";');
+
+      const subDir = path.join(srcDir, 'utils');
+      mkdirSync(subDir, { recursive: true });
+      writeFileSync(
+        path.join(subDir, 'helper.ts'),
+        'export const help = () => {};',
+      );
+      writeFileSync(
+        path.join(subDir, 'types.tsx'),
+        'export const Component = () => null;',
+      );
+
+      const result = await checkFiles(['src/**/*.{ts,tsx}'], {
+        cwd: tempDir,
+      });
+
+      expect(result.checkedFiles).toHaveLength(3);
+      expect(result.success).toBe(true);
+    });
+
+    it('should support directory patterns', async () => {
+      // Create test files
+      writeFileSync(path.join(srcDir, 'index.ts'), 'const x = "hello";');
+      writeFileSync(path.join(srcDir, 'utils.ts'), 'const y = "world";');
+
+      const result = await checkFiles(['src'], {
         cwd: tempDir,
       });
 

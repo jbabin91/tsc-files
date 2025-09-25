@@ -9,8 +9,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { checkFiles } from './core/checker.js';
-import type { CheckOptions } from './types.js';
+import { checkFiles } from '@/core/checker.js';
+import type { CheckOptions } from '@/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +30,7 @@ function getVersion(): string {
 const HELP_TEXT = `
 Usage: tsc-files [options] <files...>
 
-Run TypeScript compiler on specific files without ignoring tsconfig.json
+Run TypeScript compiler on specific files or glob patterns without ignoring tsconfig.json
 
 Options:
   --help, -h           Show this help message
@@ -44,9 +44,13 @@ Options:
   --json               Output results as JSON
 
 Examples:
-  tsc-files --noEmit src/index.ts
-  tsc-files --project tsconfig.build.json src/**/*.ts
-  tsc-files --verbose --skipLibCheck src/*.ts
+  tsc-files src/index.ts                    # Check specific file
+  tsc-files "src/**/*.ts"                   # Check all .ts files in src/
+  tsc-files "src/**/*.{ts,tsx}"             # Check .ts and .tsx files
+  tsc-files --project tsconfig.build.json src # Check all TS files in src/
+  tsc-files --verbose --skipLibCheck src/*.ts # Check with verbose output
+
+Note: Always quote glob patterns to prevent shell expansion
 `;
 
 async function main(): Promise<void> {
@@ -79,21 +83,13 @@ async function main(): Promise<void> {
       process.exit(0);
     }
 
-    // Get files to check - filter for TypeScript files
-    const allFiles = positionals;
-    const files = allFiles.filter((file) => /\.(ts|tsx)$/.test(file));
+    // Get files/patterns to check
+    const patterns = positionals;
 
-    if (allFiles.length === 0) {
-      console.error('Error: No files specified');
+    if (patterns.length === 0) {
+      console.error('Error: No files or patterns specified');
       console.log(HELP_TEXT);
       process.exit(2);
-    }
-
-    if (files.length === 0) {
-      if (values.verbose) {
-        console.log('No TypeScript files to check');
-      }
-      process.exit(0);
     }
 
     // Build options
@@ -106,7 +102,7 @@ async function main(): Promise<void> {
     };
 
     // Run type checking
-    const result = await checkFiles(files, options);
+    const result = await checkFiles(patterns, options);
 
     // Output results
     if (values.json) {

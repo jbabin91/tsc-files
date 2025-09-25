@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ErrorSource } from '../../src/types.js';
+import { ErrorSource } from '@/types';
 
 describe('Types', () => {
   describe('ErrorSource', () => {

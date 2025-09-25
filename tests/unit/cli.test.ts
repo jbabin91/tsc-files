@@ -127,7 +127,7 @@ describe('CLI', () => {
       const { stderr, exitCode } = await runCli([], tempDir);
 
       expect(exitCode).toBe(2);
-      expect(stderr).toContain('No files specified');
+      expect(stderr).toContain('No files or patterns specified');
     });
 
     it('should exit successfully when no TypeScript files', async () => {

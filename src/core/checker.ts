@@ -2,7 +2,6 @@
  * Core type checking functionality
  */
 
-import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import {
   existsSync,
@@ -12,11 +11,90 @@ import {
   writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { promisify } from 'node:util';
 
-import type { CheckOptions, CheckResult, TypeScriptError } from '../types.js';
+import { execa } from 'execa';
+import fastGlob from 'fast-glob';
 
-const execFileAsync = promisify(execFile);
+import type { CheckOptions, CheckResult, TypeScriptError } from '@/types';
+
+/**
+ * Resolve files using fast-glob with TypeScript patterns
+ */
+async function resolveFiles(
+  patterns: string[],
+  cwd: string,
+): Promise<string[]> {
+  // Convert single files and patterns to glob patterns
+  const globPatterns: string[] = [];
+
+  for (const pattern of patterns) {
+    // Check if it's a direct file reference (no wildcards)
+    const isDirectFile =
+      !pattern.includes('*') &&
+      !pattern.includes('{') &&
+      !pattern.includes('[');
+
+    if (isDirectFile) {
+      const absolutePath = path.resolve(cwd, pattern);
+
+      // Check if it's a TypeScript file
+      if (existsSync(absolutePath) && /\.(ts|tsx)$/.test(pattern)) {
+        globPatterns.push(pattern);
+      }
+      // Check if it's a directory - if so, convert to glob pattern
+      else if (existsSync(absolutePath)) {
+        try {
+          const fs = await import('node:fs/promises');
+          const stat = await fs.stat(absolutePath);
+          if (stat.isDirectory()) {
+            globPatterns.push(`${pattern}/**/*.{ts,tsx}`);
+          }
+        } catch {
+          // If stat fails, treat as glob pattern
+          globPatterns.push(`${pattern}/**/*.{ts,tsx}`);
+        }
+      }
+    } else {
+      // It's a glob pattern, use as-is but ensure it targets TypeScript files
+      if (
+        pattern.includes('.ts') ||
+        pattern.includes('.tsx') ||
+        pattern.includes('{ts,tsx}') ||
+        pattern.includes('{tsx,ts}') ||
+        !pattern.includes('.')
+      ) {
+        // If no extension specified, add TypeScript extensions
+        if (pattern.includes('.')) {
+          globPatterns.push(pattern);
+        } else {
+          globPatterns.push(`${pattern}/**/*.{ts,tsx}`);
+        }
+      }
+    }
+  }
+
+  if (globPatterns.length === 0) {
+    return [];
+  }
+
+  try {
+    const files = await fastGlob(globPatterns, {
+      cwd,
+      absolute: true,
+      onlyFiles: true,
+      ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+    });
+
+    // Filter to only TypeScript files as a safety measure
+    return files.filter((file) => /\.(ts|tsx)$/.test(file));
+  } catch {
+    // Fallback to simple pattern matching if glob fails
+    return patterns
+      .filter((pattern) => /\.(ts|tsx)$/.test(pattern))
+      .map((file) => path.resolve(cwd, file))
+      .filter((file) => existsSync(file));
+  }
+}
 
 /**
  * Find tsconfig.json file starting from cwd
@@ -132,10 +210,13 @@ export async function checkFiles(
   const startTime = performance.now();
   const cwd = options.cwd ?? process.cwd();
 
-  // Filter TypeScript files
-  const tsFiles = files.filter((file) => /\.(ts|tsx)$/.test(file));
+  // Find tsconfig.json first - this will throw if not found
+  const tsconfigPath = findTsConfig(cwd, options.project);
 
-  if (tsFiles.length === 0) {
+  // Resolve files using fast-glob (supports patterns and individual files)
+  const resolvedFiles = await resolveFiles(files, cwd);
+
+  if (resolvedFiles.length === 0) {
     if (options.verbose) {
       // eslint-disable-next-line no-console
       console.log('No TypeScript files to check');
@@ -151,11 +232,8 @@ export async function checkFiles(
     };
   }
 
-  // Find tsconfig.json
-  const tsconfigPath = findTsConfig(cwd, options.project);
-
-  // Convert files to absolute paths
-  const absoluteFiles = tsFiles.map((file) => path.resolve(cwd, file));
+  // Files are already absolute from resolveFiles
+  const absoluteFiles = resolvedFiles;
 
   // Read existing tsconfig
   let existingConfig: { compilerOptions?: Record<string, unknown> };
@@ -206,13 +284,14 @@ export async function checkFiles(
     const args = ['--project', tempConfigPath];
 
     try {
-      const { stdout, stderr } = await execFileAsync(tscPath, args, {
+      const result = await execa(tscPath, args, {
         cwd,
-        encoding: 'utf8',
+        timeout: 30_000, // 30 second timeout
+        cleanup: true, // Kill process tree on abort
       });
 
       // TypeScript returns 0 for success, non-zero for errors
-      const allOutput = `${stdout}\n${stderr}`.trim();
+      const allOutput = `${result.stdout}\n${result.stderr}`.trim();
       const errors = parseTypeScriptOutput(allOutput);
 
       const errorList = errors.filter((e) => e.severity === 'error');
@@ -232,16 +311,17 @@ export async function checkFiles(
       const error = execError as {
         stdout?: string;
         stderr?: string;
-        code?: number;
+        exitCode?: number;
         message?: string;
+        shortMessage?: string;
       };
       const allOutput = `${error.stdout ?? ''}\n${error.stderr ?? ''}`.trim();
       const errors = parseTypeScriptOutput(allOutput);
 
       // If no parseable errors found but execution failed, it's a system error
-      if (errors.length === 0 && error.code !== 0) {
+      if (errors.length === 0 && error.exitCode !== 0) {
         throw new Error(
-          `TypeScript compiler failed: ${allOutput || error.message}`,
+          `TypeScript compiler failed: ${allOutput ?? error.shortMessage ?? error.message}`,
         );
       }
 

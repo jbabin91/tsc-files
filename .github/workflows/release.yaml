@@ -56,8 +56,8 @@ jobs:
         with:
           publish: pnpm changeset:release
           version: changeset version
-          commit: 'chore(release): :hammer: version package'
-          title: 'chore(release): :hammer: version package'
+          commit: 'chore(release): :ferris_wheel: version package'
+          title: 'chore(release): :ferris_wheel: version package'
           commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

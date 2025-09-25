@@ -1,5 +1,12 @@
 # @jbabin91/tsc-files
 
+## 0.1.5
+
+### Patch Changes
+
+- [`fdfd902`](https://github.com/jbabin91/tsc-files/commit/fdfd902e0e1f4a7402fcfa6d54ed4c5b5e9cd466) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🐛 Bug Fixes
+  - use proper npm authentication approach
+
 ## 0.1.4
 
 ### Patch Changes

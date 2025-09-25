@@ -1,6 +1,6 @@
 /**
  * TypeScript compiler detection and execution
- * Enhanced detection with package manager integration
+ * Enhanced detection with package manager integration and cross-platform support
  */
 
 import { existsSync } from 'node:fs';
@@ -9,14 +9,54 @@ import path from 'node:path';
 import {
   detectPackageManagerAdvanced,
   type PackageManagerInfo,
-} from './package-manager.js';
+} from '@/detectors/package-manager';
 
 export type TypeScriptInfo = {
   executable: string;
   args: string[];
   useShell: boolean;
   packageManager: PackageManagerInfo;
+  isWindows: boolean;
+  quotedExecutable?: string; // For Windows paths with spaces
 };
+
+/**
+ * Cross-platform utilities
+ */
+const isWindows = process.platform === 'win32';
+
+/**
+ * Quote executable path for Windows if it contains spaces
+ */
+function quoteWindowsPath(executablePath: string): string {
+  if (isWindows) {
+    // Quote paths with spaces on Windows
+    if (executablePath.includes(' ') && executablePath.startsWith('"')) {
+      return executablePath; // Already quoted
+    }
+
+    if (executablePath.includes(' ')) {
+      return `"${executablePath}"`;
+    }
+  }
+
+  return executablePath;
+}
+
+/**
+ * Get Windows-compatible executable name (.cmd extension for package managers)
+ */
+function getWindowsExecutable(executable: string): string {
+  if (isWindows) {
+    // Add .cmd extension for package managers on Windows
+    const packageManagers = ['npm', 'npx', 'yarn', 'pnpm', 'bun'];
+    if (packageManagers.includes(executable)) {
+      return `${executable}.cmd`;
+    }
+  }
+
+  return executable;
+}
 
 /**
  * Find TypeScript compiler executable with enhanced detection
@@ -29,22 +69,31 @@ export function findTypeScriptCompiler(
 
   // Try package manager specific TypeScript path first
   if (packageManagerInfo.tscPath && existsSync(packageManagerInfo.tscPath)) {
+    const executablePath = packageManagerInfo.tscPath;
+    const quotedPath = quoteWindowsPath(executablePath);
+
     return {
-      executable: packageManagerInfo.tscPath,
+      executable: executablePath,
       args: [],
       useShell: false,
       packageManager: packageManagerInfo,
+      isWindows,
+      quotedExecutable: quotedPath === executablePath ? undefined : quotedPath,
     };
   }
 
   // Try local node_modules/.bin/tsc
   const localTsc = path.join(cwd, 'node_modules', '.bin', 'tsc');
   if (existsSync(localTsc)) {
+    const quotedPath = quoteWindowsPath(localTsc);
+
     return {
       executable: localTsc,
       args: [],
       useShell: false,
       packageManager: packageManagerInfo,
+      isWindows,
+      quotedExecutable: quotedPath === localTsc ? undefined : quotedPath,
     };
   }
 
@@ -56,11 +105,16 @@ export function findTypeScriptCompiler(
 
   for (const tscPath of globalPaths) {
     if (tscPath === 'tsc' || existsSync(tscPath)) {
+      const windowsExecutable = getWindowsExecutable(tscPath);
+      const quotedPath = quoteWindowsPath(tscPath);
+
       return {
-        executable: tscPath,
+        executable: windowsExecutable,
         args: [],
-        useShell: tscPath === 'tsc', // Use shell only for global tsc
+        useShell: tscPath === 'tsc' || isWindows, // Use shell for global tsc or Windows
         packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: quotedPath === tscPath ? undefined : quotedPath,
       };
     }
   }
@@ -75,11 +129,15 @@ export function findTypeScriptCompiler(
     const tscPath = path.join(typescriptDir, 'bin', 'tsc');
 
     if (existsSync(tscPath)) {
+      const quotedPath = quoteWindowsPath(tscPath);
+
       return {
         executable: tscPath,
         args: [],
         useShell: false,
         packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: quotedPath === tscPath ? undefined : quotedPath,
       };
     }
   } catch {
@@ -89,38 +147,58 @@ export function findTypeScriptCompiler(
   // Fallback to package manager execution patterns
   switch (packageManagerInfo.manager) {
     case 'pnpm': {
+      const executable = getWindowsExecutable('pnpm');
+      const quotedPath = quoteWindowsPath(executable);
+
       return {
-        executable: 'pnpm',
+        executable,
         args: ['exec', 'tsc'],
         useShell: true,
         packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: quotedPath === executable ? undefined : quotedPath,
       };
     }
 
     case 'yarn': {
+      const executable = getWindowsExecutable('yarn');
+      const quotedPath = quoteWindowsPath(executable);
+
       return {
-        executable: 'yarn',
+        executable,
         args: ['tsc'],
         useShell: true,
         packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: quotedPath === executable ? undefined : quotedPath,
       };
     }
 
     case 'bun': {
+      const executable = getWindowsExecutable('bun');
+      const quotedPath = quoteWindowsPath(executable);
+
       return {
-        executable: 'bun',
+        executable,
         args: ['x', 'tsc'],
         useShell: true,
         packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: quotedPath === executable ? undefined : quotedPath,
       };
     }
 
     default: {
+      const executable = getWindowsExecutable('npx');
+      const quotedPath = quoteWindowsPath(executable);
+
       return {
-        executable: 'npx',
+        executable,
         args: ['tsc'],
         useShell: true,
         packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: quotedPath === executable ? undefined : quotedPath,
       };
     }
   }

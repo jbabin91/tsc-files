@@ -1,10 +1,15 @@
 /**
  * Package manager detection for optimized TypeScript execution
- * Based on lock files and environment detection patterns
+ * Based on lock files and environment detection patterns with cross-platform support
  */
 
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+
+/**
+ * Cross-platform utilities
+ */
+const isWindows = process.platform === 'win32';
 
 export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
 
@@ -38,16 +43,25 @@ const COMMAND_PATTERNS: Record<PackageManager, string> = {
 
 /**
  * TypeScript compiler path patterns for different package managers
- * Includes special handling for pnpm nested structure
+ * Includes special handling for pnpm nested structure and Windows compatibility
  */
 function getTscPath(manager: PackageManager, cwd: string): string | undefined {
   const nodeModules = path.join(cwd, 'node_modules');
 
   // Standard paths that work for most package managers
+  // Windows: Include both .cmd and .exe variations
   const standardPaths = [
     path.join(nodeModules, '.bin', 'tsc'),
     path.join(nodeModules, 'typescript', 'bin', 'tsc'),
   ];
+
+  // Add Windows-specific paths
+  if (isWindows) {
+    standardPaths.push(
+      path.join(nodeModules, '.bin', 'tsc.cmd'),
+      path.join(nodeModules, '.bin', 'tsc.exe'),
+    );
+  }
 
   // Special pnpm handling with nested structure
   if (manager === 'pnpm') {
@@ -67,6 +81,15 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
       path.join(cwd, '..', '..', 'node_modules', '.bin', 'tsc'),
       path.join(cwd, '..', '..', '..', 'node_modules', '.bin', 'tsc'),
     ];
+
+    // Add Windows extensions for pnpm paths
+    if (isWindows) {
+      pnpmPaths.push(
+        path.join(cwd, '..', 'node_modules', '.bin', 'tsc.cmd'),
+        path.join(cwd, '..', '..', 'node_modules', '.bin', 'tsc.cmd'),
+        path.join(cwd, '..', '..', '..', 'node_modules', '.bin', 'tsc.cmd'),
+      );
+    }
 
     for (const tscPath of pnpmPaths) {
       if (existsSync(tscPath)) {

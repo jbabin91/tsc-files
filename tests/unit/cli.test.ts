@@ -286,19 +286,25 @@ describe('CLI', () => {
     });
 
     it('should provide helpful error when no tsconfig found', async () => {
-      const emptyTempDir = createTempDir();
+      // Create a temp directory in system temp (not in project directory)
+      const systemTempDir = path.join(
+        tmpdir(),
+        'isolated-cli-test',
+        Date.now().toString(),
+      );
+      mkdirSync(systemTempDir, { recursive: true });
 
       try {
         const { exitCode, stderr } = await runCli(
           ['nonexistent.ts'],
-          emptyTempDir,
+          systemTempDir,
         );
 
         expect(exitCode).toBe(2); // Configuration error
         expect(stderr).toContain('Configuration Error');
         expect(stderr).toContain('No tsconfig.json found');
       } finally {
-        cleanupTempDir(emptyTempDir);
+        cleanupTempDir(systemTempDir);
       }
     });
   });

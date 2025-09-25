@@ -5,7 +5,7 @@ import {
   type CheckOptions,
   type CheckResult,
   type TypeScriptError,
-} from '@/index.js';
+} from '@/index';
 
 describe('index', () => {
   it('should export checkFiles function', () => {

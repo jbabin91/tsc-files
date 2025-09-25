@@ -14,7 +14,7 @@ import kleur from 'kleur';
 import ora from 'ora';
 import { z } from 'zod';
 
-import { checkFiles } from '@/core/checker.js';
+import { checkFiles } from '@/core/checker';
 import type { CheckOptions } from '@/types';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -53,6 +53,8 @@
     "commit": "cz",
     "commit:lint": "commitlint --edit",
     "dev": "tsdown --watch",
+    "env:pull": "pnpm dlx dotenv-vault@latest pull",
+    "env:push": "pnpm dlx dotenv-vault@latest push",
     "format": "prettier -uwl --cache .",
     "format:check": "prettier -uc --cache .",
     "lint": "eslint . --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/.eslintcache",

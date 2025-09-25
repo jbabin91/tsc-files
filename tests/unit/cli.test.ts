@@ -65,15 +65,35 @@ const runCli = async (
     );
     return { stdout, stderr, exitCode: 0 };
   } catch (error: unknown) {
-    const execError = error as {
-      stdout?: string;
-      stderr?: string;
-      code?: number;
-    };
+    // Type-safe error property access
+    const stdout =
+      typeof error === 'object' &&
+      error !== null &&
+      'stdout' in error &&
+      typeof error.stdout === 'string'
+        ? error.stdout
+        : '';
+
+    const stderr =
+      typeof error === 'object' &&
+      error !== null &&
+      'stderr' in error &&
+      typeof error.stderr === 'string'
+        ? error.stderr
+        : '';
+
+    const code =
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      typeof error.code === 'number'
+        ? error.code
+        : 1;
+
     return {
-      stdout: execError.stdout ?? '',
-      stderr: execError.stderr ?? '',
-      exitCode: execError.code ?? 1,
+      stdout,
+      stderr,
+      exitCode: code,
     };
   }
 };

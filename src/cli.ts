@@ -127,16 +127,10 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
   let spinner: ReturnType<typeof ora> | undefined;
 
   try {
-    // Validate and parse options with zod
-    const rawOptions = options as Record<string, unknown>;
-    const validatedOptions = CliOptionsSchema.parse({
-      project: rawOptions.project,
-      noEmit: rawOptions.noEmit ?? true,
-      skipLibCheck: rawOptions.skipLibCheck ?? false,
-      verbose: rawOptions.verbose ?? false,
-      cache: rawOptions.cache ?? true,
-      json: rawOptions.json ?? false,
-    });
+    // Type-safe options parsing with validation
+    const validatedOptions = CliOptionsSchema.parse(
+      typeof options === 'object' && options !== null ? options : {},
+    );
 
     // Don't show spinner in JSON mode or if in non-interactive environment
     const showProgress =

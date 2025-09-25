@@ -308,21 +308,45 @@ export async function checkFiles(
       };
     } catch (execError: unknown) {
       // TypeScript exits with non-zero on type errors, which is expected
-      const error = execError as {
-        stdout?: string;
-        stderr?: string;
-        exitCode?: number;
-        message?: string;
-        shortMessage?: string;
-      };
-      const allOutput = `${error.stdout ?? ''}\n${error.stderr ?? ''}`.trim();
+      // Type-safe error property access
+      const stdout =
+        typeof execError === 'object' &&
+        execError !== null &&
+        'stdout' in execError &&
+        typeof execError.stdout === 'string'
+          ? execError.stdout
+          : '';
+
+      const stderr =
+        typeof execError === 'object' &&
+        execError !== null &&
+        'stderr' in execError &&
+        typeof execError.stderr === 'string'
+          ? execError.stderr
+          : '';
+
+      const exitCode =
+        typeof execError === 'object' &&
+        execError !== null &&
+        'exitCode' in execError &&
+        typeof execError.exitCode === 'number'
+          ? execError.exitCode
+          : 1;
+
+      const message =
+        typeof execError === 'object' &&
+        execError !== null &&
+        'message' in execError &&
+        typeof execError.message === 'string'
+          ? execError.message
+          : String(execError);
+
+      const allOutput = `${stdout}\n${stderr}`.trim();
       const errors = parseTypeScriptOutput(allOutput);
 
       // If no parseable errors found but execution failed, it's a system error
-      if (errors.length === 0 && error.exitCode !== 0) {
-        throw new Error(
-          `TypeScript compiler failed: ${allOutput ?? error.shortMessage ?? error.message}`,
-        );
+      if (errors.length === 0 && exitCode !== 0) {
+        throw new Error(`TypeScript compiler failed: ${allOutput || message}`);
       }
 
       const errorList = errors.filter((e) => e.severity === 'error');

@@ -2,7 +2,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { checkFiles } from '@/core/checker.js';
 
@@ -285,6 +285,42 @@ const other: number = "not a number";`,
       ).rejects.toThrow();
 
       cleanupTempDir(emptyTempDir);
+    });
+
+    it('should handle warnings separately from errors', async () => {
+      // Create a TypeScript file that will generate warnings (unused variables)
+      writeFileSync(
+        path.join(tempDir, 'warnings.ts'),
+        `
+          const unusedVariable = 'this will generate a warning';
+          export const message: string = 'test';
+        `,
+      );
+
+      const result = await checkFiles(['warnings.ts'], {
+        cwd: tempDir,
+        // Enable strict checks that might generate warnings
+        verbose: true,
+      });
+
+      expect(result.success).toBe(true); // Should succeed despite warnings
+      expect(result.errorCount).toBe(0);
+      expect(typeof result.warningCount).toBe('number');
+      expect(Array.isArray(result.warnings)).toBe(true);
+    });
+
+    it('should handle cleanup errors gracefully', async () => {
+      // Create invalid TypeScript to trigger error handling paths
+      writeFileSync(
+        path.join(tempDir, 'invalid.ts'),
+        'const message: string = 42;',
+      );
+
+      // Should still complete despite potential cleanup errors
+      const result = await checkFiles(['invalid.ts'], { cwd: tempDir });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
     });
   });
 

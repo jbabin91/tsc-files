@@ -2,9 +2,7 @@ import { defineConfig } from 'cz-git';
 
 export default defineConfig({
   extends: ['@commitlint/config-conventional'],
-  // commitlint rules
   rules: {
-    // Ensure types match your existing patterns
     'type-enum': [
       2,
       'always',
@@ -21,9 +19,7 @@ export default defineConfig({
         'revert', // Revert a previous commit
       ],
     ],
-    // Scope format - allow optional scopes
     'scope-case': [2, 'always', 'lower-case'],
-    // Subject format - imperative mood, no period
     'subject-case': [
       2,
       'never',
@@ -31,31 +27,18 @@ export default defineConfig({
     ],
     'subject-full-stop': [2, 'never', '.'],
     'subject-empty': [2, 'never'],
-    // Header length limit
     'header-max-length': [2, 'always', 200],
-    // Body length limit
     'body-max-length': [2, 'always', Infinity],
-    'body-max-line-length': [0, 'always'], // Disable line length limit completely
+    'body-max-line-length': [0, 'always'],
   },
-  // cz-git configuration
   prompt: {
     alias: {
-      fd: 'docs: fix typos',
+      fd: 'docs(repo): :memo: fix typos',
       b: 'chore(repo): :hammer: bump dependencies',
       cs: 'chore(repo): :hammer: add changeset',
     },
     useEmoji: true,
-    scopes: [
-      // Project-specific scopes
-      'cli',
-      'core',
-      'types',
-      'config',
-      'build',
-      'test',
-      'docs',
-      'deps',
-    ],
+    scopes: ['cli', 'core', 'types', 'config', 'build', 'test', 'docs', 'deps'],
     customScopesAlias: 'custom',
     emptyScopesAlias: 'empty',
     upperCaseSubject: false,

@@ -34,6 +34,7 @@ export default defineConfig({
   prompt: {
     alias: {
       fd: 'docs(repo): :memo: fix typos',
+      ud: 'docs(repo): :memo: update documentation',
       b: 'chore(repo): :hammer: bump dependencies',
       cs: 'chore(repo): :hammer: add changeset',
     },

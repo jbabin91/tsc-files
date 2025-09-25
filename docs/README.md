@@ -11,14 +11,20 @@ This directory contains comprehensive documentation for the tsc-files project.
 ### Technical Documentation
 
 - [Architecture](./architecture.md) - System design and component overview
+- [Architecture Details](./architecture-details.md) - Detailed architectural information
 - [API Reference](./api.md) - CLI options and programmatic API
-- [Package Manager Detection](./package-manager-detection.md) - How we detect npm/yarn/pnpm/bun
 - [Testing Strategy](./testing-strategy.md) - Testing approach and guidelines
+- [Security Requirements](./security-requirements.md) - Comprehensive security requirements
+- [Implementation Strategy](./implementation-strategy.md) - Systematic implementation plan
+- [Performance Requirements](./performance-requirements.md) - Performance guidelines and optimization
 
 ### Project Information
 
-- [Migration Guide](./migration-guide.md) - Migrating from the original tsc-files
-- [Phase 1 Checklist](./phase-1-checklist.md) - Development progress tracking
+- [Usage Examples](./usage-examples.md) - Real-world usage scenarios and examples
+- [Troubleshooting Guide](./troubleshooting-guide.md) - Common issues and solutions
+- [Getting Started](./getting-started.md) - Installation and setup guide
+- [Release Process](./release-process.md) - Release management and publishing
+- [Contributing](./contributing.md) - How to contribute to the project
 
 ### Architectural Decisions
 

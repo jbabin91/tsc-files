@@ -50,6 +50,11 @@ jobs:
         run: |
           npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_TOKEN }}"
 
+      - name: Setup Git User
+        run: |
+          git config user.name "automated-commit-signer[bot]"
+          git config user.email "234268492+automated-commit-signer[bot]@users.noreply.github.com"
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1.5.3
@@ -59,6 +64,7 @@ jobs:
           commit: 'chore(release): :hammer: version package'
           title: 'chore(release): :hammer: version package'
           commitMode: github-api
+          setupGitUser: false
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -66,8 +72,6 @@ jobs:
       - name: Format and fix markdown after version bump
         if: steps.changesets.outputs.hasChangesets == 'true'
         run: |
-          git config user.name "automated-commit-signer[bot]"
-          git config user.email "234268492+automated-commit-signer[bot]@users.noreply.github.com"
           pnpm format
           pnpm lint:md:fix
           git add -A

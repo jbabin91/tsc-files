@@ -37,9 +37,6 @@ jobs:
         with:
           app-id: ${{ vars.AUTOMATED_COMMIT_SIGNER_APP_ID }}
           private-key: ${{ secrets.AUTOMATED_COMMIT_SIGNER_PRIVATE_KEY }}
-          permission-contents: write
-          permission-pull-requests: write
-          permission-metadata: read
 
       - uses: actions/checkout@v5
         with:
@@ -47,12 +44,6 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup
-
-      - name: Setup Git User
-        shell: bash
-        run: |
-          git config user.name "automated-commit-signer[bot]"
-          git config user.email "175816895+automated-commit-signer[bot]@users.noreply.github.com"
 
       - name: Set NPM Token
         shell: bash
@@ -66,6 +57,7 @@ jobs:
           version: pnpm changeset:version
           commit: 'chore(release): :hammer: version package'
           title: 'chore(release): :hammer: version package'
+          commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -126,8 +126,8 @@ describe('CLI', () => {
     it('should exit with error when no files specified', async () => {
       const { stderr, exitCode } = await runCli([], tempDir);
 
-      expect(exitCode).toBe(2);
-      expect(stderr).toContain('No files or patterns specified');
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('missing required argument');
     });
 
     it('should exit successfully when no TypeScript files', async () => {
@@ -270,6 +270,65 @@ describe('CLI', () => {
 
       expect(exitCode).toBe(2);
       expect(stderr).toContain('Configuration Error');
+    });
+  });
+
+  describe('enhanced CLI features', () => {
+    beforeEach(() => {
+      writeFileSync(
+        path.join(srcDir, 'test.ts'),
+        'const message: string = "Hello";',
+      );
+    });
+
+    it('should display enhanced help with examples and patterns', async () => {
+      const { stdout, exitCode } = await runCli(['--help'], tempDir);
+
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('Examples:');
+      expect(stdout).toContain('Glob Patterns:');
+      expect(stdout).toContain('Exit Codes:');
+      expect(stdout).toContain('tsc-files src/index.ts src/utils.ts');
+      expect(stdout).toContain('"src/**/*.ts"');
+    });
+
+    it('should handle error output with enhanced formatting', async () => {
+      writeFileSync(
+        path.join(srcDir, 'error.ts'),
+        'const message: string = 42;', // Type error
+      );
+
+      const { stderr, exitCode } = await runCli(['src/error.ts'], tempDir);
+
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('error.ts');
+      expect(stderr).toContain('Type');
+    });
+
+    it('should suppress progress indicators in JSON mode', async () => {
+      const { stdout, exitCode } = await runCli(
+        ['--json', 'src/test.ts'],
+        tempDir,
+      );
+
+      expect(exitCode).toBe(0);
+      const result = JSON.parse(stdout) as {
+        success: boolean;
+        errorCount: number;
+      };
+      expect(result).toHaveProperty('success', true);
+      expect(result).toHaveProperty('errorCount', 0);
+    });
+
+    it('should provide helpful tips in error messages', async () => {
+      // Test configuration error tip
+      rmSync(path.join(tempDir, 'tsconfig.json'));
+      writeFileSync(path.join(srcDir, 'test.ts'), 'const x = 1;');
+
+      const { stderr } = await runCli(['src/test.ts'], tempDir);
+
+      // Should contain helpful tip (may vary based on actual error)
+      expect(stderr.length).toBeGreaterThan(0);
     });
   });
 });

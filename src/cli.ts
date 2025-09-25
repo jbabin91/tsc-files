@@ -2,18 +2,36 @@
 
 /**
  * CLI entry point for @jbabin91/tsc-files
+ * Enhanced with commander.js, kleur colors, and ora progress indicators
  */
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
+
+import { Command } from 'commander';
+import kleur from 'kleur';
+import ora from 'ora';
+import { z } from 'zod';
 
 import { checkFiles } from '@/core/checker.js';
 import type { CheckOptions } from '@/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// CLI options validation schema
+const CliOptionsSchema = z.object({
+  project: z.string().optional(),
+  noEmit: z.boolean().default(true),
+  skipLibCheck: z.boolean().default(false),
+  verbose: z.boolean().default(false),
+  cache: z.boolean().default(true),
+  json: z.boolean().default(false),
+});
+
+// Remove unused type for now
+// type CliOptions = z.infer<typeof CliOptionsSchema>;
 
 function getVersion(): string {
   try {
@@ -27,136 +45,213 @@ function getVersion(): string {
   }
 }
 
-const HELP_TEXT = `
-Usage: tsc-files [options] <files...>
+// Enhanced CLI with professional patterns from our research
+function createProgram(): Command {
+  const program = new Command();
+  const version = getVersion();
 
-Run TypeScript compiler on specific files or glob patterns without ignoring tsconfig.json
-
-Options:
-  --help, -h           Show this help message
-  --version, -v        Show version number
-  --project, -p        Specify tsconfig.json path
-  --noEmit             Don't emit files (default: true)
-  --skipLibCheck       Skip type checking of declaration files
-  --verbose            Enable verbose output
-  --cache              Use cache directory for temp files (default: true)
-  --no-cache           Disable caching
-  --json               Output results as JSON
-
-Examples:
-  tsc-files src/index.ts                    # Check specific file
-  tsc-files "src/**/*.ts"                   # Check all .ts files in src/
-  tsc-files "src/**/*.{ts,tsx}"             # Check .ts and .tsx files
-  tsc-files --project tsconfig.build.json src # Check all TS files in src/
-  tsc-files --verbose --skipLibCheck src/*.ts # Check with verbose output
-
-Note: Always quote glob patterns to prevent shell expansion
-`;
-
-async function main(): Promise<void> {
-  try {
-    const { values, positionals } = parseArgs({
-      args: process.argv.slice(2),
-      allowPositionals: true,
-      options: {
-        help: { type: 'boolean', short: 'h' },
-        version: { type: 'boolean', short: 'v' },
-        project: { type: 'string', short: 'p' },
-        noEmit: { type: 'boolean' },
-        skipLibCheck: { type: 'boolean' },
-        verbose: { type: 'boolean' },
-        cache: { type: 'boolean' },
-        'no-cache': { type: 'boolean' },
-        json: { type: 'boolean' },
-      },
+  program
+    .name('tsc-files')
+    .description(
+      'Run TypeScript compiler on specific files while respecting tsconfig.json',
+    )
+    .version(version, '-v, --version', 'output the version number')
+    .argument(
+      '<files...>',
+      'TypeScript files to check (supports glob patterns like "src/**/*.ts")',
+    )
+    .option(
+      '-p, --project <path>',
+      'path to tsconfig.json (default: auto-detected from current directory)',
+    )
+    .option(
+      '--verbose',
+      'enable detailed output including file processing steps',
+    )
+    .option('--json', 'output results as JSON for CI/CD integration')
+    .option('--no-cache', 'disable temporary file caching for debugging')
+    .option(
+      '--skip-lib-check',
+      'skip type checking of declaration files for faster execution',
+    )
+    .action(async (files: string[], options: unknown) => {
+      await runTypeCheck(files, options);
     });
 
-    // Show help
-    if (values.help) {
-      console.log(HELP_TEXT);
-      process.exit(0);
+  // Enhanced help with colors and custom formatting
+  program.configureHelp({
+    styleTitle: kleur.bold,
+    styleCommandText: kleur.cyan,
+    styleCommandDescription: kleur.gray,
+    styleOptionText: kleur.yellow,
+    styleOptionDescription: kleur.gray,
+  });
+
+  // Add comprehensive help sections (inspired by markdownlint-cli2 and our research)
+  program.addHelpText(
+    'after',
+    `
+${kleur.bold('Examples:')}
+  ${kleur.dim('# Check specific files')}
+  tsc-files src/index.ts src/utils.ts
+
+  ${kleur.dim('# Use glob patterns (quote to prevent shell expansion)')}
+  tsc-files "src/**/*.ts" "tests/**/*.ts"
+
+  ${kleur.dim('# With custom tsconfig')}
+  tsc-files --project tsconfig.build.json "src/**/*.ts"
+
+  ${kleur.dim('# Git hook usage (lint-staged)')}
+  tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$')
+
+${kleur.bold('Glob Patterns:')}
+  ${kleur.yellow('"src/**/*.ts"')}       All .ts files in src/ and subdirectories
+  ${kleur.yellow('"**/*.{ts,tsx}"')}     All TypeScript files (including JSX)
+  ${kleur.yellow('"!**/*.test.ts"')}     Exclude test files
+
+${kleur.bold('Exit Codes:')}
+  ${kleur.green('0')}  Success (no type errors)
+  ${kleur.red('1')}  Type errors found
+  ${kleur.red('2')}  Configuration errors (tsconfig.json issues)
+  ${kleur.red('3')}  System errors (TypeScript not found)
+
+For more information, visit: ${kleur.cyan('https://github.com/jbabin91/tsc-files')}
+`,
+  );
+
+  return program;
+}
+
+// Enhanced type checking function with progress indicators and colors
+async function runTypeCheck(files: string[], options: unknown): Promise<void> {
+  let spinner: ReturnType<typeof ora> | undefined;
+
+  try {
+    // Validate and parse options with zod
+    const rawOptions = options as Record<string, unknown>;
+    const validatedOptions = CliOptionsSchema.parse({
+      project: rawOptions.project,
+      noEmit: rawOptions.noEmit ?? true,
+      skipLibCheck: rawOptions.skipLibCheck ?? false,
+      verbose: rawOptions.verbose ?? false,
+      cache: rawOptions.cache ?? true,
+      json: rawOptions.json ?? false,
+    });
+
+    // Don't show spinner in JSON mode or if in non-interactive environment
+    const showProgress =
+      !validatedOptions.json && process.stdout.isTTY && !process.env.CI;
+
+    if (showProgress) {
+      const fileCount = files.length;
+      const fileText = fileCount === 1 ? 'file' : 'files';
+      spinner = ora(
+        kleur.cyan(
+          `Type checking ${kleur.bold(fileCount.toString())} ${fileText}...`,
+        ),
+      ).start();
     }
 
-    // Show version
-    if (values.version) {
-      console.log(getVersion());
-      process.exit(0);
-    }
-
-    // Get files/patterns to check
-    const patterns = positionals;
-
-    if (patterns.length === 0) {
-      console.error('Error: No files or patterns specified');
-      console.log(HELP_TEXT);
-      process.exit(2);
-    }
-
-    // Build options
-    const options: CheckOptions = {
-      project: values.project,
-      noEmit: values.noEmit ?? true,
-      skipLibCheck: values.skipLibCheck,
-      verbose: values.verbose,
-      cache: values['no-cache'] ? false : (values.cache ?? true),
+    // Build options for core checker
+    const checkOptions: CheckOptions = {
+      project: validatedOptions.project,
+      noEmit: validatedOptions.noEmit,
+      skipLibCheck: validatedOptions.skipLibCheck,
+      verbose: validatedOptions.verbose,
+      cache: validatedOptions.cache,
     };
 
     // Run type checking
-    const result = await checkFiles(patterns, options);
+    const result = await checkFiles(files, checkOptions);
+
+    // Stop spinner before output
+    if (spinner) {
+      if (result.success) {
+        spinner.succeed(kleur.green('✓ Type check completed'));
+      } else {
+        spinner.fail(kleur.red(`✗ Found ${result.errors.length} type errors`));
+      }
+    }
 
     // Output results
-    if (values.json) {
+    if (validatedOptions.json) {
       console.log(JSON.stringify(result, null, 2));
     } else {
+      // Display errors with enhanced formatting
       if (result.errors.length > 0) {
+        console.error(); // Add spacing after spinner
         for (const error of result.errors) {
-          console.error(
-            `${error.file}:${error.line}:${error.column} - ${error.message}`,
+          const fileLocation = kleur.cyan(
+            `${error.file}:${error.line}:${error.column}`,
           );
+          const errorMessage = kleur.red(error.message);
+          console.error(`${fileLocation} - ${errorMessage}`);
         }
       }
 
-      if (values.verbose) {
-        console.log(
-          `Checked ${result.checkedFiles.length} files in ${result.duration}ms`,
-        );
+      // Verbose output with colors
+      if (validatedOptions.verbose && !spinner) {
+        const duration = kleur.dim(`${result.duration}ms`);
+        const fileCount = kleur.bold(result.checkedFiles.length.toString());
+        console.log(`\nChecked ${fileCount} files in ${duration}`);
       }
 
-      if (result.success) {
-        console.log('✓ Type check passed');
+      // Success message only if not already shown by spinner
+      if (result.success && !spinner) {
+        console.log(kleur.green('✓ Type check passed'));
       }
     }
 
     process.exit(result.success ? 0 : 1);
   } catch (error) {
+    // Stop spinner on error
+    if (spinner) {
+      spinner.fail(kleur.red('✗ Type check failed'));
+    }
+
     const message = error instanceof Error ? error.message : String(error);
 
-    // Check for specific error types and provide appropriate exit codes
+    // Enhanced error handling with colors and context
     if (
       message.includes('tsconfig.json not found') ||
       message.includes('Failed to read tsconfig.json') ||
       message.includes('TypeScript config not found')
     ) {
-      console.error('Configuration Error:', message);
+      console.error(kleur.red('Configuration Error:'), kleur.dim(message));
+      console.error(
+        kleur.yellow('\nTip:'),
+        'Use --project flag to specify a different tsconfig.json path',
+      );
       process.exit(2);
     } else if (
       message.includes('TypeScript compiler failed') ||
       message.includes('tsc')
     ) {
-      console.error('System Error:', message);
+      console.error(kleur.red('System Error:'), kleur.dim(message));
+      console.error(
+        kleur.yellow('\nTip:'),
+        'Ensure TypeScript is installed: npm install -D typescript',
+      );
       process.exit(3);
     } else {
-      console.error('Error:', message);
+      console.error(kleur.red('Error:'), kleur.dim(message));
       process.exit(99);
     }
   }
 }
 
-// Handle unhandled rejections
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled rejection:', error);
-  process.exit(99);
-});
+async function main(): Promise<void> {
+  const program = createProgram();
+
+  // Handle unhandled rejections gracefully
+  process.on('unhandledRejection', (error) => {
+    console.error(kleur.red('Unhandled rejection:'), error);
+    process.exit(99);
+  });
+
+  // Parse arguments and run
+  await program.parseAsync();
+}
 
 // Run CLI
 void main();

@@ -4,10 +4,28 @@
  * CLI entry point for @jbabin91/tsc-files
  */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { checkFiles } from './core/checker.js';
 import type { CheckOptions } from './types.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function getVersion(): string {
+  try {
+    const packageJsonPath = path.join(__dirname, '..', 'package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
+      version: string;
+    };
+    return packageJson.version;
+  } catch {
+    return '0.0.0-dev';
+  }
+}
 
 const HELP_TEXT = `
 Usage: tsc-files [options] <files...>
@@ -57,17 +75,25 @@ async function main(): Promise<void> {
 
     // Show version
     if (values.version) {
-      // TODO: Read from package.json
-      console.log('0.1.0');
+      console.log(getVersion());
       process.exit(0);
     }
 
-    // Get files to check
-    const files = positionals;
-    if (files.length === 0) {
+    // Get files to check - filter for TypeScript files
+    const allFiles = positionals;
+    const files = allFiles.filter((file) => /\.(ts|tsx)$/.test(file));
+
+    if (allFiles.length === 0) {
       console.error('Error: No files specified');
       console.log(HELP_TEXT);
-      process.exit(1);
+      process.exit(2);
+    }
+
+    if (files.length === 0) {
+      if (values.verbose) {
+        console.log('No TypeScript files to check');
+      }
+      process.exit(0);
     }
 
     // Build options
@@ -107,11 +133,26 @@ async function main(): Promise<void> {
 
     process.exit(result.success ? 0 : 1);
   } catch (error) {
-    console.error(
-      'Error:',
-      error instanceof Error ? error.message : String(error),
-    );
-    process.exit(99);
+    const message = error instanceof Error ? error.message : String(error);
+
+    // Check for specific error types and provide appropriate exit codes
+    if (
+      message.includes('tsconfig.json not found') ||
+      message.includes('Failed to read tsconfig.json') ||
+      message.includes('TypeScript config not found')
+    ) {
+      console.error('Configuration Error:', message);
+      process.exit(2);
+    } else if (
+      message.includes('TypeScript compiler failed') ||
+      message.includes('tsc')
+    ) {
+      console.error('System Error:', message);
+      process.exit(3);
+    } else {
+      console.error('Error:', message);
+      process.exit(99);
+    }
   }
 }
 

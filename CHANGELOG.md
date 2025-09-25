@@ -1,5 +1,15 @@
 # @jbabin91/tsc-files
 
+## 0.1.5
+
+### Patch Changes
+
+- [`61fc744`](https://github.com/jbabin91/tsc-files/commit/61fc744df3980667db25338da6e6996243b115c6) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🐛 Bug Fixes
+  - use proper npm authentication approach
+
+- [`c0f9e6d`](https://github.com/jbabin91/tsc-files/commit/c0f9e6dc74085585c4590b30596cf5a0c81f85d4) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🔧 Improvements
+  - Update lefthook configuration to format YAML files in pre-commit hooks
+
 ## 0.1.4
 
 ### Patch Changes

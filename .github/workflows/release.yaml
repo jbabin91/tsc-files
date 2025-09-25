@@ -66,6 +66,8 @@ jobs:
       - name: Format and fix markdown after version bump
         if: steps.changesets.outputs.hasChangesets == 'true'
         run: |
+          git config user.name "automated-commit-signer[bot]"
+          git config user.email "234268492+automated-commit-signer[bot]@users.noreply.github.com"
           pnpm format
           pnpm lint:md:fix
           git add -A

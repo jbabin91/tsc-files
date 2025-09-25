@@ -266,6 +266,43 @@ describe('CLI', () => {
     });
   });
 
+  describe('configuration discovery', () => {
+    it('should find tsconfig.json in parent directories', async () => {
+      // Create nested directory structure
+      const nestedDir = path.join(tempDir, 'src', 'components');
+      mkdirSync(nestedDir, { recursive: true });
+
+      // Create test file in nested directory
+      writeFileSync(
+        path.join(nestedDir, 'test.ts'),
+        'const x: string = "test";',
+      );
+
+      // Run CLI from nested directory - should find tsconfig from tempDir root
+      const { exitCode, stderr } = await runCli(['test.ts'], nestedDir);
+
+      expect(exitCode).toBe(0);
+      expect(stderr).toBe('');
+    });
+
+    it('should provide helpful error when no tsconfig found', async () => {
+      const emptyTempDir = createTempDir();
+
+      try {
+        const { exitCode, stderr } = await runCli(
+          ['nonexistent.ts'],
+          emptyTempDir,
+        );
+
+        expect(exitCode).toBe(2); // Configuration error
+        expect(stderr).toContain('Configuration Error');
+        expect(stderr).toContain('No tsconfig.json found');
+      } finally {
+        cleanupTempDir(emptyTempDir);
+      }
+    });
+  });
+
   describe('error handling', () => {
     it('should handle missing tsconfig with proper exit code', async () => {
       // Remove the tsconfig

@@ -97,7 +97,7 @@ async function resolveFiles(
 }
 
 /**
- * Find tsconfig.json file starting from cwd
+ * Find tsconfig.json file with context detection up directory tree
  */
 function findTsConfig(cwd: string, projectPath?: string): string {
   if (projectPath) {
@@ -108,13 +108,28 @@ function findTsConfig(cwd: string, projectPath?: string): string {
     return resolvedPath;
   }
 
-  // Look for tsconfig.json in current directory
-  const defaultPath = path.join(cwd, 'tsconfig.json');
-  if (existsSync(defaultPath)) {
-    return defaultPath;
+  // Context detection: traverse up directory tree looking for tsconfig.json
+  let currentDir = path.resolve(cwd);
+  const rootDir = path.parse(currentDir).root;
+
+  while (currentDir !== rootDir) {
+    const tsconfigPath = path.join(currentDir, 'tsconfig.json');
+    if (existsSync(tsconfigPath)) {
+      return tsconfigPath;
+    }
+
+    // Move up one directory
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      // Reached filesystem root without finding parent
+      break;
+    }
+    currentDir = parentDir;
   }
 
-  throw new Error('No tsconfig.json found. Use --project to specify path.');
+  throw new Error(
+    'No tsconfig.json found in current directory or any parent directories. Use --project to specify path.',
+  );
 }
 
 /**

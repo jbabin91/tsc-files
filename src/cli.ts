@@ -209,7 +209,8 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
     if (
       message.includes('tsconfig.json not found') ||
       message.includes('Failed to read tsconfig.json') ||
-      message.includes('TypeScript config not found')
+      message.includes('TypeScript config not found') ||
+      message.includes('No tsconfig.json found')
     ) {
       console.error(kleur.red('Configuration Error:'), kleur.dim(message));
       console.error(

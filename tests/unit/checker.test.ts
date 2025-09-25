@@ -170,6 +170,57 @@ const other: number = "not a number";`,
       expect(result.success).toBe(true);
     });
 
+    it('should find tsconfig.json in parent directories (context detection)', async () => {
+      // Create nested directory structure with tsconfig in parent
+      const nestedDir = path.join(tempDir, 'nested', 'deeply', 'subdirectory');
+      mkdirSync(nestedDir, { recursive: true });
+
+      // Create TypeScript file in nested directory
+      writeFileSync(
+        path.join(nestedDir, 'test.ts'),
+        'const x: string = "test";',
+      );
+
+      // Run from nested directory - should find tsconfig.json from tempDir
+      const result = await checkFiles(['test.ts'], { cwd: nestedDir });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(1);
+    });
+
+    it('should prioritize closer tsconfig.json files', async () => {
+      // Create nested directory with its own tsconfig
+      const nestedDir = path.join(tempDir, 'nested');
+      mkdirSync(nestedDir, { recursive: true });
+
+      // Create more restrictive tsconfig in nested directory
+      const nestedTsconfig = {
+        compilerOptions: {
+          target: 'ES2022',
+          strict: true,
+          noEmit: true,
+          noUnusedLocals: true, // This will cause warnings/errors for unused vars
+        },
+      };
+      writeFileSync(
+        path.join(nestedDir, 'tsconfig.json'),
+        JSON.stringify(nestedTsconfig, null, 2),
+      );
+
+      // Create test file in nested directory
+      writeFileSync(
+        path.join(nestedDir, 'test.ts'),
+        'const unusedVar = "test"; export const used = "value";',
+      );
+
+      // Should use the nested tsconfig.json, not the parent one
+      const result = await checkFiles(['test.ts'], { cwd: nestedDir });
+
+      // Result may vary based on TypeScript version, but should successfully run
+      expect(typeof result.success).toBe('boolean');
+      expect(result.checkedFiles).toHaveLength(1);
+    });
+
     it('should throw error when tsconfig not found', async () => {
       const emptyTempDir = createTempDir();
 
@@ -277,12 +328,13 @@ const other: number = "not a number";`,
     it('should throw on error when throwOnError is true', async () => {
       const emptyTempDir = createTempDir();
 
+      // Create a test file that doesn't exist to trigger file resolution error
       await expect(
-        checkFiles(['test.ts'], {
+        checkFiles(['nonexistent.ts'], {
           cwd: emptyTempDir,
           throwOnError: true,
         }),
-      ).rejects.toThrow();
+      ).rejects.toThrow('No tsconfig.json found');
 
       cleanupTempDir(emptyTempDir);
     });

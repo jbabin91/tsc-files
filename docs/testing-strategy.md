@@ -24,6 +24,28 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: ['tests/fixtures/**'],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 95,
+          lines: 85,
+          statements: 85,
+        },
+        // Core business logic has higher coverage requirements
+        'src/core/**': {
+          branches: 80,
+          functions: 100,
+          lines: 90,
+          statements: 90,
+        },
+        // Detectors have lower initial thresholds - can increase over time
+        'src/detectors/**': {
+          branches: 29,
+          functions: 62,
+          lines: 35,
+          statements: 35,
+        },
+      },
     },
   },
 });
@@ -46,7 +68,7 @@ export default defineConfig({
 
 ```typescript
 import { describe, test, expect } from 'vitest';
-import { detectPackageManager } from '../src/detectors/package-manager.js';
+import { detectPackageManager } from '@/detectors/package-manager';
 
 describe('Package Manager Detection', () => {
   test('detects pnpm from lock file', async () => {
@@ -278,6 +300,57 @@ vi.mock('fs/promises', () => ({
   writeFile: vi.fn(),
   unlink: vi.fn(),
 }));
+```
+
+## Coverage Strategy
+
+### Tiered Coverage Requirements
+
+The project uses different coverage thresholds for different code areas based on their criticality and testability:
+
+#### Global Baseline (Default)
+
+- **Branches**: 80% - Ensures most conditional logic paths are tested
+- **Functions**: 95% - Nearly all functions should be exercised
+- **Lines/Statements**: 85% - High coverage for general codebase
+
+#### Core Business Logic (`src/core/**`) - **Highest Standards**
+
+- **Branches**: 80% - All conditional paths in critical logic
+- **Functions**: 100% - Every function must be tested (zero-tolerance)
+- **Lines/Statements**: 90% - Maximum coverage for core functionality
+
+#### Detector Modules (`src/detectors/**`) - **Progressive Standards**
+
+- **Branches**: 29% - Current baseline, can be increased over time
+- **Functions**: 62% - Moderate function coverage requirement
+- **Lines/Statements**: 35% - Lower initial threshold due to cross-platform complexity
+
+### Coverage Philosophy
+
+1. **Zero-Tolerance for Core**: Core business logic must have near-perfect coverage
+2. **Progressive for Infrastructure**: Detector modules have lower initial thresholds that can be raised as tests are added
+3. **Practical Approach**: Acknowledges that some cross-platform and environment-specific code is harder to test
+4. **Quality Gates**: All thresholds are enforced in CI - coverage regressions block merges
+
+### Improving Coverage
+
+To increase coverage for detector modules:
+
+```bash
+# Run coverage to see specific uncovered lines
+pnpm test:coverage
+
+# Focus on testable logic first
+# - Package manager detection
+# - Path construction
+# - Configuration generation
+# - Error handling paths
+
+# Leave environment-specific code for integration tests
+# - Windows vs Unix paths
+# - File system operations
+# - Environment variable detection
 ```
 
 ## Performance Testing

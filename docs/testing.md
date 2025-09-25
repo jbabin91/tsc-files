@@ -18,7 +18,11 @@ The setup file (`tests/setup.ts`) is automatically loaded by Vitest, so you can 
 
 ```typescript
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { TEST_FILES, TEST_CONFIGS, PERFORMANCE_BENCHMARKS } from '../setup';
+import {
+  TEST_FILES,
+  TEST_CONFIGS,
+  PERFORMANCE_BENCHMARKS,
+} from '@/tests/setup';
 
 describe('My CLI Test', () => {
   let tempDir: string;
@@ -111,7 +115,7 @@ const result = await runCli(['--json', 'file.ts'], tempDir);
 Pre-defined TypeScript code for common scenarios:
 
 ```typescript
-import { TEST_FILES } from '../setup';
+import { TEST_FILES } from '@/tests/setup';
 
 // Valid TypeScript
 TEST_FILES.VALID_TS;
@@ -135,7 +139,7 @@ TEST_FILES.UNUSED_VAR_TS;
 Pre-configured tsconfig.json files:
 
 ```typescript
-import { TEST_CONFIGS } from '../setup';
+import { TEST_CONFIGS } from '@/tests/setup';
 
 // Strict TypeScript configuration
 writeTestFile(
@@ -157,7 +161,7 @@ writeTestFile(
 Built-in benchmarks for CLI operations:
 
 ```typescript
-import { PERFORMANCE_BENCHMARKS } from '../setup';
+import { PERFORMANCE_BENCHMARKS } from '@/tests/setup';
 
 it('should be fast for single files', async () => {
   const start = Date.now();

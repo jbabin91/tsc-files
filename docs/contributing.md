@@ -372,7 +372,7 @@ Follow the testing strategy outlined in `docs/testing-strategy.md`:
 ```typescript
 // tests/unit/detectors/package-manager.test.ts
 import { describe, test, expect, vi } from 'vitest';
-import { detectPackageManager } from '../../../src/detectors/package-manager.js';
+import { detectPackageManager } from '@/detectors/package-manager';
 
 describe('Package Manager Detection', () => {
   test('detects pnpm from lock file', async () => {

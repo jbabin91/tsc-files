@@ -208,8 +208,10 @@ ls -la src/utils/index.ts
 **Use relative imports temporarily:**
 
 ```typescript
-// Instead of: import { helper } from '@/utils'
-import { helper } from '../utils';
+// ✅ CORRECT: Use path aliases
+import { helper } from '@/utils';
+// ❌ INCORRECT: Avoid relative imports
+// import { helper } from '../utils';
 ```
 
 **Debug module resolution:**

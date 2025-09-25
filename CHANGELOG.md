@@ -1,5 +1,12 @@
 # @jbabin91/tsc-files
 
+## 0.1.6
+
+### Patch Changes
+
+- [`c3c03a6`](https://github.com/jbabin91/tsc-files/commit/c3c03a69b8916b1867749d09910827bb312b3bb1) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🧪 Testing
+  - Test npm built-in provenance configuration
+
 ## 0.1.5
 
 ### Patch Changes

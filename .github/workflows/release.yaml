@@ -45,15 +45,15 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: Set NPM Token
-        shell: bash
-        run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_TOKEN }}"
-
       - name: Setup Git User
         run: |
           git config user.name "automated-commit-signer[bot]"
           git config user.email "234268492+automated-commit-signer[bot]@users.noreply.github.com"
+
+      - name: Set NPM Token
+        shell: bash
+        run: |
+          npm config set '//registry.npmjs.org/:_authToken' "${{ secrets.NPM_TOKEN }}"
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets

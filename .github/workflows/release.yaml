@@ -55,7 +55,7 @@ jobs:
         uses: changesets/action@v1.5.3
         with:
           publish: pnpm changeset:release
-          version: changeset version
+          version: pnpm changeset:version
           commit: 'chore(release): :hammer: version package'
           title: 'chore(release): :hammer: version package'
           commitMode: github-api

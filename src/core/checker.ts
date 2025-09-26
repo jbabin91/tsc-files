@@ -16,6 +16,8 @@ tmp.setGracefulCleanup();
 
 /**
  * Check if JavaScript files should be included based on TypeScript configuration
+ * @param tsconfigPath - Path to tsconfig.json file
+ * @returns True if JavaScript files should be included in type checking
  */
 function shouldIncludeJavaScriptFiles(tsconfigPath?: string): boolean {
   if (!tsconfigPath || !existsSync(tsconfigPath)) {
@@ -42,6 +44,8 @@ function shouldIncludeJavaScriptFiles(tsconfigPath?: string): boolean {
 
 /**
  * Get file extensions to include based on TypeScript configuration
+ * @param includeJs - Whether to include JavaScript files
+ * @returns Object containing extensions, glob pattern, and regex pattern
  */
 function getFileExtensions(includeJs: boolean): {
   extensions: string[];
@@ -63,6 +67,10 @@ function getFileExtensions(includeJs: boolean): {
 
 /**
  * Resolve files using fast-glob with TypeScript and optionally JavaScript patterns
+ * @param patterns - Array of file patterns to resolve
+ * @param cwd - Current working directory
+ * @param tsconfigPath - Optional path to tsconfig.json for JavaScript inclusion
+ * @returns Promise resolving to array of absolute file paths
  */
 async function resolveFiles(
   patterns: string[],
@@ -438,11 +446,43 @@ async function checkFilesWithSingleConfig(
 }
 
 /**
- * Check TypeScript files for type errors
+ * Check TypeScript files for type errors using the TypeScript compiler
+ * This is the main entry point for the tsc-files library
  *
- * @param files - Array of file paths to check
- * @param options - Configuration options
- * @returns Promise resolving to check results
+ * @param files - Array of file paths or glob patterns to type-check
+ * @param options - Configuration options for type checking
+ * @param options.project - Path to tsconfig.json file (auto-detected if not provided)
+ * @param options.noEmit - Skip emitting files (default: true)
+ * @param options.skipLibCheck - Skip type checking of declaration files (default: false)
+ * @param options.verbose - Enable verbose logging (default: false)
+ * @param options.cwd - Current working directory (default: process.cwd())
+ * @param options.throwOnError - Throw errors instead of returning them in result (default: true)
+ * @param options.cache - Use cache directory for temporary files (default: true)
+ * @returns Promise resolving to comprehensive check results including errors, warnings, and performance metrics
+ *
+ * @example
+ * ```typescript
+ * import { checkFiles } from '@jbabin91/tsc-files';
+ *
+ * // Basic usage - check specific files
+ * const result = await checkFiles(['src/index.ts', 'src/utils.ts']);
+ * if (result.success) {
+ *   console.log(`✓ All files passed type checking in ${result.duration}ms`);
+ * } else {
+ *   console.error(`✗ Found ${result.errorCount} type errors`);
+ *   result.errors.forEach(error => {
+ *     console.error(`${error.file}:${error.line}:${error.column} - ${error.message}`);
+ *   });
+ * }
+ *
+ * // Advanced usage with options
+ * const result = await checkFiles(['src/**\/*.ts'], {
+ *   project: './tsconfig.build.json',
+ *   verbose: true,
+ *   skipLibCheck: true,
+ *   throwOnError: false
+ * });
+ * ```
  */
 export async function checkFiles(
   files: string[],

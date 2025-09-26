@@ -121,6 +121,13 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
 /**
  * Detect package manager by scanning for lock files
  * Uses priority order: pnpm > bun > npm > yarn
+ * @param cwd - Current working directory to scan for lock files
+ * @returns Package manager information including detected manager, lock file, and TypeScript path
+ * @example
+ * ```typescript
+ * const pmInfo = detectPackageManager('./my-project');
+ * console.log(pmInfo.manager); // 'pnpm' | 'bun' | 'npm' | 'yarn'
+ * ```
  */
 export function detectPackageManager(
   cwd: string = process.cwd(),
@@ -158,6 +165,14 @@ export function detectPackageManager(
 /**
  * Detect package manager by environment variables and lock files
  * Includes npm_config_user_agent parsing for CI environments
+ * @param cwd - Current working directory to scan for package manager indicators
+ * @returns Package manager information with enhanced environment detection
+ * @example
+ * ```typescript
+ * // In CI environment with npm_config_user_agent set
+ * const pmInfo = detectPackageManagerAdvanced();
+ * console.log(pmInfo.manager); // Detected from environment variable
+ * ```
  */
 export function detectPackageManagerAdvanced(
   cwd: string = process.cwd(),
@@ -198,6 +213,14 @@ export function detectPackageManagerAdvanced(
 
 /**
  * Get recommended TypeScript execution method based on package manager
+ * @param packageManagerInfo - Package manager information from detection
+ * @returns Execution configuration with executable path, args, and shell usage
+ * @example
+ * ```typescript
+ * const pmInfo = detectPackageManager();
+ * const execution = getRecommendedTscExecution(pmInfo);
+ * // Returns: { executable: 'pnpm', args: ['exec', 'tsc'], useShell: true }
+ * ```
  */
 export function getRecommendedTscExecution(
   packageManagerInfo: PackageManagerInfo,

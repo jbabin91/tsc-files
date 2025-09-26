@@ -56,6 +56,15 @@ function getWindowsExecutable(executable: string): string {
 /**
  * Find TypeScript compiler executable with enhanced detection
  * Integrates with package manager detection for optimal execution
+ * @param cwd - Current working directory to search for TypeScript compiler
+ * @returns Complete TypeScript execution information including executable path, args, and package manager info
+ * @example
+ * ```typescript
+ * const tsInfo = findTypeScriptCompiler('./my-project');
+ * console.log(tsInfo.executable); // '/path/to/tsc' or 'pnpm'
+ * console.log(tsInfo.args); // [] or ['exec', 'tsc']
+ * console.log(tsInfo.packageManager.manager); // 'pnpm' | 'bun' | 'npm' | 'yarn'
+ * ```
  */
 export function findTypeScriptCompiler(
   cwd: string = process.cwd(),
@@ -199,7 +208,17 @@ export function findTypeScriptCompiler(
 
 /**
  * Legacy function for backwards compatibility
- * @deprecated Use findTypeScriptCompiler instead
+ * @deprecated Use findTypeScriptCompiler instead for complete TypeScript execution information
+ * @returns Path to TypeScript compiler executable
+ * @example
+ * ```typescript
+ * // Legacy usage (deprecated)
+ * const tscPath = findTscPath();
+ *
+ * // Recommended usage
+ * const tsInfo = findTypeScriptCompiler();
+ * const tscPath = tsInfo.executable;
+ * ```
  */
 export function findTscPath(): string {
   const tsInfo = findTypeScriptCompiler();

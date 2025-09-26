@@ -116,9 +116,23 @@ runs:
         echo "🧪 Running extended integration tests..."
         extended_start=$(date +%s)
 
-        # Use the same isolated test directory
+        # Use the same isolated test directory (create if needed)
         TEST_DIR="/tmp/tsc-files-integration-$$"
-        cd "$TEST_DIR"
+        if [ ! -d "$TEST_DIR" ]; then
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+
+          # Re-install the package if directory doesn't exist
+          TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
+          echo "📦 Re-installing $TARBALL for extended tests..."
+          npm init -y > /dev/null 2>&1
+          npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
+            echo "❌ Failed to install $TARBALL"
+            exit 1
+          }
+        else
+          cd "$TEST_DIR"
+        fi
 
         # Test 5: Glob patterns
         mkdir -p src/utils
@@ -170,9 +184,23 @@ runs:
         echo "🧪 Testing package manager CLI integration..."
         pm_start=$(date +%s)
 
-        # Use the same isolated test directory
+        # Use the same isolated test directory (create if needed)
         TEST_DIR="/tmp/tsc-files-integration-$$"
-        cd "$TEST_DIR"
+        if [ ! -d "$TEST_DIR" ]; then
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+
+          # Re-install the package if directory doesn't exist
+          TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
+          echo "📦 Re-installing $TARBALL for package manager tests..."
+          npm init -y > /dev/null 2>&1
+          npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
+            echo "❌ Failed to install $TARBALL"
+            exit 1
+          }
+        else
+          cd "$TEST_DIR"
+        fi
 
         # Test direct binary usage (package should provide tsc-files command)
         echo "  🔍 Testing direct tsc-files binary..."
@@ -240,7 +268,21 @@ runs:
 
         # Quick performance test with installed package
         TEST_DIR="/tmp/tsc-files-integration-$$"
-        cd "$TEST_DIR"
+        if [ ! -d "$TEST_DIR" ]; then
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+
+          # Re-install the package if directory doesn't exist
+          TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
+          echo "📦 Re-installing $TARBALL for performance tests..."
+          npm init -y > /dev/null 2>&1
+          npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
+            echo "❌ Failed to install $TARBALL"
+            exit 1
+          }
+        else
+          cd "$TEST_DIR"
+        fi
         echo "  🔍 Testing performance with multiple files..."
 
         # Create additional test files

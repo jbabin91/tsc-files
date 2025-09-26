@@ -43,12 +43,13 @@ runs:
         echo "🧪 Running core integration tests..."
         test_start=$(date +%s)
 
-        # Create test workspace
-        mkdir -p integration-test-workspace
-        cd integration-test-workspace
+        # Create isolated test workspace (outside parent project to avoid packageManager inheritance)
+        TEST_DIR="/tmp/tsc-files-integration-$$"
+        mkdir -p "$TEST_DIR"
+        cd "$TEST_DIR"
 
         # Install the actual packaged CLI locally (like users would)
-        TARBALL="$(ls ../jbabin91-tsc-files-*.tgz | head -n1)"
+        TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
         echo "📦 Installing $TARBALL and TypeScript..."
         npm init -y > /dev/null 2>&1
         npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
@@ -115,7 +116,9 @@ runs:
         echo "🧪 Running extended integration tests..."
         extended_start=$(date +%s)
 
-        cd integration-test-workspace
+        # Use the same isolated test directory
+        TEST_DIR="/tmp/tsc-files-integration-$$"
+        cd "$TEST_DIR"
 
         # Test 5: Glob patterns
         mkdir -p src/utils
@@ -167,7 +170,9 @@ runs:
         echo "🧪 Testing package manager CLI integration..."
         pm_start=$(date +%s)
 
-        cd integration-test-workspace
+        # Use the same isolated test directory
+        TEST_DIR="/tmp/tsc-files-integration-$$"
+        cd "$TEST_DIR"
 
         # Test direct binary usage (package should provide tsc-files command)
         echo "  🔍 Testing direct tsc-files binary..."
@@ -234,7 +239,8 @@ runs:
         perf_start=$(date +%s)
 
         # Quick performance test with installed package
-        cd integration-test-workspace
+        TEST_DIR="/tmp/tsc-files-integration-$$"
+        cd "$TEST_DIR"
         echo "  🔍 Testing performance with multiple files..."
 
         # Create additional test files
@@ -274,4 +280,11 @@ runs:
         else
           echo "❌ TOO SLOW: Exceeded 90 second target"
           exit 1
+        fi
+
+        # Cleanup temporary test directory
+        TEST_DIR="/tmp/tsc-files-integration-$$"
+        if [ -d "$TEST_DIR" ]; then
+          rm -rf "$TEST_DIR"
+          echo "🧹 Cleaned up test directory"
         fi

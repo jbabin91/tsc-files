@@ -20,8 +20,7 @@ runs:
       run: |
         echo "🚀 Running quick built package test..."
         # Test the built CLI directly (faster than packaged installation)
-        chmod +x .github/scripts/quick-integration-test.sh
-        ./.github/scripts/quick-integration-test.sh
+        bash .github/scripts/quick-integration-test.sh
 
     - name: Package CLI
       shell: bash

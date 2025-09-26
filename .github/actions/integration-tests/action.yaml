@@ -23,23 +23,19 @@ runs:
         chmod +x .github/scripts/quick-integration-test.sh
         ./.github/scripts/quick-integration-test.sh
 
-    - name: Setup for Global Tests
+    - name: Package CLI
       shell: bash
       run: |
-        echo "🔧 Setting up for global CLI tests..."
-        setup_start=$(date +%s)
+        echo "📦 Packaging CLI for real-world testing..."
+        pack_start=$(date +%s)
 
-        # Pack for installation (don't install globally yet)
+        # Pack the package (creates tarball)
         npm pack --silent
         TARBALL=$(ls jbabin91-tsc-files-*.tgz | head -n1)
         echo "📦 Package created: $TARBALL"
 
-        # Install TypeScript globally (cached by GitHub Actions)
-        echo "🔧 Installing TypeScript..."
-        npm install -g typescript@latest --silent
-
-        setup_end=$(date +%s)
-        echo "✅ Setup completed in $((setup_end - setup_start))s"
+        pack_end=$(date +%s)
+        echo "✅ Packaging completed in $((pack_end - pack_start))s"
 
     - name: Run Core Tests
       shell: bash
@@ -51,11 +47,11 @@ runs:
         mkdir -p integration-test-workspace
         cd integration-test-workspace
 
-        # Install tsc-files locally (faster than global)
+        # Install the actual packaged CLI locally (like users would)
         TARBALL="$(ls ../jbabin91-tsc-files-*.tgz | head -n1)"
-        echo "📦 Installing $TARBALL..."
+        echo "📦 Installing $TARBALL and TypeScript..."
         npm init -y > /dev/null 2>&1
-        npm install "$TARBALL" || {
+        npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
           echo "❌ Failed to install $TARBALL"
           exit 1
         }
@@ -164,25 +160,71 @@ runs:
         extended_end=$(date +%s)
         echo "✅ Extended tests completed in $((extended_end - extended_start))s"
 
-    - name: Basic Package Manager Detection
+    - name: Package Manager CLI Tests
       if: inputs.test_scenario == 'basic'
       shell: bash
       run: |
-        echo "🧪 Testing basic package manager detection..."
+        echo "🧪 Testing package manager CLI integration..."
         pm_start=$(date +%s)
 
-        # Simple detection test - just verify tools exist
-        echo "  🔍 Checking available package managers..."
-        if command -v npm &> /dev/null; then
-          echo "  ✅ npm available"
+        cd integration-test-workspace
+
+        # Test direct binary usage (package should provide tsc-files command)
+        echo "  🔍 Testing direct tsc-files binary..."
+        if ./node_modules/.bin/tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+          echo "  ✅ Direct tsc-files binary works"
+        else
+          echo "  ❌ Direct tsc-files binary failed"
+          exit 1
         fi
 
+        # Test pnpm if available (should find the binary)
         if command -v pnpm &> /dev/null; then
-          echo "  ✅ pnpm available"
+          echo "  🔍 Testing pnpm tsc-files..."
+          if pnpm tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+            echo "  ✅ pnpm tsc-files works"
+          else
+            echo "  ⚠️ pnpm tsc-files failed"
+          fi
+        else
+          echo "  ℹ️ pnpm not available, skipping pnpm test"
+        fi
+
+        # Test yarn if available
+        if command -v yarn &> /dev/null; then
+          echo "  🔍 Testing yarn tsc-files..."
+          if yarn tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+            echo "  ✅ yarn tsc-files works"
+          else
+            echo "  ⚠️ yarn tsc-files failed"
+          fi
+        else
+          echo "  ℹ️ yarn not available, skipping yarn test"
+        fi
+
+        # Test bun if available
+        if command -v bun &> /dev/null; then
+          echo "  🔍 Testing bun tsc-files..."
+          if bun tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+            echo "  ✅ bun tsc-files works"
+          else
+            echo "  ⚠️ bun tsc-files failed"
+          fi
+        else
+          echo "  ℹ️ bun not available, skipping bun test"
+        fi
+
+        # Test traditional npx (still widely used)
+        echo "  🔍 Testing npx tsc-files..."
+        if npx tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+          echo "  ✅ npx tsc-files works"
+        else
+          echo "  ❌ npx tsc-files failed"
+          exit 1
         fi
 
         pm_end=$(date +%s)
-        echo "✅ Package manager detection completed in $((pm_end - pm_start))s"
+        echo "✅ Package manager CLI tests completed in $((pm_end - pm_start))s"
 
     - name: Performance Test with Package Managers
       if: inputs.test_scenario == 'full'
@@ -191,7 +233,7 @@ runs:
         echo "🧪 Running performance tests (simplified for speed)..."
         perf_start=$(date +%s)
 
-        # Quick performance test with local installation only
+        # Quick performance test with installed package
         cd integration-test-workspace
         echo "  🔍 Testing performance with multiple files..."
 
@@ -233,11 +275,3 @@ runs:
           echo "❌ TOO SLOW: Exceeded 90 second target"
           exit 1
         fi
-
-    - name: Cleanup
-      if: always()
-      shell: bash
-      run: |
-        # Cleanup test artifacts
-        rm -rf integration-test-workspace
-        rm -f jbabin91-tsc-files-*.tgz

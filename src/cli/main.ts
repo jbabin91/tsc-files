@@ -19,7 +19,12 @@ export function createCli(): {
   // Override exitOverride for testing
   program.exitOverride((err) => {
     const result = handleCommanderError(err);
-    console.error(result.stderr.replace(/\n$/, '')); // eslint-disable-line no-console
+    if (result.stdout) {
+      console.log(result.stdout.replace(/\n$/, '')); // eslint-disable-line no-console
+    }
+    if (result.stderr) {
+      console.error(result.stderr.replace(/\n$/, '')); // eslint-disable-line no-console
+    }
     process.exit(result.exitCode); // eslint-disable-line unicorn/no-process-exit
   });
 
@@ -30,7 +35,12 @@ export function createCli(): {
         return 0; // Should not reach here in normal CLI usage
       } catch (error) {
         const result = handleCommanderError(error as Error);
-        console.error(result.stderr.replace(/\n$/, '')); // eslint-disable-line no-console
+        if (result.stdout) {
+          console.log(result.stdout.replace(/\n$/, '')); // eslint-disable-line no-console
+        }
+        if (result.stderr) {
+          console.error(result.stderr.replace(/\n$/, '')); // eslint-disable-line no-console
+        }
         return result.exitCode;
       }
     },

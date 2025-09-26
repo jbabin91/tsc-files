@@ -114,6 +114,20 @@ export function handleCommanderError(error: Error): CliResult {
   // Handle specific commander errors
   if (error instanceof Error && 'code' in error) {
     const commanderError = error as { code: string; exitCode?: number };
+
+    // Handle version and help commands - these are successful exits, not errors
+    // Commander.js already outputs these to stdout/stderr, so we don't need to duplicate
+    if (
+      commanderError.code === 'commander.version' ||
+      commanderError.code === 'commander.helpDisplayed'
+    ) {
+      return {
+        exitCode: 0,
+        stdout: '', // Commander.js already printed the output
+        stderr: '',
+      };
+    }
+
     if (
       commanderError.code === 'commander.missingMandatoryOptionValue' ||
       commanderError.code === 'commander.missingArgument'

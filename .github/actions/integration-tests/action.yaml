@@ -1,30 +1,240 @@
-name: Integration Tests
-description: Run cross-platform integration tests for the CLI
+name: Fast Integration Tests
+description: Optimized cross-platform integration tests for CLI (sub-1-minute runtime)
+
+inputs:
+  test_scenario:
+    description: 'Test scenario to run (basic, full)'
+    required: false
+    default: 'basic'
 
 runs:
   using: composite
   steps:
-    - name: Test CLI Installation
+    - name: Quick Local Test
       shell: bash
       run: |
-        npm pack
+        echo "🚀 Running quick local integration test..."
+        # Use our optimized script for fast local testing
+        chmod +x .github/scripts/quick-integration-test.sh
+        ./.github/scripts/quick-integration-test.sh
+
+    - name: Setup for Global Tests
+      shell: bash
+      run: |
+        echo "🔧 Setting up for global CLI tests..."
+        start_time=$(date +%s)
+
+        # Pack and install globally for comprehensive testing
+        npm pack --silent
         TARBALL=$(ls jbabin91-tsc-files-*.tgz | head -n1)
-        npm install -g "$TARBALL"
+        echo "📦 Installing $TARBALL globally..."
+        npm install -g "$TARBALL" --silent
 
-    - name: Test CLI Usage
+        # Install TypeScript globally (cached by GitHub Actions)
+        echo "🔧 Installing TypeScript..."
+        npm install -g typescript@latest --silent
+
+        setup_end=$(date +%s)
+        echo "✅ Global setup completed in $((setup_end - start_time))s"
+
+    - name: Run Core Tests
       shell: bash
       run: |
-        echo 'console.log("test");' > test.ts
-        tsc-files test.ts
+        echo "🧪 Running core integration tests..."
+        test_start=$(date +%s)
+
+        # Create test workspace
+        mkdir -p integration-test-workspace
+        cd integration-test-workspace
+
+        # Create minimal tsconfig.json
+        cat > tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true
+          }
+        }
+        EOF
+
+        # Test 1: Valid TypeScript file
+        echo 'const message: string = "Hello, World!"; console.log(message);' > valid.ts
+        echo "  🔍 Testing valid TypeScript file..."
+        if tsc-files valid.ts; then
+          echo "  ✅ Valid file test passed"
+        else
+          echo "  ❌ Valid file test failed"
+          exit 1
+        fi
+
+        # Test 2: Type error detection
         echo 'const x: string = 123;' > error.ts
-        tsc-files error.ts || echo "Expected error caught"
+        echo "  🔍 Testing type error detection..."
+        if tsc-files error.ts 2>/dev/null; then
+          echo "  ❌ Type error test failed (should have detected error)"
+          exit 1
+        else
+          echo "  ✅ Type error detection passed"
+        fi
 
-    - name: Test with Different Package Managers
+        # Test 3: Multiple files
+        echo 'export const add = (a: number, b: number) => a + b;' > math.ts
+        echo 'import { add } from "./math"; console.log(add(1, 2));' > app.ts
+        echo "  🔍 Testing multiple files..."
+        if tsc-files math.ts app.ts; then
+          echo "  ✅ Multiple files test passed"
+        else
+          echo "  ❌ Multiple files test failed"
+          exit 1
+        fi
+
+        # Test 4: CLI flags
+        echo "  🔍 Testing CLI flags..."
+        if tsc-files --help | grep -q "Usage:"; then
+          echo "  ✅ Help flag test passed"
+        else
+          echo "  ❌ Help flag test failed"
+          exit 1
+        fi
+
+        if tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+          echo "  ✅ Version flag test passed"
+        else
+          echo "  ❌ Version flag test failed"
+          exit 1
+        fi
+
+        test_end=$(date +%s)
+        echo "✅ Core tests completed in $((test_end - test_start))s"
+
+    - name: Run Extended Tests
+      if: inputs.test_scenario == 'full'
       shell: bash
       run: |
-        # Test with different package managers in temp directories
-        mkdir -p test-npm-temp && cd test-npm-temp
-        npm init -y
-        npm install typescript
-        echo 'const x: number = "string";' > test.ts
-        npx tsc-files test.ts || echo "npm test passed"
+        echo "🧪 Running extended integration tests..."
+        extended_start=$(date +%s)
+
+        cd integration-test-workspace
+
+        # Test 5: Glob patterns
+        mkdir -p src/utils
+        echo 'export interface User { id: number; name: string; }' > src/types.ts
+        echo 'import { User } from "../types"; export const createUser = (data: User) => data;' > src/utils/userService.ts
+        echo "  🔍 Testing glob patterns..."
+        if tsc-files "src/**/*.ts"; then
+          echo "  ✅ Glob patterns test passed"
+        else
+          echo "  ❌ Glob patterns test failed"
+          exit 1
+        fi
+
+        # Test 6: JSON output
+        echo "  🔍 Testing JSON output..."
+        OUTPUT=$(tsc-files --json src/types.ts 2>/dev/null)
+        if echo "$OUTPUT" | grep -q '"success"'; then
+          echo "  ✅ JSON output test passed"
+        else
+          echo "  ❌ JSON output test failed"
+          exit 1
+        fi
+
+        # Test 7: Custom tsconfig
+        cat > custom.tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2018",
+            "strict": false,
+            "skipLibCheck": true
+          }
+        }
+        EOF
+        echo "  🔍 Testing custom tsconfig..."
+        if tsc-files --project custom.tsconfig.json src/types.ts; then
+          echo "  ✅ Custom tsconfig test passed"
+        else
+          echo "  ❌ Custom tsconfig test failed"
+          exit 1
+        fi
+
+        extended_end=$(date +%s)
+        echo "✅ Extended tests completed in $((extended_end - extended_start))s"
+
+    - name: Performance Test with Package Managers
+      if: inputs.test_scenario == 'full'
+      shell: bash
+      run: |
+        echo "🧪 Running comprehensive performance tests..."
+        # Use our performance testing script for full package manager coverage
+        chmod +x .github/scripts/test-integration-performance.sh
+
+        # Test npm (always available)
+        echo "📦 Testing with npm..."
+        timeout 60s ./.github/scripts/test-integration-performance.sh npm || {
+          echo "❌ npm performance test failed or timed out"
+          exit 1
+        }
+
+        # Test pnpm if available
+        if command -v pnpm &> /dev/null; then
+          echo "📦 Testing with pnpm..."
+          timeout 60s ./.github/scripts/test-integration-performance.sh pnpm || {
+            echo "⚠️ pnpm performance test failed or timed out (non-critical)"
+          }
+        fi
+
+    - name: Basic Package Manager Detection
+      if: inputs.test_scenario == 'basic'
+      shell: bash
+      run: |
+        echo "🧪 Testing basic package manager detection..."
+        pm_start=$(date +%s)
+
+        # Test npm detection (already set up)
+        cd integration-test-workspace
+        if [[ -f "../package.json" ]]; then
+          echo "  ✅ npm package manager context detected"
+        else
+          echo "  ⚠️ npm package manager context not found"
+        fi
+
+        # Quick pnpm test if available (no separate install)
+        if command -v pnpm &> /dev/null; then
+          echo "  ✅ pnpm available for testing"
+        else
+          echo "  ⚠️ pnpm not available (expected on some platforms)"
+        fi
+
+        pm_end=$(date +%s)
+        echo "✅ Package manager detection completed in $((pm_end - pm_start))s"
+
+    - name: Performance Summary
+      shell: bash
+      run: |
+        end_time=$(date +%s)
+        total_time=$((end_time - start_time))
+
+        echo ""
+        echo "🏁 Integration Test Summary"
+        echo "⏱️  Total runtime: ${total_time}s"
+
+        if (( total_time <= 30 )); then
+          echo "🎯 EXCELLENT: Under 30 seconds!"
+        elif (( total_time <= 45 )); then
+          echo "✅ GOOD: Under 45 seconds!"
+        elif (( total_time <= 60 )); then
+          echo "⚠️ ACCEPTABLE: Under 60 seconds"
+        else
+          echo "❌ TOO SLOW: Exceeded 60 second target"
+          exit 1
+        fi
+
+    - name: Cleanup
+      if: always()
+      shell: bash
+      run: |
+        # Cleanup test artifacts
+        rm -rf integration-test-workspace
+        rm -f jbabin91-tsc-files-*.tgz

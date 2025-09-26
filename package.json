@@ -52,6 +52,7 @@
     "changeset:release": "pnpm build && changeset publish",
     "changeset:version": "changeset version && pnpm format && pnpm lint:md:fix",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm no-resolution",
+    "clean": "rm -rf coverage dist node_modules reports",
     "commit": "cz",
     "commit:lint": "commitlint --edit",
     "dev": "tsdown --watch",

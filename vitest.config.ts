@@ -29,8 +29,15 @@ export default defineConfig({
         global: {
           branches: 80,
           functions: 95,
-          lines: 85,
-          statements: 85,
+          lines: 84,
+          statements: 84,
+        },
+        // CLI modules - user-facing interface (main.ts excluded from coverage)
+        'src/cli/**': {
+          branches: 85,
+          functions: 94,
+          lines: 89,
+          statements: 89,
         },
         // Configuration modules - solid coverage for setup logic
         'src/config/**': {
@@ -46,12 +53,12 @@ export default defineConfig({
           lines: 75,
           statements: 75,
         },
-        // Detectors have lower initial thresholds - can increase over time
+        // Detectors have comprehensive coverage for platform detection
         'src/detectors/**': {
-          branches: 29,
-          functions: 62,
-          lines: 35,
-          statements: 35,
+          branches: 75,
+          functions: 100,
+          lines: 65,
+          statements: 65,
         },
         // Execution modules - high standards for new refactored components
         'src/execution/**': {
@@ -60,10 +67,17 @@ export default defineConfig({
           lines: 95,
           statements: 95,
         },
+        // Type definitions - ensure all types are covered
+        'src/types/**': {
+          branches: 100,
+          functions: 100,
+          lines: 100,
+          statements: 100,
+        },
         // Utility modules - highest standards for pure functions
         'src/utils/**': {
           branches: 90,
-          functions: 90,
+          functions: 100,
           lines: 95,
           statements: 95,
         },

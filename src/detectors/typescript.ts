@@ -199,22 +199,3 @@ export function findTypeScriptCompiler(
     }
   }
 }
-
-/**
- * Legacy function for backwards compatibility
- * @deprecated Use findTypeScriptCompiler instead for complete TypeScript execution information
- * @returns Path to TypeScript compiler executable
- * @example
- * ```typescript
- * // Legacy usage (deprecated)
- * const tscPath = findTscPath();
- *
- * // Recommended usage
- * const tsInfo = findTypeScriptCompiler();
- * const tscPath = tsInfo.executable;
- * ```
- */
-export function findTscPath(): string {
-  const tsInfo = findTypeScriptCompiler();
-  return tsInfo.executable;
-}

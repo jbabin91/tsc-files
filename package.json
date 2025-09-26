@@ -44,7 +44,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown && pnpm format",
+    "prebuild": "rm -rf dist",
+    "build": "tsdown",
+    "postbuild": "pnpm format",
     "changeset:auto": "node scripts/generate-changeset.ts",
     "changeset:local-release": "pnpm changeset:version && pnpm changeset:release",
     "changeset:release": "pnpm build && changeset publish",
@@ -134,10 +136,5 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "lefthook"
-    ]
   }
 }

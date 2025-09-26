@@ -86,9 +86,11 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
 
       // Security check: ensure resolved path doesn't traverse outside reasonable bounds
       const normalizedPath = path.resolve(tscPath);
-      if (normalizedPath.includes('node_modules') &&
-          normalizedPath.includes('.bin') &&
-          normalizedPath.endsWith('tsc')) {
+      if (
+        normalizedPath.includes('node_modules') &&
+        normalizedPath.includes('.bin') &&
+        normalizedPath.endsWith('tsc')
+      ) {
         pnpmPaths.push(normalizedPath);
       }
     }
@@ -97,13 +99,20 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
     if (isWindows) {
       for (let level = 1; level <= 3; level++) {
         const parentPath = path.resolve(cwd, '../'.repeat(level));
-        const tscCmdPath = path.join(parentPath, 'node_modules', '.bin', 'tsc.cmd');
+        const tscCmdPath = path.join(
+          parentPath,
+          'node_modules',
+          '.bin',
+          'tsc.cmd',
+        );
 
         // Security check: ensure resolved path doesn't traverse outside reasonable bounds
         const normalizedPath = path.resolve(tscCmdPath);
-        if (normalizedPath.includes('node_modules') &&
-            normalizedPath.includes('.bin') &&
-            normalizedPath.endsWith('tsc.cmd')) {
+        if (
+          normalizedPath.includes('node_modules') &&
+          normalizedPath.includes('.bin') &&
+          normalizedPath.endsWith('tsc.cmd')
+        ) {
           pnpmPaths.push(normalizedPath);
         }
       }

@@ -37,7 +37,7 @@ globalThis.createTempDir = () => {
   // This ensures proper permissions (0700) and unique directory names
   const tempDir = tmp.dirSync({
     prefix: 'tsc-files-test-',
-    unsafeCleanup: true // Allow cleanup of non-empty directories
+    unsafeCleanup: true, // Allow cleanup of non-empty directories
   });
   return tempDir.name;
 };

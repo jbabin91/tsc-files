@@ -76,19 +76,37 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
         'bin',
         'tsc',
       ),
-      // Try current directory and parent directories for pnpm workspaces
-      path.join(cwd, '..', 'node_modules', '.bin', 'tsc'),
-      path.join(cwd, '..', '..', 'node_modules', '.bin', 'tsc'),
-      path.join(cwd, '..', '..', '..', 'node_modules', '.bin', 'tsc'),
     ];
+
+    // Safely try parent directories for pnpm workspaces (max 3 levels up)
+    // Use path.resolve for security and normalize paths to prevent traversal attacks
+    for (let level = 1; level <= 3; level++) {
+      const parentPath = path.resolve(cwd, '../'.repeat(level));
+      const tscPath = path.join(parentPath, 'node_modules', '.bin', 'tsc');
+
+      // Security check: ensure resolved path doesn't traverse outside reasonable bounds
+      const normalizedPath = path.resolve(tscPath);
+      if (normalizedPath.includes('node_modules') &&
+          normalizedPath.includes('.bin') &&
+          normalizedPath.endsWith('tsc')) {
+        pnpmPaths.push(normalizedPath);
+      }
+    }
 
     // Add Windows extensions for pnpm paths
     if (isWindows) {
-      pnpmPaths.push(
-        path.join(cwd, '..', 'node_modules', '.bin', 'tsc.cmd'),
-        path.join(cwd, '..', '..', 'node_modules', '.bin', 'tsc.cmd'),
-        path.join(cwd, '..', '..', '..', 'node_modules', '.bin', 'tsc.cmd'),
-      );
+      for (let level = 1; level <= 3; level++) {
+        const parentPath = path.resolve(cwd, '../'.repeat(level));
+        const tscCmdPath = path.join(parentPath, 'node_modules', '.bin', 'tsc.cmd');
+
+        // Security check: ensure resolved path doesn't traverse outside reasonable bounds
+        const normalizedPath = path.resolve(tscCmdPath);
+        if (normalizedPath.includes('node_modules') &&
+            normalizedPath.includes('.bin') &&
+            normalizedPath.endsWith('tsc.cmd')) {
+          pnpmPaths.push(normalizedPath);
+        }
+      }
     }
 
     for (const tscPath of pnpmPaths) {

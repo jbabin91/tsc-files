@@ -5,10 +5,10 @@
 
 import { execFile } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
+import tmp from 'tmp';
 import { expect } from 'vitest';
 
 const execFileAsync = promisify(execFile);
@@ -31,11 +31,15 @@ declare global {
   var writeTestFile: (dir: string, filename: string, content: string) => string;
 }
 
-// Temp directory utilities
+// Temp directory utilities - using secure tmp library
 globalThis.createTempDir = () => {
-  const tempDir = path.join(tmpdir(), 'tsc-files-test', Date.now().toString());
-  mkdirSync(tempDir, { recursive: true });
-  return tempDir;
+  // Use tmp library for secure temporary directory creation
+  // This ensures proper permissions (0700) and unique directory names
+  const tempDir = tmp.dirSync({
+    prefix: 'tsc-files-test-',
+    unsafeCleanup: true // Allow cleanup of non-empty directories
+  });
+  return tempDir.name;
 };
 
 globalThis.cleanupTempDir = (tempDir: string) => {

@@ -1,17 +1,11 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { checkFiles } from '@/core/checker';
 
-// Test utilities
-const createTempDir = () => {
-  const tempDir = path.join(tmpdir(), 'tsc-files-test', Date.now().toString());
-  mkdirSync(tempDir, { recursive: true });
-  return tempDir;
-};
+// Test utilities - using global createTempDir from setup.ts
 
 const cleanupTempDir = (tempDir: string) => {
   try {
@@ -440,8 +434,9 @@ const other: number = "not a number";`,
 
     it('should handle filesystem root in findTsConfig', async () => {
       // Create a temp directory that is very deep to test filesystem root detection
+      const veryDeepTempDir = createTempDir();
       const veryDeepDir = path.join(
-        tmpdir(),
+        veryDeepTempDir,
         'very',
         'deep',
         'directory',
@@ -458,7 +453,7 @@ const other: number = "not a number";`,
       ).rejects.toThrow('No tsconfig.json found');
 
       // Clean up
-      rmSync(path.join(tmpdir(), 'very'), { recursive: true, force: true });
+      cleanupTempDir(veryDeepTempDir);
     });
 
     it('should handle complex execution error scenarios', async () => {
@@ -877,13 +872,8 @@ const other: number = "not a number";`,
 
     it('should handle throwOnError: false for missing tsconfig in directory', async () => {
       // Test lines 571-589: throwOnError: false path for config grouping errors
-      // Create a temp directory in system temp (not in project directory)
-      const systemTempDir = path.join(
-        tmpdir(),
-        'isolated-tsc-test',
-        Date.now().toString(),
-      );
-      mkdirSync(systemTempDir, { recursive: true });
+      // Create a secure temp directory (not in project directory)
+      const systemTempDir = createTempDir();
 
       // Create an actual TypeScript file to trigger the tsconfig search
       const emptyTempSrcDir = path.join(systemTempDir, 'src');

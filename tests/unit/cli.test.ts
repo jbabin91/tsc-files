@@ -1,6 +1,5 @@
 import { execFile } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -11,16 +10,7 @@ const execFileAsync = promisify(execFile);
 // Build the CLI path relative to the current working directory
 const CLI_PATH = path.resolve(process.cwd(), 'dist/cli.js');
 
-// Test utilities
-const createTempDir = () => {
-  const tempDir = path.join(
-    tmpdir(),
-    'tsc-files-cli-test',
-    Date.now().toString(),
-  );
-  mkdirSync(tempDir, { recursive: true });
-  return tempDir;
-};
+// Test utilities - using global createTempDir from setup.ts
 
 const cleanupTempDir = (tempDir: string) => {
   try {
@@ -286,13 +276,8 @@ describe('CLI', () => {
     });
 
     it('should provide helpful error when no tsconfig found', async () => {
-      // Create a temp directory in system temp (not in project directory)
-      const systemTempDir = path.join(
-        tmpdir(),
-        'isolated-cli-test',
-        Date.now().toString(),
-      );
-      mkdirSync(systemTempDir, { recursive: true });
+      // Create a secure temp directory (not in project directory)
+      const systemTempDir = createTempDir();
 
       try {
         const { exitCode, stderr } = await runCli(

@@ -217,6 +217,7 @@ const other: number = "not a number";`,
         checkFiles(['test.ts'], {
           cwd: emptyTempDir,
           project: 'nonexistent.json',
+          throwOnError: true,
         }),
       ).rejects.toThrow('TypeScript config not found');
 
@@ -310,7 +311,7 @@ const other: number = "not a number";`,
       writeFileSync(path.join(srcDir, 'test.ts'), 'const x = 1;');
 
       await expect(
-        checkFiles(['src/test.ts'], { cwd: tempDir }),
+        checkFiles(['src/test.ts'], { cwd: tempDir, throwOnError: true }),
       ).rejects.toThrow('Failed to read tsconfig.json');
     });
 
@@ -373,6 +374,7 @@ const other: number = "not a number";`,
         checkFiles(['src/test.ts'], {
           cwd: tempDir,
           project: 'nonexistent-tsconfig.json',
+          throwOnError: true,
         }),
       ).rejects.toThrow('TypeScript config not found');
     });
@@ -444,6 +446,7 @@ const other: number = "not a number";`,
       await expect(
         checkFiles(['test.ts'], {
           cwd: veryDeepDir,
+          throwOnError: true,
         }),
       ).rejects.toThrow('No tsconfig.json found');
 
@@ -739,6 +742,7 @@ const other: number = "not a number";`,
       await expect(
         checkFiles(['src/test.ts', 'src/test.js'], {
           cwd: tempDir,
+          throwOnError: true,
         }),
       ).rejects.toThrow('Failed to read tsconfig.json');
     });
@@ -828,6 +832,7 @@ const other: number = "not a number";`,
       await expect(
         checkFiles(['src/test.ts', 'src/test.js'], {
           cwd: tempDir,
+          throwOnError: true,
         }),
       ).rejects.toThrow('No tsconfig.json found');
     });
@@ -845,6 +850,7 @@ const other: number = "not a number";`,
       await expect(
         checkFiles(['src/test.ts', 'src/test.js'], {
           cwd: tempDir,
+          throwOnError: true,
         }),
       ).rejects.toThrow();
     });

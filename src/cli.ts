@@ -178,18 +178,57 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
       }
     }
 
-    process.exit(result.success ? 0 : 1);
+    // Determine exit code based on result
+    if (result.success) {
+      process.exit(0);
+    } else {
+      // Check if any errors are configuration errors
+      const hasConfigError = result.errors.some(
+        (error) =>
+          error.code === 'CONFIG_ERROR' ||
+          error.message.includes('tsconfig.json') ||
+          error.message.includes('TypeScript config not found') ||
+          error.message.includes('No tsconfig.json found'),
+      );
+
+      if (hasConfigError) {
+        // Format as configuration error for better output
+        const configError = result.errors.find(
+          (error) =>
+            error.code === 'CONFIG_ERROR' ||
+            error.message.includes('tsconfig.json') ||
+            error.message.includes('TypeScript config not found') ||
+            error.message.includes('No tsconfig.json found'),
+        );
+        if (configError) {
+          console.error(
+            kleur.red('Configuration Error:'),
+            kleur.dim(configError.message),
+          );
+          console.error(
+            kleur.yellow('\nTip:'),
+            'Use --project flag to specify a different tsconfig.json path',
+          );
+        }
+        process.exit(2);
+      } else {
+        process.exit(1);
+      }
+    }
   } catch (error) {
     if (spinner) {
       spinner.fail(kleur.red('✗ Type check failed'));
     }
 
     const message = error instanceof Error ? error.message : String(error);
+
+    // Configuration errors (exit code 2)
     if (
       message.includes('tsconfig.json not found') ||
       message.includes('Failed to read tsconfig.json') ||
       message.includes('TypeScript config not found') ||
-      message.includes('No tsconfig.json found')
+      message.includes('No tsconfig.json found') ||
+      message.includes('Configuration Error')
     ) {
       console.error(kleur.red('Configuration Error:'), kleur.dim(message));
       console.error(
@@ -197,9 +236,13 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
         'Use --project flag to specify a different tsconfig.json path',
       );
       process.exit(2);
-    } else if (
+    }
+    // System errors (exit code 3)
+    else if (
       message.includes('TypeScript compiler failed') ||
-      message.includes('tsc')
+      message.includes('TypeScript not found') ||
+      message.includes('tsc') ||
+      message.includes('System Error')
     ) {
       console.error(kleur.red('System Error:'), kleur.dim(message));
       console.error(
@@ -207,7 +250,9 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
         'Ensure TypeScript is installed: npm install -D typescript',
       );
       process.exit(3);
-    } else {
+    }
+    // Unknown errors (exit code 99)
+    else {
       console.error(kleur.red('Error:'), kleur.dim(message));
       process.exit(99);
     }

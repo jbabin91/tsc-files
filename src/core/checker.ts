@@ -1,241 +1,14 @@
 /**
- * Core type checking functionality
+ * Core type checking functionality - refactored to orchestrate modular components
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
+import { findTsConfig } from '@/config/discovery';
+import { parseTypeScriptConfig } from '@/config/parser';
+import { createTempConfig } from '@/config/temp-config';
+import { executeAndParseTypeScript } from '@/execution/executor';
+import type { CheckOptions, CheckResult } from '@/types';
 
-import { execa } from 'execa';
-import fastGlob from 'fast-glob';
-import tmp from 'tmp';
-
-import { findTypeScriptCompiler } from '@/detectors/typescript';
-import type { CheckOptions, CheckResult, TypeScriptError } from '@/types';
-
-tmp.setGracefulCleanup();
-
-/**
- * Check if JavaScript files should be included based on TypeScript configuration
- * @param tsconfigPath - Path to tsconfig.json file
- * @returns True if JavaScript files should be included in type checking
- */
-function shouldIncludeJavaScriptFiles(tsconfigPath?: string): boolean {
-  if (!tsconfigPath || !existsSync(tsconfigPath)) {
-    return false;
-  }
-
-  try {
-    const configContent = readFileSync(tsconfigPath, 'utf8');
-    const config = JSON.parse(configContent) as {
-      compilerOptions?: {
-        allowJs?: boolean;
-        checkJs?: boolean;
-      };
-    };
-
-    return Boolean(
-      (config.compilerOptions?.allowJs ?? false) ||
-        (config.compilerOptions?.checkJs ?? false),
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Get file extensions to include based on TypeScript configuration
- * @param includeJs - Whether to include JavaScript files
- * @returns Object containing extensions, glob pattern, and regex pattern
- */
-function getFileExtensions(includeJs: boolean): {
-  extensions: string[];
-  globPattern: string;
-  regexPattern: RegExp;
-} {
-  const tsExtensions = ['ts', 'tsx'];
-  const jsExtensions = ['js', 'jsx'];
-
-  const extensions = includeJs
-    ? [...tsExtensions, ...jsExtensions]
-    : tsExtensions;
-
-  const globPattern = `{${extensions.join(',')}}`;
-  const regexPattern = new RegExp(`\\.(${extensions.join('|')})$`);
-
-  return { extensions, globPattern, regexPattern };
-}
-
-/**
- * Resolve files using fast-glob with TypeScript and optionally JavaScript patterns
- * @param patterns - Array of file patterns to resolve
- * @param cwd - Current working directory
- * @param tsconfigPath - Optional path to tsconfig.json for JavaScript inclusion
- * @returns Promise resolving to array of absolute file paths
- */
-async function resolveFiles(
-  patterns: string[],
-  cwd: string,
-  tsconfigPath?: string,
-): Promise<string[]> {
-  const includeJs = shouldIncludeJavaScriptFiles(tsconfigPath);
-  const { globPattern, regexPattern } = getFileExtensions(includeJs);
-
-  const globPatterns: string[] = [];
-
-  for (const pattern of patterns) {
-    const isDirectFile =
-      !pattern.includes('*') &&
-      !pattern.includes('{') &&
-      !pattern.includes('[');
-
-    if (isDirectFile) {
-      const absolutePath = path.resolve(cwd, pattern);
-
-      if (existsSync(absolutePath) && regexPattern.test(pattern)) {
-        globPatterns.push(pattern);
-      } else if (existsSync(absolutePath)) {
-        try {
-          const fs = await import('node:fs/promises');
-          const stat = await fs.stat(absolutePath);
-          if (stat.isDirectory()) {
-            globPatterns.push(`${pattern}/**/*.${globPattern}`);
-          }
-        } catch {
-          globPatterns.push(`${pattern}/**/*.${globPattern}`);
-        }
-      }
-    } else {
-      const hasValidExtension = includeJs
-        ? pattern.includes('.ts') ||
-          pattern.includes('.tsx') ||
-          pattern.includes('.js') ||
-          pattern.includes('.jsx') ||
-          pattern.includes('{ts,tsx}') ||
-          pattern.includes('{tsx,ts}') ||
-          pattern.includes('{js,jsx}') ||
-          pattern.includes('{jsx,js}') ||
-          pattern.includes('{ts,js}') ||
-          pattern.includes('{js,ts}') ||
-          pattern.includes('{ts,tsx,js,jsx}') ||
-          pattern.includes('{tsx,ts,jsx,js}') ||
-          !pattern.includes('.')
-        : pattern.includes('.ts') ||
-          pattern.includes('.tsx') ||
-          pattern.includes('{ts,tsx}') ||
-          pattern.includes('{tsx,ts}') ||
-          !pattern.includes('.');
-
-      if (hasValidExtension) {
-        if (pattern.includes('.')) {
-          globPatterns.push(pattern);
-        } else {
-          globPatterns.push(`${pattern}/**/*.${globPattern}`);
-        }
-      }
-    }
-  }
-
-  if (globPatterns.length === 0) {
-    return [];
-  }
-
-  try {
-    const files = await fastGlob(globPatterns, {
-      cwd,
-      absolute: true,
-      onlyFiles: true,
-      ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
-    });
-
-    return files.filter((file) => regexPattern.test(file));
-  } catch {
-    return patterns
-      .filter((pattern) => regexPattern.test(pattern))
-      .map((file) => path.resolve(cwd, file))
-      .filter((file) => existsSync(file));
-  }
-}
-
-/**
- * Find tsconfig.json file with context detection up directory tree
- */
-function findTsConfig(cwd: string, projectPath?: string): string {
-  if (projectPath) {
-    const resolvedPath = path.resolve(cwd, projectPath);
-    if (!existsSync(resolvedPath)) {
-      throw new Error(`TypeScript config not found: ${resolvedPath}`);
-    }
-    return resolvedPath;
-  }
-
-  let currentDir = path.resolve(cwd);
-  const rootDir = path.parse(currentDir).root;
-
-  while (currentDir !== rootDir) {
-    const tsconfigPath = path.join(currentDir, 'tsconfig.json');
-    if (existsSync(tsconfigPath)) {
-      return tsconfigPath;
-    }
-
-    const parentDir = path.dirname(currentDir);
-    if (parentDir === currentDir) {
-      break;
-    }
-    currentDir = parentDir;
-  }
-
-  throw new Error(
-    'No tsconfig.json found in current directory or any parent directories. Use --project to specify path.',
-  );
-}
-
-/**
- * Generate secure temp config path using tmp library
- */
-function getTempConfigPath(cacheDir?: string): {
-  path: string;
-  cleanup: () => void;
-} {
-  const tmpFile = tmp.fileSync({
-    prefix: 'tsconfig.',
-    postfix: '.json',
-    mode: 0o600,
-    dir: cacheDir,
-    discardDescriptor: false,
-    keep: false,
-  });
-
-  return {
-    path: tmpFile.name,
-    cleanup: tmpFile.removeCallback,
-  };
-}
-
-/**
- * Parse TypeScript compiler output for errors
- */
-function parseTypeScriptOutput(output: string): TypeScriptError[] {
-  const errors: TypeScriptError[] = [];
-  const lines = output.split('\n');
-
-  for (const line of lines) {
-    const match =
-      /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+(TS\d+):\s+(.+)$/.exec(line);
-    if (match) {
-      const [, file, line, column, severity, code, message] = match;
-      errors.push({
-        file: file.trim(),
-        line: Number.parseInt(line, 10),
-        column: Number.parseInt(column, 10),
-        message: message.trim(),
-        code,
-        severity: severity as 'error' | 'warning',
-      });
-    }
-  }
-
-  return errors;
-}
+import { resolveFiles } from './file-resolver';
 
 /**
  * Group raw file patterns by their associated tsconfig.json path
@@ -250,20 +23,19 @@ function groupRawFilesByTsConfig(
 
   for (const file of files) {
     try {
-      const isPattern =
-        file.includes('*') || file.includes('{') || file.includes('[');
-      const searchDir = isPattern ? cwd : path.dirname(path.resolve(cwd, file));
+      const tsconfigPath = findTsConfig(cwd, options.project);
 
-      const tsconfigPath = findTsConfig(searchDir);
-
-      const existingFiles = groups.get(tsconfigPath) ?? [];
-      existingFiles.push(file);
-      groups.set(tsconfigPath, existingFiles);
-    } catch (error) {
-      const errorKey = `__ERROR__${error instanceof Error ? error.message : String(error)}`;
-      const existingFiles = groups.get(errorKey) ?? [];
-      existingFiles.push(file);
-      groups.set(errorKey, existingFiles);
+      if (!groups.has(tsconfigPath)) {
+        groups.set(tsconfigPath, []);
+      }
+      groups.get(tsconfigPath)!.push(file);
+    } catch {
+      // If we can't find a tsconfig for this file, group it with the default
+      const defaultKey = 'default';
+      if (!groups.has(defaultKey)) {
+        groups.set(defaultKey, []);
+      }
+      groups.get(defaultKey)!.push(file);
     }
   }
 
@@ -271,327 +43,20 @@ function groupRawFilesByTsConfig(
 }
 
 /**
- * Check files for a single tsconfig.json configuration
+ * Process a group of files with a specific tsconfig
  */
-async function checkFilesWithSingleConfig(
-  files: string[],
+async function processFileGroup(
+  rawFiles: string[],
   tsconfigPath: string,
   options: CheckOptions,
   startTime: number,
 ): Promise<CheckResult> {
   const cwd = options.cwd ?? process.cwd();
 
-  const resolvedFiles = await resolveFiles(files, cwd, tsconfigPath);
+  // Resolve files using the file resolver
+  const resolvedFiles = await resolveFiles(rawFiles, cwd, tsconfigPath);
 
   if (resolvedFiles.length === 0) {
-    if (options.verbose) {
-      // eslint-disable-next-line no-console
-      console.log('No TypeScript files to check');
-    }
-    return {
-      success: true,
-      errorCount: 0,
-      warningCount: 0,
-      errors: [],
-      warnings: [],
-      duration: Math.round(performance.now() - startTime),
-      checkedFiles: [],
-    };
-  }
-
-  const absoluteFiles = resolvedFiles;
-  let existingConfig: { compilerOptions?: Record<string, unknown> };
-  try {
-    const configContent = readFileSync(tsconfigPath, 'utf8');
-    existingConfig = JSON.parse(configContent) as {
-      compilerOptions?: Record<string, unknown>;
-    };
-  } catch (error) {
-    throw new Error(
-      `Failed to read tsconfig.json: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-
-  const { path: tempConfigPath, cleanup: cleanupTempConfig } =
-    getTempConfigPath(options.cacheDir);
-
-  const tempConfig = {
-    extends: tsconfigPath,
-    include: absoluteFiles,
-    compilerOptions: {
-      ...existingConfig.compilerOptions,
-      noEmit: options.noEmit !== false,
-      skipLibCheck:
-        options.skipLibCheck ??
-        (existingConfig.compilerOptions?.skipLibCheck as boolean | undefined),
-    },
-  };
-
-  let tempConfigCreated = false;
-
-  try {
-    const tsInfo = findTypeScriptCompiler(cwd);
-
-    writeFileSync(tempConfigPath, JSON.stringify(tempConfig, null, 2));
-    tempConfigCreated = true;
-
-    if (options.verbose) {
-      // eslint-disable-next-line no-console
-      console.log(`Created temp config: ${tempConfigPath}`);
-      // eslint-disable-next-line no-console
-      console.log(`Checking ${absoluteFiles.length} files...`);
-      // eslint-disable-next-line no-console
-      console.log(`Using ${tsInfo.packageManager.manager} package manager`);
-    }
-
-    const args = [...tsInfo.args, '--project', tempConfigPath];
-
-    try {
-      const result = await execa(tsInfo.executable, args, {
-        cwd,
-        timeout: 30_000,
-        cleanup: true,
-        shell: tsInfo.useShell,
-      });
-
-      const allOutput = `${result.stdout}\n${result.stderr}`.trim();
-      const errors = parseTypeScriptOutput(allOutput);
-
-      const errorList = errors.filter((e) => e.severity === 'error');
-      const warningList = errors.filter((e) => e.severity === 'warning');
-
-      return {
-        success: errorList.length === 0,
-        errorCount: errorList.length,
-        warningCount: warningList.length,
-        errors: errorList,
-        warnings: warningList,
-        duration: Math.round(performance.now() - startTime),
-        checkedFiles: absoluteFiles,
-      };
-    } catch (execError: unknown) {
-      const stdout =
-        typeof execError === 'object' &&
-        execError !== null &&
-        'stdout' in execError &&
-        typeof execError.stdout === 'string'
-          ? execError.stdout
-          : '';
-
-      const stderr =
-        typeof execError === 'object' &&
-        execError !== null &&
-        'stderr' in execError &&
-        typeof execError.stderr === 'string'
-          ? execError.stderr
-          : '';
-
-      const exitCode =
-        typeof execError === 'object' &&
-        execError !== null &&
-        'exitCode' in execError &&
-        typeof execError.exitCode === 'number'
-          ? execError.exitCode
-          : 1;
-
-      const message =
-        typeof execError === 'object' &&
-        execError !== null &&
-        'message' in execError &&
-        typeof execError.message === 'string'
-          ? execError.message
-          : String(execError);
-
-      const allOutput = `${stdout}\n${stderr}`.trim();
-      const errors = parseTypeScriptOutput(allOutput);
-
-      if (errors.length === 0 && exitCode !== 0) {
-        throw new Error(`TypeScript compiler failed: ${allOutput || message}`);
-      }
-
-      const errorList = errors.filter((e) => e.severity === 'error');
-      const warningList = errors.filter((e) => e.severity === 'warning');
-
-      return {
-        success: errorList.length === 0,
-        errorCount: errorList.length,
-        warningCount: warningList.length,
-        errors: errorList,
-        warnings: warningList,
-        duration: Math.round(performance.now() - startTime),
-        checkedFiles: absoluteFiles,
-      };
-    }
-  } catch (error) {
-    if (options.throwOnError) {
-      throw error;
-    }
-
-    throw new Error(
-      `Type checking failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  } finally {
-    if (tempConfigCreated) {
-      try {
-        cleanupTempConfig();
-        if (options.verbose) {
-          // eslint-disable-next-line no-console
-          console.log(`Cleaned up temp config: ${tempConfigPath}`);
-        }
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  }
-}
-
-/**
- * Check TypeScript files for type errors using the TypeScript compiler
- * This is the main entry point for the tsc-files library
- *
- * @param files - Array of file paths or glob patterns to type-check
- * @param options - Configuration options for type checking
- * @param options.project - Path to tsconfig.json file (auto-detected if not provided)
- * @param options.noEmit - Skip emitting files (default: true)
- * @param options.skipLibCheck - Skip type checking of declaration files (default: false)
- * @param options.verbose - Enable verbose logging (default: false)
- * @param options.cwd - Current working directory (default: process.cwd())
- * @param options.throwOnError - Throw errors instead of returning them in result (default: true)
- * @param options.cache - Use cache directory for temporary files (default: true)
- * @returns Promise resolving to comprehensive check results including errors, warnings, and performance metrics
- *
- * @example
- * ```typescript
- * import { checkFiles } from '@jbabin91/tsc-files';
- *
- * // Basic usage - check specific files
- * const result = await checkFiles(['src/index.ts', 'src/utils.ts']);
- * if (result.success) {
- *   console.log(`✓ All files passed type checking in ${result.duration}ms`);
- * } else {
- *   console.error(`✗ Found ${result.errorCount} type errors`);
- *   result.errors.forEach(error => {
- *     console.error(`${error.file}:${error.line}:${error.column} - ${error.message}`);
- *   });
- * }
- *
- * // Advanced usage with options
- * const result = await checkFiles(['src/**\/*.ts'], {
- *   project: './tsconfig.build.json',
- *   verbose: true,
- *   skipLibCheck: true,
- *   throwOnError: false
- * });
- * ```
- */
-export async function checkFiles(
-  files: string[],
-  options: CheckOptions = {},
-): Promise<CheckResult> {
-  const startTime = performance.now();
-  const cwd = options.cwd ?? process.cwd();
-
-  // Early validation: if explicit project is specified, validate it exists
-  if (options.project) {
-    try {
-      findTsConfig(cwd, options.project);
-    } catch (error) {
-      // Default is to throw, only return result if throwOnError is explicitly false
-      if (options.throwOnError === false) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        return {
-          success: false,
-          errorCount: 1,
-          warningCount: 0,
-          errors: [
-            {
-              file: 'config',
-              line: 1,
-              column: 1,
-              message: errorMessage,
-              code: 'CONFIG_ERROR',
-              severity: 'error' as const,
-            },
-          ],
-          warnings: [],
-          duration: Math.round(performance.now() - startTime),
-          checkedFiles: [],
-        };
-      }
-
-      // Throw by default or when throwOnError is true
-      throw error;
-    }
-  }
-
-  // If explicit project is specified, we can resolve files immediately with proper JS support
-  if (options.project) {
-    const tsconfigPath = findTsConfig(cwd, options.project);
-    const resolvedFiles = await resolveFiles(files, cwd, tsconfigPath);
-
-    if (resolvedFiles.length === 0) {
-      if (options.verbose) {
-        // eslint-disable-next-line no-console
-        console.log('No TypeScript/JavaScript files to check');
-      }
-      return {
-        success: true,
-        errorCount: 0,
-        warningCount: 0,
-        errors: [],
-        warnings: [],
-        duration: Math.round(performance.now() - startTime),
-        checkedFiles: [],
-      };
-    }
-
-    return await checkFilesWithSingleConfig(
-      resolvedFiles,
-      tsconfigPath,
-      options,
-      startTime,
-    );
-  }
-
-  // For multi-tsconfig scenarios, we need to group files by tsconfig first,
-  // then resolve files with the appropriate JavaScript support for each group
-  const rawFileGroups = groupRawFilesByTsConfig(files, options);
-
-  // Handle error cases where files couldn't be grouped
-  const errorGroups = [...rawFileGroups.keys()].filter((key) =>
-    key.startsWith('__ERROR__'),
-  );
-  if (errorGroups.length > 0) {
-    const errorMessage = errorGroups[0].replace('__ERROR__', '');
-
-    // Default is to throw, only return result if throwOnError is explicitly false
-    if (options.throwOnError === false) {
-      return {
-        success: false,
-        errorCount: 1,
-        warningCount: 0,
-        errors: [
-          {
-            file: 'config',
-            line: 1,
-            column: 1,
-            message: errorMessage,
-            code: 'CONFIG_ERROR',
-            severity: 'error' as const,
-          },
-        ],
-        warnings: [],
-        duration: Math.round(performance.now() - startTime),
-        checkedFiles: [],
-      };
-    }
-
-    // Throw by default or when throwOnError is true
-    throw new Error(errorMessage);
-  }
-
-  if (rawFileGroups.size === 0) {
     if (options.verbose) {
       // eslint-disable-next-line no-console
       console.log('No TypeScript/JavaScript files to check');
@@ -607,74 +72,244 @@ export async function checkFiles(
     };
   }
 
-  // Process each group and resolve files with proper JavaScript support
-  const allResults: CheckResult[] = [];
-  const allCheckedFiles: string[] = [];
-  const allErrors: TypeScriptError[] = [];
-  const allWarnings: TypeScriptError[] = [];
+  // Parse original config
+  const originalConfig = parseTypeScriptConfig(tsconfigPath);
 
-  if (rawFileGroups.size > 1 && options.verbose) {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Monorepo detected: processing ${rawFileGroups.size} different tsconfig groups`,
-    );
-  }
-
-  // Process each group in parallel for better performance
-  const groupPromises = [...rawFileGroups.entries()].map(
-    async ([tsconfigPath, groupFiles]) => {
-      // Resolve files with proper JavaScript support for this tsconfig
-      const resolvedFiles = await resolveFiles(groupFiles, cwd, tsconfigPath);
-
-      if (resolvedFiles.length === 0) {
-        // Return empty successful result for groups with no matching files
-        return {
-          success: true,
-          errorCount: 0,
-          warningCount: 0,
-          errors: [],
-          warnings: [],
-          duration: 0,
-          checkedFiles: [],
-        };
-      }
-
-      if (options.verbose) {
-        // eslint-disable-next-line no-console
-        console.log(
-          `Processing group with ${resolvedFiles.length} files using ${tsconfigPath}`,
-        );
-      }
-
-      return await checkFilesWithSingleConfig(
-        resolvedFiles,
-        tsconfigPath,
-        options,
-        startTime,
-      );
-    },
+  // Create temporary config
+  const tempHandle = createTempConfig(
+    tsconfigPath,
+    originalConfig,
+    resolvedFiles,
+    options,
   );
 
-  const groupResults = await Promise.all(groupPromises);
-
-  // Aggregate results from all groups
-  for (const result of groupResults) {
-    allResults.push(result);
-    allCheckedFiles.push(...result.checkedFiles);
-    allErrors.push(...result.errors);
-    allWarnings.push(...result.warnings);
+  if (options.verbose) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `Processing group with ${resolvedFiles.length} files using ${tsconfigPath}`,
+    );
+    // eslint-disable-next-line no-console
+    console.log(`Created temp config: ${tempHandle.path}`);
+    // eslint-disable-next-line no-console
+    console.log(`Checking ${resolvedFiles.length} files...`);
   }
 
-  // Calculate overall success (all groups must succeed)
-  const overallSuccess = allResults.every((result) => result.success);
+  try {
+    // Execute TypeScript compiler and parse results
+    const result = await executeAndParseTypeScript(
+      tempHandle.path,
+      resolvedFiles,
+      cwd,
+      options,
+      startTime,
+    );
+
+    return result;
+  } catch (error) {
+    if (options.throwOnError) {
+      throw error;
+    }
+
+    // Determine error code based on error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isConfigError =
+      errorMessage.includes('tsconfig.json') ||
+      errorMessage.includes('TypeScript config') ||
+      errorMessage.includes('Failed to read tsconfig');
+
+    return {
+      success: false,
+      errorCount: 1,
+      warningCount: 0,
+      errors: [
+        {
+          file: 'tsc-files',
+          line: 1,
+          column: 1,
+          message: errorMessage,
+          code: isConfigError ? 'CONFIG_ERROR' : 'TSC_FILES_ERROR',
+          severity: 'error' as const,
+        },
+      ],
+      warnings: [],
+      duration: Math.round(performance.now() - startTime),
+      checkedFiles: resolvedFiles,
+    };
+  } finally {
+    try {
+      tempHandle.cleanup();
+      if (options.verbose) {
+        // eslint-disable-next-line no-console
+        console.log(`Cleaned up temp config: ${tempHandle.path}`);
+      }
+    } catch (cleanupError) {
+      if (options.verbose) {
+        // eslint-disable-next-line no-console
+        console.warn(`Failed to cleanup temp config: ${cleanupError}`);
+      }
+    }
+  }
+}
+
+/**
+ * Combine results from multiple file groups
+ */
+function combineResults(results: CheckResult[]): CheckResult {
+  if (results.length === 0) {
+    return {
+      success: true,
+      errorCount: 0,
+      warningCount: 0,
+      errors: [],
+      warnings: [],
+      duration: 0,
+      checkedFiles: [],
+    };
+  }
+
+  if (results.length === 1) {
+    return results[0];
+  }
+
+  const combinedErrors = results.flatMap((r) => r.errors);
+  const combinedWarnings = results.flatMap((r) => r.warnings);
+  const combinedCheckedFiles = results.flatMap((r) => r.checkedFiles);
+  const maxDuration = Math.max(...results.map((r) => r.duration));
 
   return {
-    success: overallSuccess,
-    errorCount: allErrors.length,
-    warningCount: allWarnings.length,
-    errors: allErrors,
-    warnings: allWarnings,
-    duration: Math.round(performance.now() - startTime),
-    checkedFiles: allCheckedFiles,
+    success: combinedErrors.length === 0,
+    errorCount: combinedErrors.length,
+    warningCount: combinedWarnings.length,
+    errors: combinedErrors,
+    warnings: combinedWarnings,
+    duration: maxDuration,
+    checkedFiles: combinedCheckedFiles,
   };
+}
+
+/**
+ * Check TypeScript files for type errors
+ * @param files - Array of file patterns to check
+ * @param options - Configuration options
+ * @returns Promise resolving to check results
+ */
+export async function checkFiles(
+  files: string[],
+  options: CheckOptions = {},
+): Promise<CheckResult> {
+  const startTime = performance.now();
+  const cwd = options.cwd ?? process.cwd();
+
+  if (files.length === 0) {
+    return {
+      success: true,
+      errorCount: 0,
+      warningCount: 0,
+      errors: [],
+      warnings: [],
+      duration: Math.round(performance.now() - startTime),
+      checkedFiles: [],
+    };
+  }
+
+  try {
+    // Group files by their tsconfig
+    const fileGroups = groupRawFilesByTsConfig(files, options);
+
+    if (fileGroups.size > 1 && options.verbose) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `Monorepo detected: processing ${fileGroups.size} different tsconfig groups`,
+      );
+    }
+
+    // Process each group
+    const results: CheckResult[] = [];
+    for (const [tsconfigPath, groupFiles] of fileGroups) {
+      if (tsconfigPath === 'default') {
+        // Handle default case where no tsconfig was found
+        try {
+          const defaultTsconfig = findTsConfig(cwd, options.project);
+          const result = await processFileGroup(
+            groupFiles,
+            defaultTsconfig,
+            options,
+            startTime,
+          );
+          results.push(result);
+        } catch (error) {
+          if (options.throwOnError) {
+            throw error;
+          }
+
+          // Determine error code based on error message
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          const isConfigError =
+            errorMessage.includes('tsconfig.json') ||
+            errorMessage.includes('TypeScript config') ||
+            errorMessage.includes('Failed to read tsconfig');
+
+          results.push({
+            success: false,
+            errorCount: 1,
+            warningCount: 0,
+            errors: [
+              {
+                file: 'tsc-files',
+                line: 1,
+                column: 1,
+                message: errorMessage,
+                code: isConfigError ? 'CONFIG_ERROR' : 'TSC_FILES_ERROR',
+                severity: 'error' as const,
+              },
+            ],
+            warnings: [],
+            duration: Math.round(performance.now() - startTime),
+            checkedFiles: [],
+          });
+        }
+      } else {
+        const result = await processFileGroup(
+          groupFiles,
+          tsconfigPath,
+          options,
+          startTime,
+        );
+        results.push(result);
+      }
+    }
+
+    return combineResults(results);
+  } catch (error) {
+    if (options.throwOnError) {
+      throw error;
+    }
+
+    // Determine error code based on error message
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isConfigError =
+      errorMessage.includes('tsconfig.json') ||
+      errorMessage.includes('TypeScript config') ||
+      errorMessage.includes('Failed to read tsconfig');
+
+    return {
+      success: false,
+      errorCount: 1,
+      warningCount: 0,
+      errors: [
+        {
+          file: 'tsc-files',
+          line: 1,
+          column: 1,
+          message: errorMessage,
+          code: isConfigError ? 'CONFIG_ERROR' : 'TSC_FILES_ERROR',
+          severity: 'error' as const,
+        },
+      ],
+      warnings: [],
+      duration: Math.round(performance.now() - startTime),
+      checkedFiles: [],
+    };
+  }
 }

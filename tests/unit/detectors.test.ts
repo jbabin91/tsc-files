@@ -1,8 +1,3 @@
-/**
- * Comprehensive tests for detector modules
- * Tests package manager detection and TypeScript compiler resolution
- */
-
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -144,29 +139,22 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
 
   describe('getTscPath function coverage', () => {
     it('should handle Windows platform detection for pnpm paths', () => {
-      // Spy on process.platform
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', {
         value: 'win32',
         writable: true,
       });
 
-      // Mock existsSync to simulate pnpm nested structure exists
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
         return pathStr.includes('.pnpm') && pathStr.endsWith('tsc');
       });
 
-      // Create a test directory path
       const testDir = '/test/project';
-
-      // Call detectPackageManager which internally uses getTscPath
       const result = packageManagerModule.detectPackageManager(testDir);
 
-      // Should detect npm fallback (no lock files), but the getTscPath function was exercised
       expect(result.manager).toBe('npm');
 
-      // Restore platform
       Object.defineProperty(process, 'platform', {
         value: originalPlatform,
         writable: true,
@@ -174,10 +162,8 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
     });
 
     it('should handle pnpm parent directory traversal with security checks', () => {
-      // Mock existsSync to simulate parent directory tsc paths
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
-        // Simulate finding tsc in parent directory
         return (
           pathStr.includes('../') && pathStr.includes('node_modules/.bin/tsc')
         );
@@ -186,7 +172,7 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
       const testDir = '/deep/nested/project/path';
       const result = packageManagerModule.detectPackageManager(testDir);
 
-      expect(result.manager).toBe('npm'); // fallback
+      expect(result.manager).toBe('npm');
     });
 
     it('should handle Windows cmd extension for pnpm paths', () => {
@@ -196,7 +182,6 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
         writable: true,
       });
 
-      // Mock existsSync to return true for Windows .cmd paths
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
         return pathStr.includes('tsc.cmd') && pathStr.includes('../');
@@ -205,7 +190,6 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
       const testDir = '/test/pnpm/project';
       packageManagerModule.detectPackageManager(testDir);
 
-      // Restore platform
       Object.defineProperty(process, 'platform', {
         value: originalPlatform,
         writable: true,
@@ -213,10 +197,8 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
     });
 
     it('should handle security path traversal validation', () => {
-      // Mock existsSync to simulate various path conditions
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
-        // Test the security validation logic
         return (
           pathStr.includes('node_modules') &&
           pathStr.includes('.bin') &&
@@ -243,7 +225,6 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
       for (const lockFile of lockFiles) {
         vi.clearAllMocks();
 
-        // Mock only the specific lock file exists
         mockExistsSync.mockImplementation((filePath) => {
           return filePath.toString().endsWith(lockFile);
         });
@@ -316,7 +297,6 @@ describe('TypeScript Detection', () => {
     it('should return executable path from findTypeScriptCompiler', () => {
       const result = findTscPath();
 
-      // Should return a string (the executable field from findTypeScriptCompiler)
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(0);
     });
@@ -324,12 +304,10 @@ describe('TypeScript Detection', () => {
 
   describe('Cross-Platform Support', () => {
     it('should handle platform-specific executable detection', () => {
-      // Just test that the function executes without errors and returns expected structure
       mockExistsSync.mockReturnValue(false);
 
       const result = typescriptModule.findTypeScriptCompiler('/test');
 
-      // Should return a valid TypeScriptInfo structure regardless of platform
       expect(result).toHaveProperty('executable');
       expect(result).toHaveProperty('args');
       expect(result).toHaveProperty('useShell');
@@ -340,17 +318,13 @@ describe('TypeScript Detection', () => {
 
   describe('TypeScript package resolution paths', () => {
     it('should handle various global TypeScript installation paths', () => {
-      // Mock existsSync to simulate different path scenarios
       let callCount = 0;
       mockExistsSync.mockImplementation((filePath) => {
         callCount++;
         const pathStr = filePath.toString();
 
-        // Test the fallback logic by returning false for local paths
-        // but true for global 'tsc' command
         if (pathStr === 'tsc') return true;
         if (pathStr.includes('node_modules') && pathStr.includes('tsc')) {
-          // Return true on specific call to test different paths
           return callCount > 10;
         }
         return false;
@@ -361,19 +335,16 @@ describe('TypeScript Detection', () => {
     });
 
     it('should handle require.resolve scenarios with error handling', () => {
-      // Test that require.resolve is used in path detection with fallback
       mockExistsSync.mockReturnValue(false);
 
       const result = typescriptModule.findTypeScriptCompiler('/test');
 
-      // Should return valid structure even when require.resolve might fail
       expect(result).toHaveProperty('executable');
       expect(result).toHaveProperty('packageManager');
       expect(result).toHaveProperty('useShell');
     });
 
     it('should handle package manager integration in TypeScript detection', () => {
-      // Test that package manager detection is integrated
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
         return pathStr.endsWith('pnpm-lock.yaml');
@@ -381,7 +352,6 @@ describe('TypeScript Detection', () => {
 
       const result = typescriptModule.findTypeScriptCompiler('/test');
 
-      // Should use package manager info
       expect(result.packageManager.manager).toBe('pnpm');
       expect(result).toHaveProperty('executable');
     });
@@ -391,7 +361,6 @@ describe('TypeScript Detection', () => {
     it('should handle current project tsc path in global paths array', () => {
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
-        // Simulate finding tsc in current project's node_modules
         return (
           pathStr === path.join(process.cwd(), 'node_modules', '.bin', 'tsc')
         );
@@ -411,14 +380,12 @@ describe('TypeScript Detection', () => {
 
       const result = typescriptModule.findTypeScriptCompiler('/simple/path');
 
-      // quotedExecutable should be undefined when path doesn't need quoting
       expect(result.quotedExecutable).toBeUndefined();
     });
   });
 
   describe('Final Coverage Push', () => {
     it('should test standard tsc paths in typescript/bin directory', () => {
-      // Mock existsSync to simulate typescript package being found at standard path
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
         return (
@@ -434,7 +401,6 @@ describe('TypeScript Detection', () => {
     });
 
     it('should handle local node_modules bin path detection', () => {
-      // Mock existsSync to find local tsc in node_modules/.bin
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
         return (
@@ -451,11 +417,9 @@ describe('TypeScript Detection', () => {
     });
 
     it('should test global tsc fallback with useShell true', () => {
-      // Mock existsSync to return false for all local paths but true for global tsc
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
 
-        // Return false for all specific paths to trigger global fallback
         if (
           pathStr.includes('node_modules') ||
           pathStr.includes('typescript')
@@ -463,7 +427,6 @@ describe('TypeScript Detection', () => {
           return false;
         }
 
-        // Return true for 'tsc' (global command)
         if (pathStr === 'tsc') {
           return true;
         }
@@ -473,7 +436,6 @@ describe('TypeScript Detection', () => {
 
       const result = findTypeScriptCompiler('/test');
 
-      // Should fall back to global tsc with useShell true
       expect(result.useShell).toBe(true);
       expect(typeof result.executable).toBe('string');
     });
@@ -496,23 +458,19 @@ describe('TypeScript Detection', () => {
 
       const result = typescriptModule.findTypeScriptCompiler('/test');
 
-      // When path contains spaces, quotedExecutable should be defined
       if (result.executable.includes(' ')) {
         expect(result.quotedExecutable).toBeDefined();
       }
     });
 
     it('should test path scenarios and integration coverage', () => {
-      // Test general path handling without specific expectations
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
-        // Simulate some paths existing to exercise different code branches
         return pathStr.endsWith('yarn.lock') || pathStr.includes('global');
       });
 
       const result = findTypeScriptCompiler('/test');
 
-      // Just verify the function executes and returns valid structure
       expect(result).toHaveProperty('executable');
       expect(result).toHaveProperty('packageManager');
       expect(result).toHaveProperty('quotedExecutable');
@@ -520,10 +478,8 @@ describe('TypeScript Detection', () => {
     });
 
     it('should handle integration with existing project structure', () => {
-      // Test integration with the actual current working directory
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
-        // Exercise the path checking logic
         return (
           pathStr.includes(process.cwd()) && pathStr.includes('node_modules')
         );
@@ -538,21 +494,16 @@ describe('TypeScript Detection', () => {
 
   describe('Package Manager Integration', () => {
     it('should prefer package manager tscPath when available', () => {
-      // Mock the package manager having a valid tscPath
       mockExistsSync.mockImplementation((filePath) => {
         return filePath.toString().includes('/node_modules/.pnpm/');
       });
 
-      // This tests the integration with package manager detection
-      // Results should use the tscPath from package manager info
       const result = findTscPath();
       expect(typeof result).toBe('string');
     });
 
     it('should handle global tsc as final fallback', () => {
-      // Mock no local tsc found, should fall back to global 'tsc'
       mockExistsSync.mockImplementation((filePath) => {
-        // Only return true for lock files, not for tsc paths
         return (
           filePath.toString().endsWith('.yaml') ||
           filePath.toString().endsWith('.json') ||

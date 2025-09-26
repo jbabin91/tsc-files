@@ -13,13 +13,11 @@ describe('index', () => {
   });
 
   it('should export TypeScript types', () => {
-    // Test that the types are available at compile time
     const options: CheckOptions = {
       verbose: true,
     };
     expect(options.verbose).toBe(true);
 
-    // This test ensures the types are properly exported
     const mockError: TypeScriptError = {
       file: 'test.ts',
       line: 1,

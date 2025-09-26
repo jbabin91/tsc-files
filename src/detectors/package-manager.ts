@@ -6,9 +6,6 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-/**
- * Cross-platform utilities
- */
 const isWindows = process.platform === 'win32';
 
 export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
@@ -22,7 +19,7 @@ export type PackageManagerInfo = {
 
 /**
  * Package manager detection patterns based on lock files
- * Priority order: pnpm > yarn > bun > npm (npm as fallback)
+ * Priority order: pnpm > bun > npm > yarn (npm as fallback)
  */
 const LOCK_FILE_PATTERNS: Record<PackageManager, string[]> = {
   pnpm: ['pnpm-lock.yaml'],
@@ -31,9 +28,6 @@ const LOCK_FILE_PATTERNS: Record<PackageManager, string[]> = {
   npm: ['package-lock.json', 'npm-shrinkwrap.json'],
 };
 
-/**
- * Command patterns for different package managers
- */
 const COMMAND_PATTERNS: Record<PackageManager, string> = {
   pnpm: 'pnpm',
   yarn: 'yarn',
@@ -48,14 +42,11 @@ const COMMAND_PATTERNS: Record<PackageManager, string> = {
 function getTscPath(manager: PackageManager, cwd: string): string | undefined {
   const nodeModules = path.join(cwd, 'node_modules');
 
-  // Standard paths that work for most package managers
-  // Windows: Include both .cmd and .exe variations
   const standardPaths = [
     path.join(nodeModules, '.bin', 'tsc'),
     path.join(nodeModules, 'typescript', 'bin', 'tsc'),
   ];
 
-  // Add Windows-specific paths
   if (isWindows) {
     standardPaths.push(
       path.join(nodeModules, '.bin', 'tsc.cmd'),
@@ -63,9 +54,7 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
     );
   }
 
-  // Special pnpm handling with nested structure
   if (manager === 'pnpm') {
-    // pnpm can have nested structure: ../../../node_modules/.pnpm/...
     const pnpmPaths = [
       path.join(
         nodeModules,
@@ -78,13 +67,10 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
       ),
     ];
 
-    // Safely try parent directories for pnpm workspaces (max 3 levels up)
-    // Use path.resolve for security and normalize paths to prevent traversal attacks
     for (let level = 1; level <= 3; level++) {
       const parentPath = path.resolve(cwd, '../'.repeat(level));
       const tscPath = path.join(parentPath, 'node_modules', '.bin', 'tsc');
 
-      // Security check: ensure resolved path doesn't traverse outside reasonable bounds
       const normalizedPath = path.resolve(tscPath);
       if (
         normalizedPath.includes('node_modules') &&
@@ -95,7 +81,6 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
       }
     }
 
-    // Add Windows extensions for pnpm paths
     if (isWindows) {
       for (let level = 1; level <= 3; level++) {
         const parentPath = path.resolve(cwd, '../'.repeat(level));
@@ -106,7 +91,6 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
           'tsc.cmd',
         );
 
-        // Security check: ensure resolved path doesn't traverse outside reasonable bounds
         const normalizedPath = path.resolve(tscCmdPath);
         if (
           normalizedPath.includes('node_modules') &&
@@ -125,7 +109,6 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
     }
   }
 
-  // Check standard paths for all package managers
   for (const tscPath of standardPaths) {
     if (existsSync(tscPath)) {
       return tscPath;
@@ -137,13 +120,12 @@ function getTscPath(manager: PackageManager, cwd: string): string | undefined {
 
 /**
  * Detect package manager by scanning for lock files
- * Uses priority order: pnpm > yarn > bun > npm
+ * Uses priority order: pnpm > bun > npm > yarn
  */
 export function detectPackageManager(
   cwd: string = process.cwd(),
 ): PackageManagerInfo {
-  // Priority detection order (based on community usage and performance)
-  const priorities: PackageManager[] = ['pnpm', 'yarn', 'bun', 'npm'];
+  const priorities: PackageManager[] = ['pnpm', 'bun', 'npm', 'yarn'];
 
   for (const manager of priorities) {
     const lockFiles = LOCK_FILE_PATTERNS[manager];
@@ -163,12 +145,11 @@ export function detectPackageManager(
     }
   }
 
-  // Fallback to npm if no lock files found
   const tscPath = getTscPath('npm', cwd);
 
   return {
     manager: 'npm',
-    lockFile: 'package.json', // Fallback indicator
+    lockFile: 'package.json',
     command: COMMAND_PATTERNS.npm,
     tscPath,
   };
@@ -181,7 +162,6 @@ export function detectPackageManager(
 export function detectPackageManagerAdvanced(
   cwd: string = process.cwd(),
 ): PackageManagerInfo {
-  // Check environment variables first (more reliable in CI/CD)
   const userAgent = process.env.npm_config_user_agent;
 
   if (userAgent) {

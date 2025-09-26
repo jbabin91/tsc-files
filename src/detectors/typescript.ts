@@ -20,9 +20,6 @@ export type TypeScriptInfo = {
   quotedExecutable?: string; // For Windows paths with spaces
 };
 
-/**
- * Cross-platform utilities
- */
 const isWindows = process.platform === 'win32';
 
 /**
@@ -30,9 +27,8 @@ const isWindows = process.platform === 'win32';
  */
 function quoteWindowsPath(executablePath: string): string {
   if (isWindows) {
-    // Quote paths with spaces on Windows
     if (executablePath.includes(' ') && executablePath.startsWith('"')) {
-      return executablePath; // Already quoted
+      return executablePath;
     }
 
     if (executablePath.includes(' ')) {
@@ -48,7 +44,6 @@ function quoteWindowsPath(executablePath: string): string {
  */
 function getWindowsExecutable(executable: string): string {
   if (isWindows) {
-    // Add .cmd extension for package managers on Windows
     const packageManagers = ['npm', 'npx', 'yarn', 'pnpm', 'bun'];
     if (packageManagers.includes(executable)) {
       return `${executable}.cmd`;
@@ -67,7 +62,6 @@ export function findTypeScriptCompiler(
 ): TypeScriptInfo {
   const packageManagerInfo = detectPackageManagerAdvanced(cwd);
 
-  // Try package manager specific TypeScript path first
   if (packageManagerInfo.tscPath && existsSync(packageManagerInfo.tscPath)) {
     const executablePath = packageManagerInfo.tscPath;
     const quotedPath = quoteWindowsPath(executablePath);
@@ -82,7 +76,6 @@ export function findTypeScriptCompiler(
     };
   }
 
-  // Try local node_modules/.bin/tsc
   const localTsc = path.join(cwd, 'node_modules', '.bin', 'tsc');
   if (existsSync(localTsc)) {
     const quotedPath = quoteWindowsPath(localTsc);

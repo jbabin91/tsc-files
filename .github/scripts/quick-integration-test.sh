@@ -5,19 +5,23 @@ set -e
 echo "🚀 Quick Integration Test"
 START_TIME=$(date +%s)
 
-# Build first
-echo "📦 Building..."
-pnpm build --silent
+# Skip build in CI - assume dist/ already exists from Build Package step
+if [[ "$CI" == "true" ]]; then
+    echo "📦 Skipping build in CI (using pre-built package)..."
+else
+    echo "📦 Building..."
+    pnpm build --silent
+fi
 
 # Create test directory
 TEST_DIR="quick-test-$$"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
-# Install TypeScript locally for testing
+# Install TypeScript locally for testing (faster than global)
 echo "  Installing TypeScript locally..."
 npm init -y > /dev/null 2>&1
-npm install typescript > /dev/null 2>&1
+npm install typescript --no-audit --no-fund > /dev/null 2>&1
 
 # Create minimal test setup
 echo '{"compilerOptions": {"target": "ES2020", "strict": true}}' > tsconfig.json

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/jbabin91/tsc-files/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 📚 Documentation
+    url: https://github.com/jbabin91/tsc-files/blob/main/README.md
+    about: Read the documentation for usage and troubleshooting
+  - name: 🛠️ Troubleshooting Guide
+    url: https://github.com/jbabin91/tsc-files/blob/main/CLAUDE.md#troubleshooting-guide
+    about: Common issues and solutions

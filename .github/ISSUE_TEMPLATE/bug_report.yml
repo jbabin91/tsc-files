@@ -1,0 +1,110 @@
+name: 🐛 Bug Report
+description: Report a reproducible bug or issue with tsc-files
+title: '[Bug]: '
+labels: ['bug', 'triage']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! This helps us improve tsc-files for everyone.
+
+        **Before submitting**, please check:
+        - [ ] You have the latest version of tsc-files
+        - [ ] You've checked existing issues for duplicates
+        - [ ] You've read the troubleshooting guide in CLAUDE.md
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe what happened and what you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command Executed
+      description: The exact command that caused the issue
+      placeholder: 'tsc-files src/**/*.ts --project tsconfig.json'
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Actual Output
+      description: Copy and paste the actual output (including error messages)
+      placeholder: Paste the complete output here
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen instead
+      placeholder: Describe the expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the issue
+      value: |
+        1.
+        2.
+        3.
+        4.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Please provide your environment details:
+      value: |
+        - **OS**:
+        - **Node.js version**:
+        - **Package Manager**:
+        - **tsc-files version**:
+        - **TypeScript version**:
+        - **Project type**: (monorepo/single package/etc)
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: tsconfig
+    attributes:
+      label: tsconfig.json (if relevant)
+      description: If the issue is related to TypeScript configuration, paste your tsconfig.json
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or files that might help
+      placeholder: Any additional information that might be helpful
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

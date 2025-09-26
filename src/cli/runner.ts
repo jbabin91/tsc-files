@@ -128,14 +128,17 @@ export function handleCommanderError(error: Error): CliResult {
       };
     }
 
+    // Handle argument/option errors - Commander.js already outputs these with showHelpAfterError
     if (
       commanderError.code === 'commander.missingMandatoryOptionValue' ||
-      commanderError.code === 'commander.missingArgument'
+      commanderError.code === 'commander.missingArgument' ||
+      commanderError.code === 'commander.unknownOption' ||
+      commanderError.code === 'commander.invalidArgument'
     ) {
       return {
         exitCode: 1,
         stdout: '',
-        stderr: message + '\n',
+        stderr: '', // Commander.js already printed the error with showHelpAfterError
       };
     }
   }

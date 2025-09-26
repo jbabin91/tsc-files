@@ -37,6 +37,14 @@ export function createProgram(
     )
     .action(actionHandler);
 
+  // Configure better error handling and help display
+  program
+    .showHelpAfterError('(add --help for additional information)')
+    .configureOutput({
+      // Use colored output for errors
+      outputError: (str, write) => write(kleur.red(str)),
+    });
+
   program.configureHelp({
     styleTitle: kleur.bold,
     styleCommandText: kleur.cyan,

@@ -377,7 +377,7 @@ describe('CLI Runner', () => {
       expect(result).toEqual({
         exitCode: 1,
         stdout: '',
-        stderr: 'Required option missing\n',
+        stderr: '', // Commander.js handles the output directly
       });
     });
 
@@ -392,7 +392,7 @@ describe('CLI Runner', () => {
       expect(result).toEqual({
         exitCode: 1,
         stdout: '',
-        stderr: 'Missing required argument\n',
+        stderr: '', // Commander.js handles the output directly
       });
     });
 

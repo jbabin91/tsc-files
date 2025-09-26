@@ -48,8 +48,12 @@ runs:
 
         # Install tsc-files locally (faster than global)
         TARBALL="../$(ls ../jbabin91-tsc-files-*.tgz | head -n1)"
+        echo "📦 Installing $TARBALL..."
         npm init -y > /dev/null 2>&1
-        npm install "$TARBALL" --silent > /dev/null 2>&1
+        npm install "$TARBALL" || {
+          echo "❌ Failed to install $TARBALL"
+          exit 1
+        }
 
         # Create minimal tsconfig.json
         cat > tsconfig.json << 'EOF'

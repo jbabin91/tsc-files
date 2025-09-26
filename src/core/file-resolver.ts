@@ -1,7 +1,3 @@
-/**
- * File resolution utilities for TypeScript and JavaScript file patterns
- */
-
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 

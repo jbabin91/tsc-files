@@ -91,10 +91,10 @@ export default defineConfig(
     },
   },
   {
-    files: ['src/cli.ts', 'tests/**/*', '**/*.test.*', '**/*.spec.*'],
+    files: ['tests/**/*', '**/*.test.*', '**/*.spec.*'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
       'no-console': 'off',
+      'no-empty-pattern': 'off',
     },
   },
   configPrettier,

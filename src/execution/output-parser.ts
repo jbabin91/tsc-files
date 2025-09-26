@@ -1,8 +1,4 @@
-/**
- * TypeScript compiler output parsing utilities
- */
-
-import type { TypeScriptError } from '@/types';
+import type { TypeScriptError } from '@/types/core';
 
 /**
  * Parse TypeScript compiler output for errors and warnings

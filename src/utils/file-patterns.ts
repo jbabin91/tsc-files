@@ -1,8 +1,4 @@
 /**
- * File pattern utilities for TypeScript and JavaScript file detection
- */
-
-/**
  * TypeScript file extensions
  */
 export const TS_EXTENSIONS = ['ts', 'tsx'] as const;

@@ -1,13 +1,9 @@
-/**
- * TypeScript compiler execution utilities
- */
-
 import { execa } from 'execa';
 
 import { findTypeScriptCompiler } from '@/detectors/typescript';
-import type { CheckOptions, CheckResult } from '@/types';
-
-import { parseAndSeparateOutput } from './output-parser';
+import { parseAndSeparateOutput } from '@/execution/output-parser';
+import type { CheckOptions, CheckResult } from '@/types/core';
+import { logger } from '@/utils/logger';
 
 /**
  * Execution result from TypeScript compiler
@@ -89,8 +85,7 @@ export async function executeTypeScriptCompiler(
   const args = [...tsInfo.args, '--project', tempConfigPath];
 
   if (options.verbose) {
-    // eslint-disable-next-line no-console
-    console.log(`Using ${tsInfo.packageManager.manager} package manager`);
+    logger.info(`Using ${tsInfo.packageManager.manager} package manager`);
   }
 
   try {

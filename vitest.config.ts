@@ -108,8 +108,11 @@ export default defineConfig({
     reporters: process.env.CI
       ? ['github-actions']
       : ['default', 'github-actions', 'junit'],
+    // Enable automatic mock restoration and environment variable cleanup
+    restoreMocks: true,
     setupFiles: ['./tests/setup.ts'],
-    testTimeout: process.env.CI ? 10_000 : 5000, // 10s in CI, 5s locally
+    testTimeout: process.env.CI ? 10_000 : 5000,
+    unstubEnvs: true, // 10s in CI, 5s locally
     // Disable isolation for better performance (safe for our filesystem-based tests)
     // isolate: false, // Causes worker thread termination issues - keeping isolation enabled
   },

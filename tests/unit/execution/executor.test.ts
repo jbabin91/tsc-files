@@ -1,7 +1,3 @@
-/**
- * Tests for execution/executor.ts
- */
-
 import type { Result } from 'execa';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -9,7 +5,7 @@ import {
   executeAndParseTypeScript,
   executeTypeScriptCompiler,
 } from '@/execution/executor';
-import type { CheckOptions } from '@/types';
+import type { CheckOptions } from '@/types/core';
 
 // Helper to create properly typed mock execa results for testing
 const createMockExecaResult = (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ErrorSource } from '@/types';
+import { ErrorSource } from '@/types/core';
 
 describe('Types', () => {
   describe('ErrorSource', () => {

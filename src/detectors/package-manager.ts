@@ -1,8 +1,3 @@
-/**
- * Package manager detection for optimized TypeScript execution
- * Based on lock files and environment detection patterns with cross-platform support
- */
-
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 

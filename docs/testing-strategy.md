@@ -285,21 +285,24 @@ test('findTypeScriptCompiler works', async () => {
 });
 ```
 
-### Mock Strategy
+### Testing Strategy
 
-- **Mock external dependencies**: File system, child processes, network calls
-- **Test real integrations separately**: Integration tests with actual TypeScript
-- **Use fixtures for file system tests**: Avoid creating real files in unit tests
+- **No mocking of core functions**: Tests run against real implementations for better integration testing
+- **Use test fixtures**: Automatic temp directory creation and cleanup
+- **Real TypeScript execution**: Tests use actual TypeScript compiler for authentic behavior
+- **Isolated test environments**: Each test gets its own temporary directory
 
 ```typescript
-import { vi } from 'vitest';
+import { test } from 'vitest';
 
-// Mock file system for unit tests
-vi.mock('fs/promises', () => ({
-  readFile: vi.fn(),
-  writeFile: vi.fn(),
-  unlink: vi.fn(),
-}));
+// Tests run against real functions with isolated environments
+test('should check TypeScript files', async ({ tempDir }) => {
+  const { srcDir } = createTestProject(tempDir);
+  writeTestFile(srcDir, 'test.ts', 'export const x: number = 42;');
+
+  const result = await runCli(['src/test.ts'], tempDir);
+  expect(result).toHaveSuccessfulExit();
+});
 ```
 
 ## Coverage Strategy

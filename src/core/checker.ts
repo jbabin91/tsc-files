@@ -1,14 +1,10 @@
-/**
- * Core type checking functionality - refactored to orchestrate modular components
- */
-
 import { findTsConfig } from '@/config/discovery';
 import { parseTypeScriptConfig } from '@/config/parser';
 import { createTempConfig } from '@/config/temp-config';
+import { resolveFiles } from '@/core/file-resolver';
 import { executeAndParseTypeScript } from '@/execution/executor';
-import type { CheckOptions, CheckResult } from '@/types';
-
-import { resolveFiles } from './file-resolver';
+import type { CheckOptions, CheckResult } from '@/types/core';
+import { logger } from '@/utils/logger';
 
 /**
  * Group raw file patterns by their associated tsconfig.json path
@@ -58,8 +54,7 @@ async function processFileGroup(
 
   if (resolvedFiles.length === 0) {
     if (options.verbose) {
-      // eslint-disable-next-line no-console
-      console.log('No TypeScript/JavaScript files to check');
+      logger.info('No TypeScript/JavaScript files to check');
     }
     return {
       success: true,
@@ -84,14 +79,11 @@ async function processFileGroup(
   );
 
   if (options.verbose) {
-    // eslint-disable-next-line no-console
-    console.log(
+    logger.info(
       `Processing group with ${resolvedFiles.length} files using ${tsconfigPath}`,
     );
-    // eslint-disable-next-line no-console
-    console.log(`Created temp config: ${tempHandle.path}`);
-    // eslint-disable-next-line no-console
-    console.log(`Checking ${resolvedFiles.length} files...`);
+    logger.info(`Created temp config: ${tempHandle.path}`);
+    logger.info(`Checking ${resolvedFiles.length} files...`);
   }
 
   try {
@@ -139,13 +131,11 @@ async function processFileGroup(
     try {
       tempHandle.cleanup();
       if (options.verbose) {
-        // eslint-disable-next-line no-console
-        console.log(`Cleaned up temp config: ${tempHandle.path}`);
+        logger.info(`Cleaned up temp config: ${tempHandle.path}`);
       }
     } catch (cleanupError) {
       if (options.verbose) {
-        // eslint-disable-next-line no-console
-        console.warn(`Failed to cleanup temp config: ${cleanupError}`);
+        logger.warn(`Failed to cleanup temp config: ${cleanupError}`);
       }
     }
   }
@@ -217,8 +207,7 @@ export async function checkFiles(
     const fileGroups = groupRawFilesByTsConfig(files, options);
 
     if (fileGroups.size > 1 && options.verbose) {
-      // eslint-disable-next-line no-console
-      console.log(
+      logger.info(
         `Monorepo detected: processing ${fileGroups.size} different tsconfig groups`,
       );
     }

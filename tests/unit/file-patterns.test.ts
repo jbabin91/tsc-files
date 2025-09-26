@@ -1,7 +1,3 @@
-/**
- * Tests for file pattern utilities
- */
-
 import { describe, expect, it } from 'vitest';
 
 import {

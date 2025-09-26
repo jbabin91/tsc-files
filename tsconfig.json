@@ -20,10 +20,7 @@
     "types": ["node", "vitest/globals"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@/core/*": ["src/core/*"],
-      "@/types": ["src/types"],
-      "@/utils/*": ["src/utils/*"]
+      "@/*": ["src/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

@@ -1,7 +1,3 @@
-/**
- * Tests for execution/output-parser.ts
- */
-
 import { describe, expect, it } from 'vitest';
 
 import {

@@ -7,7 +7,8 @@ This project uses an enhanced testing setup for CLI applications that extends Vi
 The testing setup provides:
 
 - **Custom CLI matchers** - Like `toHaveExitCode()`, `toContainInStdout()`, `toHaveSuccessfulExit()`
-- **Global test utilities** - Pre-configured temp directory and file creation helpers
+- **Test fixtures** - Automatic temp directory creation and cleanup
+- **Real implementation testing** - Tests run against actual TypeScript compiler
 - **Test templates** - Predefined TypeScript code snippets for common test scenarios
 - **Performance benchmarks** - Built-in timing expectations for CLI operations
 - **Enhanced error reporting** - Better error messages for CLI-specific assertions
@@ -17,27 +18,14 @@ The testing setup provides:
 The setup file (`tests/setup.ts`) is automatically loaded by Vitest, so you can use enhanced features immediately:
 
 ```typescript
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import {
-  TEST_FILES,
-  TEST_CONFIGS,
-  PERFORMANCE_BENCHMARKS,
-} from '@/tests/setup';
+import { describe, expect } from 'vitest';
+import { test } from '../setup';
 
 describe('My CLI Test', () => {
-  let tempDir: string;
-  let srcDir: string;
+  test('should check TypeScript files', async ({ tempDir }) => {
+    // Automatic temp directory creation and cleanup
+    const { srcDir } = createTestProject(tempDir);
 
-  beforeEach(() => {
-    tempDir = createTempDir(); // Global utility
-    ({ srcDir } = createTestProject(tempDir)); // Global utility
-  });
-
-  afterEach(() => {
-    cleanupTempDir(tempDir); // Global utility
-  });
-
-  it('should check TypeScript files', async () => {
     // Easy file creation with predefined templates
     writeTestFile(srcDir, 'test.ts', TEST_FILES.VALID_TS);
 

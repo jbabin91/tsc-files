@@ -1,7 +1,3 @@
-/**
- * TypeScript configuration parsing utilities
- */
-
 import { existsSync, readFileSync } from 'node:fs';
 
 /**

@@ -1,9 +1,5 @@
-/**
- * TypeScript compiler detection and execution
- * Enhanced detection with package manager integration and cross-platform support
- */
-
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import {
@@ -123,10 +119,8 @@ export function findTypeScriptCompiler(
 
   // Try to resolve from typescript package
   try {
-    // eslint-disable-next-line unicorn/prefer-module
-    const typescriptPkg = require.resolve('typescript/package.json', {
-      paths: [cwd],
-    });
+    const require = createRequire(path.join(cwd, 'package.json'));
+    const typescriptPkg = require.resolve('typescript/package.json');
     const typescriptDir = path.dirname(typescriptPkg);
     const tscPath = path.join(typescriptDir, 'bin', 'tsc');
 

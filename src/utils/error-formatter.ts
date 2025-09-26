@@ -1,7 +1,3 @@
-/**
- * Error message formatting utilities
- */
-
 import kleur from 'kleur';
 
 /**

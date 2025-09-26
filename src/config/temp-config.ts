@@ -1,14 +1,9 @@
-/**
- * Temporary TypeScript configuration file management
- */
-
 import { writeFileSync } from 'node:fs';
 
 import tmp from 'tmp';
 
-import type { CheckOptions } from '@/types';
-
-import type { TypeScriptConfig } from './parser';
+import type { TypeScriptConfig } from '@/config/parser';
+import type { CheckOptions } from '@/types/core';
 
 // Ensure graceful cleanup of temp files
 tmp.setGracefulCleanup();

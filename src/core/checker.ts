@@ -12,7 +12,6 @@ import tmp from 'tmp';
 import { findTypeScriptCompiler } from '@/detectors/typescript';
 import type { CheckOptions, CheckResult, TypeScriptError } from '@/types';
 
-// Set up graceful cleanup for all temp files
 tmp.setGracefulCleanup();
 
 /**
@@ -32,13 +31,11 @@ function shouldIncludeJavaScriptFiles(tsconfigPath?: string): boolean {
       };
     };
 
-    // Include JS files if allowJs or checkJs is enabled
     return Boolean(
       (config.compilerOptions?.allowJs ?? false) ||
         (config.compilerOptions?.checkJs ?? false),
     );
   } catch {
-    // If we can't read the config, don't include JS files
     return false;
   }
 }
@@ -72,15 +69,12 @@ async function resolveFiles(
   cwd: string,
   tsconfigPath?: string,
 ): Promise<string[]> {
-  // Check if JavaScript files should be included based on tsconfig
   const includeJs = shouldIncludeJavaScriptFiles(tsconfigPath);
   const { globPattern, regexPattern } = getFileExtensions(includeJs);
 
-  // Convert single files and patterns to glob patterns
   const globPatterns: string[] = [];
 
   for (const pattern of patterns) {
-    // Check if it's a direct file reference (no wildcards)
     const isDirectFile =
       !pattern.includes('*') &&
       !pattern.includes('{') &&
@@ -89,12 +83,9 @@ async function resolveFiles(
     if (isDirectFile) {
       const absolutePath = path.resolve(cwd, pattern);
 
-      // Check if it's a valid TypeScript/JavaScript file
       if (existsSync(absolutePath) && regexPattern.test(pattern)) {
         globPatterns.push(pattern);
-      }
-      // Check if it's a directory - if so, convert to glob pattern
-      else if (existsSync(absolutePath)) {
+      } else if (existsSync(absolutePath)) {
         try {
           const fs = await import('node:fs/promises');
           const stat = await fs.stat(absolutePath);
@@ -102,12 +93,10 @@ async function resolveFiles(
             globPatterns.push(`${pattern}/**/*.${globPattern}`);
           }
         } catch {
-          // If stat fails, treat as glob pattern
           globPatterns.push(`${pattern}/**/*.${globPattern}`);
         }
       }
     } else {
-      // It's a glob pattern, use as-is but ensure it targets the right file types
       const hasValidExtension = includeJs
         ? pattern.includes('.ts') ||
           pattern.includes('.tsx') ||
@@ -129,7 +118,6 @@ async function resolveFiles(
           !pattern.includes('.');
 
       if (hasValidExtension) {
-        // If no extension specified, add appropriate extensions
         if (pattern.includes('.')) {
           globPatterns.push(pattern);
         } else {
@@ -151,10 +139,8 @@ async function resolveFiles(
       ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
     });
 
-    // Filter to only valid TypeScript/JavaScript files as a safety measure
     return files.filter((file) => regexPattern.test(file));
   } catch {
-    // Fallback to simple pattern matching if glob fails
     return patterns
       .filter((pattern) => regexPattern.test(pattern))
       .map((file) => path.resolve(cwd, file))
@@ -174,7 +160,6 @@ function findTsConfig(cwd: string, projectPath?: string): string {
     return resolvedPath;
   }
 
-  // Context detection: traverse up directory tree looking for tsconfig.json
   let currentDir = path.resolve(cwd);
   const rootDir = path.parse(currentDir).root;
 
@@ -184,10 +169,8 @@ function findTsConfig(cwd: string, projectPath?: string): string {
       return tsconfigPath;
     }
 
-    // Move up one directory
     const parentDir = path.dirname(currentDir);
     if (parentDir === currentDir) {
-      // Reached filesystem root without finding parent
       break;
     }
     currentDir = parentDir;
@@ -208,10 +191,10 @@ function getTempConfigPath(cacheDir?: string): {
   const tmpFile = tmp.fileSync({
     prefix: 'tsconfig.',
     postfix: '.json',
-    mode: 0o600, // Restrictive permissions (owner read/write only)
-    dir: cacheDir, // Use custom cache dir if provided
+    mode: 0o600,
+    dir: cacheDir,
     discardDescriptor: false,
-    keep: false, // Auto cleanup on process exit
+    keep: false,
   });
 
   return {
@@ -228,7 +211,6 @@ function parseTypeScriptOutput(output: string): TypeScriptError[] {
   const lines = output.split('\n');
 
   for (const line of lines) {
-    // Match TypeScript error format: file.ts(line,col): error TSxxxx: message
     const match =
       /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+(TS\d+):\s+(.+)$/.exec(line);
     if (match) {
@@ -260,20 +242,16 @@ function groupRawFilesByTsConfig(
 
   for (const file of files) {
     try {
-      // For patterns/globs, use the current directory to find tsconfig
-      // For actual file paths, use the file's directory
       const isPattern =
         file.includes('*') || file.includes('{') || file.includes('[');
       const searchDir = isPattern ? cwd : path.dirname(path.resolve(cwd, file));
 
       const tsconfigPath = findTsConfig(searchDir);
 
-      // Group files by their tsconfig path
       const existingFiles = groups.get(tsconfigPath) ?? [];
       existingFiles.push(file);
       groups.set(tsconfigPath, existingFiles);
     } catch (error) {
-      // If we can't find tsconfig for a file, group it under a fallback
       const errorKey = `__ERROR__${error instanceof Error ? error.message : String(error)}`;
       const existingFiles = groups.get(errorKey) ?? [];
       existingFiles.push(file);
@@ -295,7 +273,6 @@ async function checkFilesWithSingleConfig(
 ): Promise<CheckResult> {
   const cwd = options.cwd ?? process.cwd();
 
-  // Resolve files using fast-glob (supports patterns and individual files)
   const resolvedFiles = await resolveFiles(files, cwd, tsconfigPath);
 
   if (resolvedFiles.length === 0) {
@@ -314,10 +291,7 @@ async function checkFilesWithSingleConfig(
     };
   }
 
-  // Files are already absolute from resolveFiles
   const absoluteFiles = resolvedFiles;
-
-  // Read existing tsconfig
   let existingConfig: { compilerOptions?: Record<string, unknown> };
   try {
     const configContent = readFileSync(tsconfigPath, 'utf8');
@@ -330,7 +304,6 @@ async function checkFilesWithSingleConfig(
     );
   }
 
-  // Generate temp config
   const { path: tempConfigPath, cleanup: cleanupTempConfig } =
     getTempConfigPath(options.cacheDir);
 
@@ -349,10 +322,8 @@ async function checkFilesWithSingleConfig(
   let tempConfigCreated = false;
 
   try {
-    // Find TypeScript compiler with package manager integration
     const tsInfo = findTypeScriptCompiler(cwd);
 
-    // Write temp config
     writeFileSync(tempConfigPath, JSON.stringify(tempConfig, null, 2));
     tempConfigCreated = true;
 
@@ -365,18 +336,16 @@ async function checkFilesWithSingleConfig(
       console.log(`Using ${tsInfo.packageManager.manager} package manager`);
     }
 
-    // Run TypeScript compiler
     const args = [...tsInfo.args, '--project', tempConfigPath];
 
     try {
       const result = await execa(tsInfo.executable, args, {
         cwd,
-        timeout: 30_000, // 30 second timeout
-        cleanup: true, // Kill process tree on abort
+        timeout: 30_000,
+        cleanup: true,
         shell: tsInfo.useShell,
       });
 
-      // TypeScript returns 0 for success, non-zero for errors
       const allOutput = `${result.stdout}\n${result.stderr}`.trim();
       const errors = parseTypeScriptOutput(allOutput);
 
@@ -393,8 +362,6 @@ async function checkFilesWithSingleConfig(
         checkedFiles: absoluteFiles,
       };
     } catch (execError: unknown) {
-      // TypeScript exits with non-zero on type errors, which is expected
-      // Type-safe error property access
       const stdout =
         typeof execError === 'object' &&
         execError !== null &&
@@ -430,7 +397,6 @@ async function checkFilesWithSingleConfig(
       const allOutput = `${stdout}\n${stderr}`.trim();
       const errors = parseTypeScriptOutput(allOutput);
 
-      // If no parseable errors found but execution failed, it's a system error
       if (errors.length === 0 && exitCode !== 0) {
         throw new Error(`TypeScript compiler failed: ${allOutput || message}`);
       }
@@ -457,7 +423,6 @@ async function checkFilesWithSingleConfig(
       `Type checking failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   } finally {
-    // Clean up temp config file using tmp library cleanup
     if (tempConfigCreated) {
       try {
         cleanupTempConfig();
@@ -466,7 +431,7 @@ async function checkFilesWithSingleConfig(
           console.log(`Cleaned up temp config: ${tempConfigPath}`);
         }
       } catch {
-        // Ignore cleanup errors - tmp library handles this gracefully
+        // Ignore cleanup errors
       }
     }
   }

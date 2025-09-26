@@ -20,7 +20,6 @@ import type { CheckOptions } from '@/types';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// CLI options validation schema
 const CliOptionsSchema = z.object({
   project: z.string().optional(),
   noEmit: z.boolean().default(true),
@@ -29,9 +28,6 @@ const CliOptionsSchema = z.object({
   cache: z.boolean().default(true),
   json: z.boolean().default(false),
 });
-
-// Remove unused type for now
-// type CliOptions = z.infer<typeof CliOptionsSchema>;
 
 function getVersion(): string {
   try {
@@ -45,7 +41,6 @@ function getVersion(): string {
   }
 }
 
-// Enhanced CLI with professional patterns from our research
 function createProgram(): Command {
   const program = new Command();
   const version = getVersion();
@@ -78,7 +73,6 @@ function createProgram(): Command {
       await runTypeCheck(files, options);
     });
 
-  // Enhanced help with colors and custom formatting
   program.configureHelp({
     styleTitle: kleur.bold,
     styleCommandText: kleur.cyan,
@@ -87,7 +81,6 @@ function createProgram(): Command {
     styleOptionDescription: kleur.gray,
   });
 
-  // Add comprehensive help sections (inspired by markdownlint-cli2 and our research)
   program.addHelpText(
     'after',
     `
@@ -122,17 +115,14 @@ For more information, visit: ${kleur.cyan('https://github.com/jbabin91/tsc-files
   return program;
 }
 
-// Enhanced type checking function with progress indicators and colors
 async function runTypeCheck(files: string[], options: unknown): Promise<void> {
   let spinner: ReturnType<typeof ora> | undefined;
 
   try {
-    // Type-safe options parsing with validation
     const validatedOptions = CliOptionsSchema.parse(
       typeof options === 'object' && options !== null ? options : {},
     );
 
-    // Don't show spinner in JSON mode or if in non-interactive environment
     const showProgress =
       !validatedOptions.json && process.stdout.isTTY && !process.env.CI;
 
@@ -146,7 +136,6 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
       ).start();
     }
 
-    // Build options for core checker
     const checkOptions: CheckOptions = {
       project: validatedOptions.project,
       noEmit: validatedOptions.noEmit,
@@ -155,10 +144,7 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
       cache: validatedOptions.cache,
     };
 
-    // Run type checking
     const result = await checkFiles(files, checkOptions);
-
-    // Stop spinner before output
     if (spinner) {
       if (result.success) {
         spinner.succeed(kleur.green('✓ Type check completed'));
@@ -167,13 +153,11 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
       }
     }
 
-    // Output results
     if (validatedOptions.json) {
       console.log(JSON.stringify(result, null, 2));
     } else {
-      // Display errors with enhanced formatting
       if (result.errors.length > 0) {
-        console.error(); // Add spacing after spinner
+        console.error();
         for (const error of result.errors) {
           const fileLocation = kleur.cyan(
             `${error.file}:${error.line}:${error.column}`,
@@ -183,14 +167,12 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
         }
       }
 
-      // Verbose output with colors
       if (validatedOptions.verbose && !spinner) {
         const duration = kleur.dim(`${result.duration}ms`);
         const fileCount = kleur.bold(result.checkedFiles.length.toString());
         console.log(`\nChecked ${fileCount} files in ${duration}`);
       }
 
-      // Success message only if not already shown by spinner
       if (result.success && !spinner) {
         console.log(kleur.green('✓ Type check passed'));
       }
@@ -198,14 +180,11 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
 
     process.exit(result.success ? 0 : 1);
   } catch (error) {
-    // Stop spinner on error
     if (spinner) {
       spinner.fail(kleur.red('✗ Type check failed'));
     }
 
     const message = error instanceof Error ? error.message : String(error);
-
-    // Enhanced error handling with colors and context
     if (
       message.includes('tsconfig.json not found') ||
       message.includes('Failed to read tsconfig.json') ||
@@ -238,15 +217,12 @@ async function runTypeCheck(files: string[], options: unknown): Promise<void> {
 async function main(): Promise<void> {
   const program = createProgram();
 
-  // Handle unhandled rejections gracefully
   process.on('unhandledRejection', (error) => {
     console.error(kleur.red('Unhandled rejection:'), error);
     process.exit(99);
   });
 
-  // Parse arguments and run
   await program.parseAsync();
 }
 
-// Run CLI
 void main();

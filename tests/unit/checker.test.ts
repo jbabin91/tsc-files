@@ -5,8 +5,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { checkFiles } from '@/core/checker';
 
-// Test utilities - using global createTempDir from setup.ts
-
 const cleanupTempDir = (tempDir: string) => {
   try {
     rmSync(tempDir, { recursive: true, force: true });
@@ -16,7 +14,6 @@ const cleanupTempDir = (tempDir: string) => {
 };
 
 const createTestProject = (tempDir: string) => {
-  // Create a basic tsconfig.json
   const tsconfig = {
     compilerOptions: {
       target: 'ES2022',
@@ -32,7 +29,6 @@ const createTestProject = (tempDir: string) => {
     JSON.stringify(tsconfig, null, 2),
   );
 
-  // Create src directory
   const srcDir = path.join(tempDir, 'src');
   mkdirSync(srcDir, { recursive: true });
 
@@ -57,7 +53,6 @@ describe('checkFiles', () => {
     });
 
     it('should resolve individual TypeScript files', async () => {
-      // Create test files
       writeFileSync(path.join(srcDir, 'test.js'), 'console.log("hello");');
       writeFileSync(path.join(srcDir, 'test.txt'), 'some text');
       writeFileSync(path.join(srcDir, 'test.ts'), 'const x: number = 42;');

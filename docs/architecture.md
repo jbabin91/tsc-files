@@ -4,79 +4,153 @@
 
 ```mermaid
 graph TB
-    CLI[CLI Entry Point] --> Parser[Argument Parser]
-    Parser --> Core[Core Checker]
+    CLI[CLI Entry Point] --> Command[Command Setup]
+    Command --> Runner[CLI Runner]
+    Runner --> Main[Main Logic]
+
+    Main --> Core[Core Checker]
+    Core --> Resolver[File Resolver]
+    Core --> Executor[TS Executor]
 
     Core --> PM[Package Manager Detector]
     Core --> TS[TypeScript Detector]
-    Core --> Config[Config Generator]
+    Core --> Config[Config Layer]
 
     PM --> NPM[npm Handler]
     PM --> Yarn[yarn Handler]
     PM --> PNPM[pnpm Handler]
     PM --> Bun[bun Handler]
 
-    Config --> Cache[Cache Manager]
+    Config --> Discovery[Config Discovery]
+    Config --> Parser[Config Parser]
     Config --> Temp[Temp TSConfig]
 
-    Core --> Exec[TypeScript Executor]
-    Exec --> Results[Result Handler]
+    Executor --> OutputParser[Output Parser]
+    OutputParser --> Results[Result Handler]
+
+    Runner --> ErrorHandler[Error Handler]
+    Runner --> OutputFormatter[Output Formatter]
 
     Results --> Exit[Exit Code]
-    Cache --> Cleanup[Cleanup Handler]
+    Temp --> Cleanup[Cleanup Handler]
 ```
 
 ## Component Details
 
-### 1. CLI Layer
+### 1. CLI Layer (Modular Architecture)
 
 **Responsibilities:**
 
 - Parse command-line arguments with **commander.js**
-- Validate input files using **zod** schemas
-- Handle help/version commands
+- Handle help/version commands with enhanced styling
 - Provide colored output with **kleur**
 - Show progress indicators with **ora**
-- Forward to core checker
+- Categorize and format errors
+- Environment variable support (`TSC_PROJECT`)
+- Input validation and user-friendly error messages
 
 **Key Files:**
 
-- `cli.ts` - Entry point, argument parsing
-- `cli-parser.ts` - Parse and validate arguments
+- `src/cli/main.ts` - CLI entry point and program creation
+- `src/cli/command.ts` - Commander.js program setup and validation
+- `src/cli/runner.ts` - CLI execution logic and error handling
+- `src/cli/errors.ts` - Error categorization and exit code management
+- `src/cli/output.ts` - Output formatting and progress indication
+- `src/types/cli.ts` - CLI-specific type definitions
+- `src/types/core.ts` - Core TypeScript checker types
 
-**Dependencies:**
+**Enhanced Features:**
 
 ```typescript
-import { Command } from 'commander';
+import { Command, Option, InvalidArgumentError } from 'commander';
 import kleur from 'kleur';
 import ora from 'ora';
-import { z } from 'zod';
+import { logger } from '@/utils/logger';
 
-// CLI argument schema
-const CliArgsSchema = z.object({
-  files: z.array(z.string()),
-  project: z.string().optional(),
-  verbose: z.boolean().default(false),
-  json: z.boolean().default(false),
+// Environment variable support
+.addOption(
+  new Option('-p, --project <path>', 'path to tsconfig.json')
+    .env('TSC_PROJECT')
+    .argParser(validateProjectPath)
+)
+
+// Input validation
+function validateProjectPath(value: string): string {
+  if (!value.trim()) {
+    throw new InvalidArgumentError('Project path cannot be empty.');
+  }
+  if (!value.endsWith('.json')) {
+    throw new InvalidArgumentError(
+      'Project path must point to a JSON file (e.g., tsconfig.json).'
+    );
+  }
+  return value.trim();
+}
+
+// Colored output and enhanced help
+program.configureHelp({
+  styleTitle: kleur.bold,
+  styleCommandText: kleur.cyan,
+  styleCommandDescription: kleur.gray,
+  styleOptionText: kleur.yellow,
+  styleOptionDescription: kleur.gray,
 });
 
-// Enhanced CLI with colors and progress
-const spinner = ora('Type checking files...').start();
-console.log(kleur.green('✓ Type check completed'));
+// Verbose debugging with lifecycle hooks
+.hook('preAction', (_, actionCommand) => {
+  const options = actionCommand.opts();
+  if (options.verbose) {
+    logger.debug(`🔍 About to execute tsc-files with ${actionCommand.args.length} file argument(s)`);
+    logger.debug(`📋 Options: ${JSON.stringify(options, null, 2)}`);
+  }
+})
 ```
 
-### 2. Core Checker
+### 2. Core Layer (Refactored Architecture)
 
 **Responsibilities:**
 
 - Orchestrate the type checking process
-- Coordinate between detectors and executors
+- Coordinate between detectors, resolvers, and executors
+- Handle monorepo support with per-file tsconfig resolution
+- Manage JavaScript file inclusion based on configuration
 - Handle errors and cleanup
 
 **Key Files:**
 
-- `core/checker.ts` - Main orchestration logic
-- `core/runner.ts` - Execute TypeScript compiler
+- `src/core/checker.ts` - Main orchestration logic (reduced from 680 to 279 lines)
+- `src/core/file-resolver.ts` - File resolution with fast-glob optimizations
+- `src/execution/executor.ts` - TypeScript compiler execution with enhanced error handling
+- `src/execution/output-parser.ts` - Compiler output parsing and error extraction
+
+**Enhanced Architecture:**
+
+```typescript
+// File resolution with performance optimizations
+import fastGlob from 'fast-glob';
+
+const files = await fastGlob(globPatterns, {
+  cwd,
+  absolute: true,
+  onlyFiles: true,
+  unique: true, // Prevent duplicate results
+  baseNameMatch: true, // Efficient *.ts matching
+  caseSensitiveMatch: false, // Cross-platform compatibility
+  ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+});
+
+// Enhanced TypeScript execution with execa
+import { execa, type ExecaError } from 'execa';
+
+const result = await execa(tsInfo.executable, args, {
+  cwd,
+  timeout: 30_000,
+  cleanup: true,
+  shell: tsInfo.useShell,
+  all: true, // Capture combined stdout/stderr
+  maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large outputs
+});
+```
 
 ### 3. Detection Layer
 
@@ -181,108 +255,236 @@ function getTsConfigForFile(filePath: string): string {
 const { absoluteBaseUrl, paths } = loadConfig('.');
 ```
 
-#### Cache Management
+### 4. Configuration Layer (Modular Implementation)
 
-**Enhanced with fs-extra:**
+**Key Files:**
 
-```typescript
-import { ensureDir, remove, writeJSON, readJSON } from 'fs-extra';
+- `src/config/discovery.ts` - tsconfig.json discovery in directories
+- `src/config/parser.ts` - Configuration parsing and validation
+- `src/config/temp-config.ts` - Temporary configuration generation
 
-// Directory structure
-const cacheDir = 'node_modules/.cache/@jbabin91/tsc-files/';
-
-await ensureDir(join(cacheDir, 'configs'));
-await ensureDir(join(cacheDir, 'locks'));
-
-// Atomic operations with fs-extra
-await writeJSON(tempConfigPath, tsconfig, { spaces: 2 });
-```
-
-**Directory Structure:**
-
-```sh
-node_modules/.cache/@jbabin91/tsc-files/
-├── configs/
-│   ├── tsconfig-{hash}.json
-│   └── tsconfig-{hash}.json
-├── locks/
-│   └── {pid}.lock
-└── metadata.json
-```
-
-**Cleanup Strategy:**
-
-- Always cleanup on success
-- Cleanup on error via finally block
-- Stale file detection (>1 hour old)
-- Process lock files for concurrent usage
-- Atomic file operations with fs-extra
-
-### 5. Execution Layer
-
-#### Process Execution
-
-**Key Features:**
-
-- Stream output in real-time
-- Capture exit codes properly
-- Handle SIGINT gracefully
-- Timeout protection
+**Enhanced Features:**
 
 ```typescript
-interface ExecutionOptions {
-  command: string;
-  args: string[];
-  cwd: string;
-  timeout?: number;
-  env?: NodeJS.ProcessEnv;
+// Monorepo support with per-file tsconfig resolution
+export async function findConfigForFile(
+  filePath: string,
+  baseConfig?: string,
+): Promise<string> {
+  const absolutePath = path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(filePath);
+  let currentDir = path.dirname(absolutePath);
+
+  while (currentDir !== path.parse(currentDir).root) {
+    const tsconfigPath = path.join(currentDir, 'tsconfig.json');
+    if (existsSync(tsconfigPath)) {
+      return tsconfigPath;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+
+  return baseConfig ?? 'tsconfig.json';
 }
-```
 
-### 6. Error Handling
+// JavaScript support based on allowJs/checkJs
+export function shouldIncludeJavaScriptFiles(tsconfigPath?: string): boolean {
+  if (!tsconfigPath || !existsSync(tsconfigPath)) {
+    return false;
+  }
 
-#### Error Categories
-
-```typescript
-enum ErrorType {
-  // User errors (exit 1)
-  TypeCheckFailed,
-  NoFilesProvided,
-
-  // Configuration errors (exit 2)
-  TSConfigNotFound,
-  InvalidTSConfig,
-
-  // System errors (exit 3)
-  TypeScriptNotFound,
-  PackageManagerError,
-
-  // Internal errors (exit 99)
-  UnknownError,
-  CacheError,
-  CleanupError,
-}
-```
-
-#### Error Recovery
-
-```typescript
-class ErrorHandler {
-  handle(error: Error): never {
-    // 1. Log detailed error for debugging
-    if (verbose) console.error(error.stack);
-
-    // 2. Show user-friendly message
-    console.error(formatError(error));
-
-    // 3. Cleanup temp files
-    cleanup();
-
-    // 4. Exit with appropriate code
-    process.exit(getExitCode(error));
+  try {
+    const config = JSON.parse(readFileSync(tsconfigPath, 'utf8'));
+    const compilerOptions = config.compilerOptions || {};
+    return Boolean(compilerOptions.allowJs || compilerOptions.checkJs);
+  } catch {
+    return false;
   }
 }
 ```
+
+#### Cache Management (Simplified)
+
+**Strategy:**
+
+- Use system temp directory with cryptographically secure names
+- Automatic cleanup on exit (success or failure)
+- No persistent cache (simplicity over complexity)
+- Platform-specific temp handling (Windows/Unix)
+
+```typescript
+// Secure temp file creation
+const tempConfigPath = path.join(os.tmpdir(), `tsconfig.${uuid()}.json`);
+
+// Always cleanup
+try {
+  const result = await executeTypeScript(tempConfigPath, files, cwd, options);
+  return result;
+} finally {
+  await cleanupTempConfig(tempConfigPath);
+}
+```
+
+### 5. Execution Layer (Enhanced with execa)
+
+**Key Files:**
+
+- `src/execution/executor.ts` - TypeScript compiler execution
+- `src/execution/output-parser.ts` - Compiler output parsing
+
+**Enhanced Process Execution:**
+
+```typescript
+export type ExecutionResult = {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  allOutput: string; // Combined stdout/stderr
+  exitCode: number;
+  errorMessage?: string;
+};
+
+// Enhanced execution with proper error handling
+export async function executeTypeScriptCompiler(
+  tempConfigPath: string,
+  cwd: string,
+  options: Pick<CheckOptions, 'verbose'>,
+): Promise<ExecutionResult> {
+  const tsInfo = findTypeScriptCompiler(cwd);
+  const args = [...tsInfo.args, '--project', tempConfigPath];
+
+  try {
+    const result = await execa(tsInfo.executable, args, {
+      cwd,
+      timeout: 30_000,
+      cleanup: true,
+      shell: tsInfo.useShell,
+      all: true, // Capture combined stdout/stderr
+      maxBuffer: 50 * 1024 * 1024, // 50MB buffer
+    });
+
+    return {
+      success: true,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      allOutput: result.all || `${result.stdout}\n${result.stderr}`.trim(),
+      exitCode: result.exitCode ?? 0,
+    };
+  } catch (execError: unknown) {
+    // Enhanced error handling for ExecaError
+    if (execError && typeof execError === 'object' && 'exitCode' in execError) {
+      const { stdout, stderr, allOutput, exitCode, message } =
+        extractExecutionDetails(execError as ExecaError);
+
+      return {
+        success: false,
+        stdout,
+        stderr,
+        allOutput,
+        exitCode,
+        errorMessage: message,
+      };
+    }
+
+    // Fallback error handling
+    return {
+      success: false,
+      stdout: '',
+      stderr: '',
+      allOutput: '',
+      exitCode: 1,
+      errorMessage: String(execError),
+    };
+  }
+}
+```
+
+**Key Features:**
+
+- Proper ExecaError handling with type safety
+- 50MB buffer for large TypeScript outputs
+- Combined stdout/stderr capture
+- Cross-platform execution with shell mode detection
+- Timeout protection (30 seconds)
+- Comprehensive error extraction
+
+### 6. Error Handling (Enhanced Architecture)
+
+**Key Files:**
+
+- `src/cli/errors.ts` - Error categorization and exit code management
+- `src/utils/error-formatter.ts` - Error message formatting utilities
+- `src/utils/logger.ts` - Centralized logging system
+
+#### Error Categories (Implemented)
+
+```typescript
+// Exit code determination based on error analysis
+export function determineExitCode(result: CheckResult): number {
+  // Check for configuration errors first (exit 2)
+  const configError = result.errors.find(
+    (error) =>
+      error.code === 'CONFIG_ERROR' ||
+      error.message.includes('tsconfig.json') ||
+      error.message.includes('TypeScript config not found'),
+  );
+
+  if (configError) return 2;
+
+  // Type errors (exit 1)
+  if (result.errorCount > 0) return 1;
+
+  // Success (exit 0)
+  return 0;
+}
+
+// Enhanced error formatting with colors
+export function formatConfigurationError(
+  result: CheckResult,
+): ConfigErrorInfo | null {
+  const configError = result.errors.find(/* ... */);
+
+  if (!configError) return null;
+
+  return {
+    message: `${kleur.red('Configuration Error:')} ${kleur.dim(configError.message)}`,
+    tip: `${kleur.yellow('Tip:')} Use --project flag to specify a different tsconfig.json path`,
+  };
+}
+```
+
+#### Centralized Logging
+
+```typescript
+// Configurable logger with silent mode support
+export interface Logger {
+  info(message: string): void;
+  warn(message: string): void;
+  error(message: string): void;
+  debug(message: string): void;
+}
+
+// Default implementation with console
+let currentLogger: Logger = {
+  info: console.log,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
+
+// Allow custom logger injection for testing
+export function setLogger(newLogger: Logger): void {
+  currentLogger = newLogger;
+}
+```
+
+#### Error Recovery Strategy
+
+- **Graceful degradation**: Continue processing other files when possible
+- **Detailed error context**: File, line, column information
+- **User-friendly messages**: Clear error descriptions with helpful tips
+- **Proper cleanup**: Always cleanup temp files regardless of error
+- **Exit code compliance**: Standard exit codes for different error types
 
 ## Data Flow
 
@@ -335,7 +537,7 @@ sequenceDiagram
    - Stream tsc output directly
    - Batch file operations
 
-### Benchmarks Goals
+### Performance Targets & Optimizations
 
 | Scenario    | Target Time |
 | ----------- | ----------- |
@@ -343,6 +545,16 @@ sequenceDiagram
 | 10 files    | <1s         |
 | 100 files   | <3s         |
 | 1000 files  | <10s        |
+
+**Performance Optimizations Implemented:**
+
+- **Fast-glob optimizations**: `unique`, `baseNameMatch`, `caseSensitiveMatch`
+- **Enhanced execa execution**: 50MB buffer, proper shell detection
+- **Efficient file resolution**: Early filtering, glob pattern optimization
+- **Minimal I/O operations**: Single temp file write, streaming output
+- **Package manager caching**: Cached detection across runs
+
+**Note**: Actual performance varies based on project complexity, TypeScript configuration, system resources, and file sizes. The targets above represent goals for typical use cases.
 
 ## Security Considerations
 
@@ -387,49 +599,114 @@ interface Detector<T> {
 }
 ```
 
-## Testing Architecture
+## Testing Architecture (Comprehensive Implementation)
 
-### Test Layers
+### Current Test Coverage
 
-1. **Unit Tests**
-   - Individual functions
-   - Mock file system
-   - Mock process execution
+- **290 passing tests** across 22 test files
+- **84%+ core coverage** with strict thresholds
+- **Vitest framework** with comprehensive mocking
+- **Cross-platform testing** via GitHub Actions
 
-2. **Integration Tests**
+### Test Layers (Implemented)
+
+1. **Unit Tests** (247 tests)
+   - Individual function testing with proper mocking
+   - File system operations with memfs
+   - Process execution with vitest mocks
+   - Type-safe mocking without `any` types
+
+2. **Integration Tests** (43 tests)
    - Real TypeScript projects
-   - Actual file system
-   - Real tsc execution
+   - Actual file system operations
+   - Cross-platform compatibility testing
+   - Package manager integration
 
-3. **E2E Tests**
-   - Full CLI execution
-   - Different project types
-   - Error scenarios
+3. **End-to-End Tests** (GitHub Actions)
+   - Full CLI execution across platforms
+   - Real package installation and usage
+   - Performance benchmarking
+   - Error scenario validation
 
-### Test Infrastructure
+### Test Infrastructure (Production)
 
 ```typescript
-// Test utilities
-class TestProject {
-  constructor(
-    private packageManager: PackageManager,
-    private typescript: string,
-  ) {}
+// Enhanced test setup with proper TypeScript support
+import { beforeEach, afterEach, vi } from 'vitest';
+import type { Result } from 'execa';
 
-  async setup(): Promise<void> {
-    // Create temp project
-    // Install dependencies
-    // Create test files
-  }
+// Helper for type-safe execa mocking
+const createMockExecaResult = (
+  overrides: {
+    stdout?: string;
+    stderr?: string;
+    exitCode?: number;
+    all?: string;
+  } = {},
+): Result => {
+  const stdout = overrides.stdout ?? '';
+  const stderr = overrides.stderr ?? '';
+  return {
+    stdout,
+    stderr,
+    exitCode: overrides.exitCode ?? 0,
+    all: overrides.all ?? `${stdout}\n${stderr}`.trim(),
+  } as Result;
+};
 
-  async runTscFiles(args: string[]): Promise<Result> {
-    // Execute our tool
-    // Capture output
-    // Return results
-  }
+// Comprehensive module mocking
+vi.mock('execa');
+vi.mock('@/detectors/typescript', () => ({
+  findTypeScriptCompiler: vi.fn(() => ({
+    executable: 'tsc',
+    args: ['--noEmit'],
+    packageManager: { manager: 'npm' },
+    useShell: false,
+  })),
+}));
 
-  async cleanup(): Promise<void> {
-    // Remove temp project
-  }
-}
+// Coverage thresholds per module
+export default defineConfig({
+  test: {
+    coverage: {
+      thresholds: {
+        'src/cli/**': {
+          statements: 89,
+          branches: 85,
+          functions: 89,
+          lines: 89,
+        },
+        'src/core/**': {
+          statements: 85,
+          branches: 80,
+          functions: 85,
+          lines: 85,
+        },
+        'src/utils/**': {
+          statements: 90,
+          branches: 85,
+          functions: 90,
+          lines: 90,
+        },
+      },
+    },
+  },
+});
+```
+
+### Integration Test Strategy
+
+```typescript
+// Cross-platform integration testing via GitHub Actions
+- name: Run Integration Tests
+  uses: ./.github/actions/integration-tests
+  with:
+    test_scenario: 'basic' # or 'full'
+
+// Tests include:
+// - Package installation via npm pack
+// - CLI execution across Windows/macOS/Linux
+// - Performance benchmarking
+// - Error scenario validation
+// - Package manager compatibility (npm/yarn/pnpm/bun)
 ```

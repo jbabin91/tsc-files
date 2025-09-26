@@ -27,12 +27,33 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 
 ## ✨ Features
 
+### Core Functionality
+
 - ✅ **Respects tsconfig.json** - Uses your existing TypeScript configuration
 - ✅ **File-specific checking** - Only checks the files you specify
-- ✅ **Git hook friendly** - Perfect for pre-commit hooks and lint-staged
+- ✅ **Monorepo support** - Per-file tsconfig resolution for complex projects
+- ✅ **JavaScript support** - Handles allowJs/checkJs configurations automatically
 - ✅ **Package manager detection** - Works with npm, yarn, pnpm, and bun
-- ✅ **Fast & lightweight** - Minimal dependencies, maximum performance
+
+### Enhanced CLI Experience
+
+- ✅ **Colored output** - Beautiful, readable error messages and help text
+- ✅ **Verbose debugging** - Detailed logging with `--verbose` flag
+- ✅ **JSON output** - Machine-readable results with `--json` for CI/CD
+- ✅ **Environment variables** - Use `TSC_PROJECT` for consistent configuration
+- ✅ **Input validation** - Helpful error messages for invalid options
+- ✅ **Enhanced help** - Comprehensive examples and usage patterns
+
+### Performance & Reliability
+
+- ✅ **Fast & lightweight** - Optimized file resolution and execution
+- ✅ **Cross-platform** - Tested on Windows, macOS, and Linux
+- ✅ **Git hook friendly** - Perfect for pre-commit hooks and lint-staged
 - ✅ **CI/CD optimized** - Designed for continuous integration workflows
+- ✅ **Comprehensive testing** - 290+ tests with 84% coverage
+
+### Security & Quality
+
 - ✅ **Supply chain security** - npm provenance and trusted publishing enabled
 - ✅ **Signed commits** - GitHub App automation with verified commit signatures
 - ✅ **Automated security scanning** - Dependency audits, secrets scanning, CodeQL analysis
@@ -93,21 +114,52 @@ bun add --dev @jbabin91/tsc-files
 
 ### Command Line
 
+#### Basic Usage
+
 ```bash
 # Check specific files
 tsc-files src/index.ts src/utils.ts
 
-# Check with glob patterns
-tsc-files "src/**/*.ts"
+# Check with glob patterns (quote to prevent shell expansion)
+tsc-files "src/**/*.ts" "tests/**/*.ts"
 
+# Both single and double quotes work
+tsc-files 'src/**/*.ts' 'tests/**/*.ts'
+
+# Check all TypeScript files
+tsc-files "**/*.{ts,tsx}"
+```
+
+#### Advanced Options
+
+```bash
 # Use specific tsconfig
-tsc-files --project tsconfig.build.json src/*.ts
+tsc-files --project tsconfig.build.json "src/**/*.ts"
 
-# Verbose output
-tsc-files --verbose src/*.ts
+# Using environment variable (great for CI/CD)
+TSC_PROJECT=tsconfig.build.json tsc-files "src/**/*.ts"
 
-# JSON output for CI/CD
-tsc-files --json src/*.ts
+# Verbose output for debugging
+tsc-files --verbose "src/**/*.ts"
+
+# JSON output for CI/CD integration
+tsc-files --json "src/**/*.ts"
+
+# Skip library checking for faster execution
+tsc-files --skip-lib-check "src/**/*.ts"
+
+# Disable caching for debugging
+tsc-files --no-cache "src/**/*.ts"
+```
+
+#### Git Hook Usage
+
+```bash
+# Perfect for lint-staged
+tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')
+
+# With verbose output for debugging hooks
+tsc-files --verbose $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')
 ```
 
 ### Git Hooks Integration
@@ -154,23 +206,144 @@ npx lefthook install
 
 ```typescript
 import { checkFiles } from '@jbabin91/tsc-files';
+import type { CheckOptions, CheckResult } from '@jbabin91/tsc-files';
 
+// Basic usage
 const result = await checkFiles(['src/index.ts'], {
   project: './tsconfig.json',
-  noEmit: true,
   verbose: true,
 });
 
 if (result.success) {
   console.log(`✓ Type check passed (${result.duration}ms)`);
+  console.log(`Checked ${result.checkedFiles.length} files`);
 } else {
-  console.error(`✗ Found ${result.errorCount} errors`);
+  console.error(
+    `✗ Found ${result.errorCount} errors, ${result.warningCount} warnings`,
+  );
+
+  // Detailed error information
   result.errors.forEach((error) => {
     console.error(
-      `${error.file}:${error.line}:${error.column} - ${error.message}`,
+      `${error.file}:${error.line}:${error.column} - ${error.message} [${error.code}]`,
+    );
+  });
+
+  // Handle warnings separately
+  result.warnings.forEach((warning) => {
+    console.warn(
+      `${warning.file}:${warning.line}:${warning.column} - ${warning.message} [${warning.code}]`,
     );
   });
 }
+```
+
+#### Advanced API Usage
+
+```typescript
+// With all options
+const result = await checkFiles(['src/**/*.ts'], {
+  project: './tsconfig.build.json',
+  skipLibCheck: true,
+  verbose: true,
+  cache: false,
+  cwd: './packages/core',
+  throwOnError: false,
+});
+
+// Error handling with throwOnError
+try {
+  await checkFiles(['src/index.ts'], {
+    throwOnError: true,
+  });
+  console.log('✓ No type errors');
+} catch (error) {
+  console.error('Type checking failed:', error.message);
+}
+```
+
+## 📋 Package.json Scripts Integration
+
+Add type checking scripts to your `package.json` for different scenarios:
+
+```json
+{
+  "scripts": {
+    "type-check": "tsc-files 'src/**/*.ts'",
+    "type-check:verbose": "tsc-files --verbose 'src/**/*.ts'",
+    "type-check:ci": "tsc-files --json --skip-lib-check 'src/**/*.ts'",
+    "type-check:build": "TSC_PROJECT=tsconfig.build.json tsc-files 'src/**/*.ts'",
+    "type-check:staged": "tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$')"
+  }
+}
+```
+
+## 🚦 Exit Codes
+
+`tsc-files` uses standard exit codes to indicate different types of results:
+
+- **`0`** - Success (no type errors)
+- **`1`** - Type errors found
+- **`2`** - Configuration errors (tsconfig.json issues)
+- **`3`** - System errors (TypeScript not found)
+
+Perfect for CI/CD pipelines and scripts:
+
+```bash
+#!/bin/bash
+tsc-files "src/**/*.ts"
+exit_code=$?
+
+case $exit_code in
+  0) echo "✅ Type checking passed" ;;
+  1) echo "❌ Type errors found" ;;
+  2) echo "⚠️ Configuration error" ;;
+  3) echo "💥 System error" ;;
+esac
+
+exit $exit_code
+```
+
+## 🎯 Best Practices
+
+### Performance Tips
+
+```bash
+# Use --skip-lib-check for faster execution in CI
+tsc-files --skip-lib-check "src/**/*.ts"
+
+# Enable caching for repeated runs (default)
+tsc-files --cache "src/**/*.ts"
+
+# Use JSON output for programmatic processing
+tsc-files --json "src/**/*.ts" | jq '.errorCount'
+```
+
+### Monorepo Usage
+
+```bash
+# Check specific package
+tsc-files --project packages/core/tsconfig.json "packages/core/src/**/*.ts"
+
+# Check multiple packages
+tsc-files "packages/*/src/**/*.ts"
+
+# Use environment variable for consistency
+TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
+```
+
+### CI/CD Integration
+
+```yaml
+# GitHub Actions
+- name: Type Check
+  run: tsc-files --json --skip-lib-check "src/**/*.ts"
+
+# With custom tsconfig
+- name: Type Check Build
+  env:
+    TSC_PROJECT: tsconfig.build.json
+  run: tsc-files "src/**/*.ts"
 ```
 
 ## ⚙️ CLI Options

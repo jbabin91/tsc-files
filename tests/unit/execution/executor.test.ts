@@ -13,13 +13,17 @@ const createMockExecaResult = (
     stdout?: string;
     stderr?: string;
     exitCode?: number;
+    all?: string;
   } = {},
 ): Result => {
   // Return only the properties our code actually uses, cast as Result for testing
+  const stdout = overrides.stdout ?? '';
+  const stderr = overrides.stderr ?? '';
   return {
-    stdout: overrides.stdout ?? '',
-    stderr: overrides.stderr ?? '',
+    stdout,
+    stderr,
     exitCode: overrides.exitCode ?? 0,
+    all: overrides.all ?? `${stdout}\n${stderr}`.trim(),
   } as Result;
 };
 
@@ -173,6 +177,184 @@ describe('execution/executor', () => {
         errorMessage: 'Command failed',
       });
     });
+
+    it('should handle result with no all property', async () => {
+      const { execa } = await import('execa');
+      const mockedExeca = vi.mocked(execa);
+
+      // Mock result without 'all' property to test fallback
+      mockedExeca.mockResolvedValueOnce({
+        stdout: 'stdout content',
+        stderr: 'stderr content',
+        exitCode: 0,
+        // all property is missing, should fallback to concatenated stdout/stderr
+      } as Result);
+
+      const result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result).toEqual({
+        success: true,
+        stdout: 'stdout content',
+        stderr: 'stderr content',
+        allOutput: 'stdout content\nstderr content',
+        exitCode: 0,
+      });
+    });
+
+    it('should handle various error types in fallback', async () => {
+      const { execa } = await import('execa');
+      const mockedExeca = vi.mocked(execa);
+
+      // Test Error instance
+      mockedExeca.mockRejectedValueOnce(new Error('Generic error'));
+
+      let result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result.errorMessage).toBe('Generic error');
+
+      // Test string error
+      mockedExeca.mockRejectedValueOnce('String error');
+
+      result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result.errorMessage).toBe('String error');
+
+      // Test object without message property
+      mockedExeca.mockRejectedValueOnce({ someProperty: 'value' });
+
+      result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result.errorMessage).toBe('[object Object]');
+    });
+
+    it('should handle ExecaError with various message properties', async () => {
+      const { execa } = await import('execa');
+      const mockedExeca = vi.mocked(execa);
+
+      // Test with shortMessage priority
+      mockedExeca.mockRejectedValueOnce({
+        stdout: 'out',
+        stderr: 'err',
+        exitCode: 1,
+        shortMessage: 'short message',
+        originalMessage: 'original message',
+        message: 'generic message',
+      });
+
+      let result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result.errorMessage).toBe('short message');
+
+      // Test with originalMessage fallback
+      mockedExeca.mockRejectedValueOnce({
+        stdout: 'out',
+        stderr: 'err',
+        exitCode: 1,
+        originalMessage: 'original message',
+        message: 'generic message',
+      });
+
+      result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result.errorMessage).toBe('original message');
+
+      // Test with message fallback
+      mockedExeca.mockRejectedValueOnce({
+        stdout: 'out',
+        stderr: 'err',
+        exitCode: 1,
+        message: 'generic message',
+      });
+
+      result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result.errorMessage).toBe('generic message');
+    });
+
+    it('should handle ExecaError with all property', async () => {
+      const { execa } = await import('execa');
+      const mockedExeca = vi.mocked(execa);
+
+      mockedExeca.mockRejectedValueOnce({
+        stdout: 'stdout content',
+        stderr: 'stderr content',
+        all: 'combined all content',
+        exitCode: 1,
+        message: 'Command failed',
+      });
+
+      const result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result).toEqual({
+        success: false,
+        stdout: 'stdout content',
+        stderr: 'stderr content',
+        allOutput: 'combined all content',
+        exitCode: 1,
+        errorMessage: 'Command failed',
+      });
+    });
+
+    it('should use result.all when available on success', async () => {
+      const { execa } = await import('execa');
+      const mockedExeca = vi.mocked(execa);
+
+      // Mock result with explicit 'all' property
+      mockedExeca.mockResolvedValueOnce(
+        createMockExecaResult({
+          stdout: 'stdout content',
+          stderr: 'stderr content',
+          exitCode: 0,
+          all: 'explicit all content',
+        }),
+      );
+
+      const result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result).toEqual({
+        success: true,
+        stdout: 'stdout content',
+        stderr: 'stderr content',
+        allOutput: 'explicit all content',
+        exitCode: 0,
+      });
+    });
   });
 
   describe('executeAndParseTypeScript', () => {
@@ -295,6 +477,46 @@ describe('execution/executor', () => {
       expect(result.success).toBe(false);
       expect(result.errorCount).toBe(1);
       expect(result.errors).toEqual([mockError]);
+    });
+
+    it('should handle execution success but non-zero exit code with allOutput', async () => {
+      const { execa } = await import('execa');
+      const { parseAndSeparateOutput } = await import(
+        '@/execution/output-parser'
+      );
+      const mockedExeca = vi.mocked(execa);
+      const mockedParser = vi.mocked(parseAndSeparateOutput);
+
+      // For the error to be thrown, executeTypeScriptCompiler must return success: false
+      // This happens when execa throws an error, not when it succeeds
+      const execError = {
+        stdout: '',
+        stderr: 'Some compiler output',
+        exitCode: 1,
+        message: 'Command failed',
+      };
+
+      mockedExeca.mockRejectedValueOnce(execError);
+
+      mockedParser.mockReturnValueOnce({
+        errors: [],
+        warnings: [],
+        allErrors: [],
+      });
+
+      const startTime = performance.now();
+
+      // Should throw because no errors parsed but execution failed with non-zero exit code
+      // The allOutput will contain 'Some compiler output' from stderr, so it should use that
+      await expect(
+        executeAndParseTypeScript(
+          '/tmp/tsconfig.json',
+          ['test.ts'],
+          '/test/cwd',
+          {} as CheckOptions,
+          startTime,
+        ),
+      ).rejects.toThrow('TypeScript compiler failed: Some compiler output');
     });
   });
 });

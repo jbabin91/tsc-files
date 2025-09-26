@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execa, type ExecaError } from 'execa';
 
 import { findTypeScriptCompiler } from '@/detectors/typescript';
 import { parseAndSeparateOutput } from '@/execution/output-parser';
@@ -24,49 +24,32 @@ export type ExecutionResult = {
 };
 
 /**
- * Extract execution details from error object
- * @param execError - Error object from execa
+ * Extract execution details from ExecaError
+ * @param execError - ExecaError from execa
  * @returns Extracted execution details
  */
-function extractExecutionDetails(execError: unknown): {
+function extractExecutionDetails(execError: ExecaError): {
   stdout: string;
   stderr: string;
+  allOutput: string;
   exitCode: number;
   message: string;
 } {
-  const stdout =
-    typeof execError === 'object' &&
-    execError !== null &&
-    'stdout' in execError &&
-    typeof execError.stdout === 'string'
-      ? execError.stdout
-      : '';
+  const stdout = typeof execError.stdout === 'string' ? execError.stdout : '';
+  const stderr = typeof execError.stderr === 'string' ? execError.stderr : '';
+  const allOutput =
+    typeof execError.all === 'string'
+      ? execError.all
+      : `${stdout}\n${stderr}`.trim();
 
-  const stderr =
-    typeof execError === 'object' &&
-    execError !== null &&
-    'stderr' in execError &&
-    typeof execError.stderr === 'string'
-      ? execError.stderr
-      : '';
-
-  const exitCode =
-    typeof execError === 'object' &&
-    execError !== null &&
-    'exitCode' in execError &&
-    typeof execError.exitCode === 'number'
-      ? execError.exitCode
-      : 1;
-
-  const message =
-    typeof execError === 'object' &&
-    execError !== null &&
-    'message' in execError &&
-    typeof execError.message === 'string'
-      ? execError.message
-      : String(execError);
-
-  return { stdout, stderr, exitCode, message };
+  return {
+    stdout,
+    stderr,
+    allOutput,
+    exitCode: execError.exitCode ?? 1,
+    message:
+      execError.shortMessage || execError.originalMessage || execError.message,
+  };
 }
 
 /**
@@ -94,9 +77,14 @@ export async function executeTypeScriptCompiler(
       timeout: 30_000,
       cleanup: true,
       shell: tsInfo.useShell,
+      all: true, // Capture combined stdout/stderr
+      maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large TypeScript outputs
     });
 
-    const allOutput = `${result.stdout}\n${result.stderr}`.trim();
+    const allOutput =
+      typeof result.all === 'string'
+        ? result.all
+        : `${result.stdout}\n${result.stderr}`.trim();
 
     return {
       success: true,
@@ -106,17 +94,41 @@ export async function executeTypeScriptCompiler(
       exitCode: result.exitCode ?? 0,
     };
   } catch (execError: unknown) {
-    const { stdout, stderr, exitCode, message } =
-      extractExecutionDetails(execError);
-    const allOutput = `${stdout}\n${stderr}`.trim();
+    // Handle both ExecaError and other errors gracefully
+    if (execError && typeof execError === 'object' && 'exitCode' in execError) {
+      const { stdout, stderr, allOutput, exitCode, message } =
+        extractExecutionDetails(execError as ExecaError);
+
+      return {
+        success: false,
+        stdout,
+        stderr,
+        allOutput,
+        exitCode,
+        errorMessage: message,
+      };
+    }
+
+    // Fallback for non-ExecaError exceptions (including simple error objects)
+    const errorMessage =
+      execError instanceof Error
+        ? execError.message
+        : execError &&
+            typeof execError === 'object' &&
+            'message' in execError &&
+            typeof execError.message === 'string'
+          ? execError.message
+          : typeof execError === 'string'
+            ? execError
+            : String(execError);
 
     return {
       success: false,
-      stdout,
-      stderr,
-      allOutput,
-      exitCode,
-      errorMessage: message,
+      stdout: '',
+      stderr: '',
+      allOutput: '',
+      exitCode: 1,
+      errorMessage,
     };
   }
 }

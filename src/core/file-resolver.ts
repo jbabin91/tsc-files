@@ -115,6 +115,9 @@ export async function resolveFiles(
       cwd,
       absolute: true,
       onlyFiles: true,
+      unique: true, // Prevent duplicate results from overlapping patterns
+      baseNameMatch: true, // Allow *.ts to match src/file.ts efficiently
+      caseSensitiveMatch: false, // Better cross-platform compatibility
       ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
     });
 

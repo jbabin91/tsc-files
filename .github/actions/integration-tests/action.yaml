@@ -80,10 +80,12 @@ runs:
 
         # Test 4: Version flag
         echo "  Testing version flag..."
-        if node "$CLI_PATH" --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+        VERSION_OUTPUT=$(node "$CLI_PATH" --version 2>&1 || true)
+        if echo "$VERSION_OUTPUT" | grep -E "[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?"; then
             echo "  ✅ Version flag test passed"
         else
             echo "  ❌ Version flag test failed"
+            echo "Version output was: $VERSION_OUTPUT"
             exit 1
         fi
 

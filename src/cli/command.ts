@@ -13,11 +13,27 @@ const __dirname = path.dirname(__filename);
  */
 export function getVersion(): string {
   try {
-    const packageJsonPath = path.join(__dirname, '..', '..', 'package.json');
-    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
-      version: string;
-    };
-    return packageJson.version;
+    // Try multiple possible paths for package.json
+    const possiblePaths = [
+      path.join(__dirname, '..', '..', 'package.json'), // Source structure
+      path.join(__dirname, '..', 'package.json'), // Dist structure (flat)
+      path.join(process.cwd(), 'package.json'), // CWD fallback
+    ];
+
+    for (const packageJsonPath of possiblePaths) {
+      try {
+        const packageJson = JSON.parse(
+          readFileSync(packageJsonPath, 'utf8'),
+        ) as {
+          version: string;
+        };
+        return packageJson.version;
+      } catch {
+        continue;
+      }
+    }
+
+    return '0.0.0-dev';
   } catch {
     return '0.0.0-dev';
   }

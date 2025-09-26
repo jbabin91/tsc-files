@@ -1,43 +1,7 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { Command } from 'commander';
 import kleur from 'kleur';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-/**
- * Get version from package.json
- */
-export function getVersion(): string {
-  try {
-    // Try multiple possible paths for package.json
-    const possiblePaths = [
-      path.join(__dirname, '..', '..', 'package.json'), // Source structure
-      path.join(__dirname, '..', 'package.json'), // Dist structure (flat)
-      path.join(process.cwd(), 'package.json'), // CWD fallback
-    ];
-
-    for (const packageJsonPath of possiblePaths) {
-      try {
-        const packageJson = JSON.parse(
-          readFileSync(packageJsonPath, 'utf8'),
-        ) as {
-          version: string;
-        };
-        return packageJson.version;
-      } catch {
-        continue;
-      }
-    }
-
-    return '0.0.0-dev';
-  } catch {
-    return '0.0.0-dev';
-  }
-}
+import packageJson from '../../package.json' with { type: 'json' };
 
 /**
  * Create Commander.js program with all options and help text
@@ -46,14 +10,13 @@ export function createProgram(
   actionHandler: (files: string[], options: unknown) => Promise<void>,
 ): Command {
   const program = new Command();
-  const version = getVersion();
 
   program
     .name('tsc-files')
     .description(
       'Run TypeScript compiler on specific files while respecting tsconfig.json',
     )
-    .version(version, '-v, --version', 'output the version number')
+    .version(packageJson.version, '-v, --version', 'output the version number')
     .argument(
       '<files...>',
       'TypeScript files to check (supports glob patterns like "src/**/*.ts")',

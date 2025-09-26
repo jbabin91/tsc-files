@@ -1,35 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createProgram, getVersion, parseArguments } from '@/cli/command';
+import { createProgram, parseArguments } from '@/cli/command';
 
 describe('CLI Command', () => {
-  describe('getVersion', () => {
-    it('should return version from package.json', () => {
-      const version = getVersion();
-
-      // Should return the actual version from package.json
-      expect(version).toMatch(/^\d+\.\d+\.\d+/);
-      expect(version).not.toBe('0.0.0-dev');
-    });
-
-    it('should return dev version when package.json is not found', () => {
-      // Mock readFileSync to throw an error
-      const mockReadFileSync = vi.fn(() => {
-        throw new Error('File not found');
-      });
-
-      vi.doMock('node:fs', () => ({
-        readFileSync: mockReadFileSync,
-      }));
-
-      // This test is difficult to mock in practice due to module caching,
-      // so let's just verify the version is a string format
-      const version = getVersion();
-      expect(typeof version).toBe('string');
-      expect(version.length).toBeGreaterThan(0);
-    });
-  });
-
   describe('createProgram', () => {
     it('should create commander program with correct configuration', () => {
       const mockAction = vi.fn();

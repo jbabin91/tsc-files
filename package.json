@@ -57,6 +57,7 @@
     "env:push": "pnpm dlx dotenv-vault@latest push",
     "format": "prettier -uwl --cache .",
     "format:check": "prettier -uc --cache .",
+    "postinstall": "lefthook install",
     "lint": "eslint . --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/.eslintcache",
     "lint:fix": "eslint . --fix --cache --cache-location node_modules/.cache/eslint/.eslintcache",
     "lint:md": "markdownlint-cli2",
@@ -133,5 +134,10 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "lefthook"
+    ]
   }
 }

@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Quick local integration test (no global installs required)
-echo "🚀 Quick Integration Test"
+# Quick built package test (tests pre-built CLI directly, no package installation)
+echo "🚀 Quick Built Package Test"
 START_TIME=$(date +%s)
 
 # Skip build in CI - assume dist/ already exists from Build Package step
@@ -18,8 +18,8 @@ TEST_DIR="quick-test-$$"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
-# Install TypeScript locally for testing (faster than global)
-echo "  Installing TypeScript locally..."
+# Install TypeScript in test directory for CLI execution
+echo "  Installing TypeScript for test environment..."
 npm init -y > /dev/null 2>&1
 npm install typescript --no-audit --no-fund > /dev/null 2>&1
 

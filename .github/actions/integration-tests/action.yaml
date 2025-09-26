@@ -1,5 +1,5 @@
-name: Fast Integration Tests
-description: Optimized cross-platform integration tests for CLI (sub-1-minute runtime)
+name: Integration Tests
+description: Cross-platform integration tests for CLI
 
 inputs:
   test_scenario:
@@ -15,11 +15,11 @@ runs:
       run: |
         echo "INTEGRATION_START_TIME=$(date +%s)" >> $GITHUB_ENV
 
-    - name: Quick Local Test
+    - name: Quick Built Package Test
       shell: bash
       run: |
-        echo "🚀 Running quick local integration test..."
-        # Use our optimized script for fast local testing
+        echo "🚀 Running quick built package test..."
+        # Test the built CLI directly (faster than packaged installation)
         chmod +x .github/scripts/quick-integration-test.sh
         ./.github/scripts/quick-integration-test.sh
 
@@ -70,39 +70,16 @@ runs:
         }
         EOF
 
-        # Test 1: Valid TypeScript file
-        echo 'const message: string = "Hello, World!"; console.log(message);' > valid.ts
-        echo "  🔍 Testing valid TypeScript file..."
-        if npx tsc-files valid.ts; then
-          echo "  ✅ Valid file test passed"
-        else
-          echo "  ❌ Valid file test failed"
-          exit 1
-        fi
+        # Skip basic tests here - they're already covered by Quick Local Test
+        echo "  ℹ️ Basic functionality already verified by Quick Local Test"
 
-        # Test 2: Type error detection
-        echo 'const x: string = 123;' > error.ts
-        echo "  🔍 Testing type error detection..."
-        if npx tsc-files error.ts 2>/dev/null; then
-          echo "  ❌ Type error test failed (should have detected error)"
-          exit 1
+        # Test: Real-world package installation verification
+        echo "  🔍 Verifying installed package works..."
+        echo 'const pkg: string = "installed-test";' > pkg-test.ts
+        if npx tsc-files pkg-test.ts; then
+          echo "  ✅ Package installation verification passed"
         else
-          echo "  ✅ Type error detection passed"
-        fi
-
-        # Test 3: CLI flags (quick tests only)
-        echo "  🔍 Testing CLI flags..."
-        if npx tsc-files --help | grep -q "Usage:"; then
-          echo "  ✅ Help flag test passed"
-        else
-          echo "  ❌ Help flag test failed"
-          exit 1
-        fi
-
-        if npx tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
-          echo "  ✅ Version flag test passed"
-        else
-          echo "  ❌ Version flag test failed"
+          echo "  ❌ Package installation verification failed"
           exit 1
         fi
 
@@ -228,19 +205,24 @@ runs:
           cd "$TEST_DIR"
         fi
 
-        # Test direct binary usage (package should provide tsc-files command)
-        echo "  🔍 Testing direct tsc-files binary..."
-        if ./node_modules/.bin/tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+        # Test package manager detection and CLI availability
+        echo "  🔍 Testing package manager CLI integration..."
+
+        # Verify the package provides the tsc-files binary
+        if ./node_modules/.bin/tsc-files --version > /dev/null 2>&1; then
           echo "  ✅ Direct tsc-files binary works"
         else
           echo "  ❌ Direct tsc-files binary failed"
           exit 1
         fi
 
-        # Test pnpm if available (should find the binary)
+        # Test with available package managers (functionality, not version)
+        echo 'const test: string = "pm-test";' > pm-test.ts
+
+        # Test pnpm if available
         if command -v pnpm &> /dev/null; then
-          echo "  🔍 Testing pnpm tsc-files..."
-          if pnpm tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+          echo "  🔍 Testing pnpm tsc-files functionality..."
+          if pnpm tsc-files pm-test.ts > /dev/null 2>&1; then
             echo "  ✅ pnpm tsc-files works"
           else
             echo "  ⚠️ pnpm tsc-files failed"
@@ -251,8 +233,8 @@ runs:
 
         # Test yarn if available
         if command -v yarn &> /dev/null; then
-          echo "  🔍 Testing yarn tsc-files..."
-          if yarn tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+          echo "  🔍 Testing yarn tsc-files functionality..."
+          if yarn tsc-files pm-test.ts > /dev/null 2>&1; then
             echo "  ✅ yarn tsc-files works"
           else
             echo "  ⚠️ yarn tsc-files failed"
@@ -263,8 +245,8 @@ runs:
 
         # Test bun if available
         if command -v bun &> /dev/null; then
-          echo "  🔍 Testing bun tsc-files..."
-          if bun tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+          echo "  🔍 Testing bun tsc-files functionality..."
+          if bun tsc-files pm-test.ts > /dev/null 2>&1; then
             echo "  ✅ bun tsc-files works"
           else
             echo "  ⚠️ bun tsc-files failed"
@@ -273,9 +255,9 @@ runs:
           echo "  ℹ️ bun not available, skipping bun test"
         fi
 
-        # Test traditional npx (still widely used)
-        echo "  🔍 Testing npx tsc-files..."
-        if npx tsc-files --version | grep -E "[0-9]+\.[0-9]+\.[0-9]+"; then
+        # Test traditional npx (most critical - must work)
+        echo "  🔍 Testing npx tsc-files functionality..."
+        if npx tsc-files pm-test.ts > /dev/null 2>&1; then
           echo "  ✅ npx tsc-files works"
         else
           echo "  ❌ npx tsc-files failed"

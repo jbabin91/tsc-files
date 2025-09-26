@@ -69,10 +69,12 @@ runs:
 
         # Test 3: Help flag
         echo "  Testing help flag..."
-        if node "$CLI_PATH" --help | grep -q "Usage:"; then
+        HELP_OUTPUT=$(node "$CLI_PATH" --help 2>&1 || true)
+        if echo "$HELP_OUTPUT" | grep -q "Usage:"; then
             echo "  ✅ Help flag test passed"
         else
             echo "  ❌ Help flag test failed"
+            echo "Help output was: $HELP_OUTPUT"
             exit 1
         fi
 

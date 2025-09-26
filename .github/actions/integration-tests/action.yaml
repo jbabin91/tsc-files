@@ -130,6 +130,19 @@ runs:
             echo "❌ Failed to install $TARBALL"
             exit 1
           }
+
+          # Create minimal tsconfig.json for extended tests
+          cat > tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true
+          }
+        }
+        EOF
         else
           cd "$TEST_DIR"
         fi
@@ -198,6 +211,19 @@ runs:
             echo "❌ Failed to install $TARBALL"
             exit 1
           }
+
+          # Create minimal tsconfig.json for package manager tests
+          cat > tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true
+          }
+        }
+        EOF
         else
           cd "$TEST_DIR"
         fi
@@ -280,6 +306,19 @@ runs:
             echo "❌ Failed to install $TARBALL"
             exit 1
           }
+
+          # Create minimal tsconfig.json for performance tests
+          cat > tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true
+          }
+        }
+        EOF
         else
           cd "$TEST_DIR"
         fi

@@ -1,7 +1,24 @@
-import { Command } from 'commander';
+import { Command, InvalidArgumentError, Option } from 'commander';
 import kleur from 'kleur';
 
+import { logger } from '@/utils/logger';
+
 import packageJson from '../../package.json' with { type: 'json' };
+
+/**
+ * Validate project path argument
+ */
+function validateProjectPath(value: string): string {
+  if (!value.trim()) {
+    throw new InvalidArgumentError('Project path cannot be empty.');
+  }
+  if (!value.endsWith('.json')) {
+    throw new InvalidArgumentError(
+      'Project path must point to a JSON file (e.g., tsconfig.json).',
+    );
+  }
+  return value.trim();
+}
 
 /**
  * Create Commander.js program with all options and help text
@@ -21,9 +38,13 @@ export function createProgram(
       '<files...>',
       'TypeScript files to check (supports glob patterns like "src/**/*.ts")',
     )
-    .option(
-      '-p, --project <path>',
-      'path to tsconfig.json (default: auto-detected from current directory)',
+    .addOption(
+      new Option(
+        '-p, --project <path>',
+        'path to tsconfig.json (default: auto-detected from current directory)',
+      )
+        .env('TSC_PROJECT')
+        .argParser(validateProjectPath),
     )
     .option(
       '--verbose',
@@ -35,11 +56,27 @@ export function createProgram(
       '--skip-lib-check',
       'skip type checking of declaration files for faster execution',
     )
+    .hook('preAction', (_, actionCommand) => {
+      const options = actionCommand.opts();
+      if (options.verbose) {
+        logger.debug(
+          `🔍 About to execute tsc-files with ${actionCommand.args.length} file argument(s)`,
+        );
+        logger.debug(`📋 Options: ${JSON.stringify(options, null, 2)}`);
+        logger.debug(`📁 Arguments: ${JSON.stringify(actionCommand.args)}`);
+        if (process.env.TSC_PROJECT) {
+          logger.debug(
+            `🌍 TSC_PROJECT environment variable: ${process.env.TSC_PROJECT}`,
+          );
+        }
+      }
+    })
     .action(actionHandler);
 
   // Configure better error handling and help display
   program
     .showHelpAfterError('(add --help for additional information)')
+    .showSuggestionAfterError(false) // Disable spelling suggestions for cleaner output
     .configureOutput({
       // Use colored output for errors
       outputError: (str, write) => write(kleur.red(str)),
@@ -72,6 +109,9 @@ ${kleur.bold('Examples:')}
 
   ${kleur.dim('# With custom tsconfig')}
   tsc-files --project tsconfig.build.json "src/**/*.ts"
+
+  ${kleur.dim('# Using environment variable')}
+  TSC_PROJECT=tsconfig.build.json tsc-files "src/**/*.ts"
 
   ${kleur.dim('# Git hook usage (lint-staged)')}
   tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$')

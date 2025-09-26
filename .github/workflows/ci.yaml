@@ -82,7 +82,7 @@ jobs:
           bun-version: latest
       - name: Build Package
         uses: ./.github/actions/build-package
-      - name: Fast Integration Tests
+      - name: Integration Tests
         uses: ./.github/actions/integration-tests
         with:
           test_scenario: ${{ matrix.test_scenario }}

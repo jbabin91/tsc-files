@@ -201,7 +201,7 @@ Reusable actions in `.github/actions/`:
 **Research & Analysis**: ✅ Complete (original tsc-files PR analysis provided implementation roadmap)
 **Phase 1 & 1.5**: ✅ Complete (modern tooling foundation with execa, fast-glob, path aliases)
 **Phase 2**: ✅ Complete (all critical issues resolved - feature complete CLI)
-**Quality Gates**: ✅ Enforced (zero-tolerance policy for all quality metrics - 83%+ core coverage)
+**Quality Gates**: ✅ Enforced (zero-tolerance policy for all quality metrics - 84%+ core coverage)
 **Current Status**: 🚀 **Feature Complete & Production Ready**
 
 The project has successfully evolved from research to a fully functional TypeScript CLI tool with comprehensive features and enterprise-grade quality standards.
@@ -209,14 +209,14 @@ The project has successfully evolved from research to a fully functional TypeScr
 ### Implementation Completion Status
 
 - ✅ Build system configured (tsdown) with dual ESM/CJS output
-- ✅ Testing framework complete (Vitest) with 73 passing tests
+- ✅ Testing framework complete (Vitest) with 275 passing tests
 - ✅ Quality enforcement active (ESLint, Prettier, TypeScript strict)
 - ✅ CI/CD pipeline operational with automated releases
 - ✅ Documentation structure comprehensive and current
 - ✅ Security requirements implemented and validated
 - ✅ Modern tooling foundation implemented (execa, fast-glob, TypeScript path aliases)
 - ✅ Community solutions analyzed and implemented (PRs #66, #49, #75)
-- ✅ **Core Implementation Complete** (1,400+ lines):
+- ✅ **Core Implementation Complete** (2,497 lines):
   - ✅ CLI Interface (252 lines) - commander, kleur, ora, zod integration
   - ✅ Type Checker (681 lines) - monorepo support, JavaScript handling
   - ✅ Package Detection (461 lines) - npm/yarn/pnpm/bun with cross-platform support
@@ -313,6 +313,15 @@ if (result.success) {
 - The `tsconfig.json` includes all `**/*.ts` files to ensure configuration files are type-checked
 - Strict TypeScript configuration with comprehensive error checking
 - Uses Node.js ESM with proper module resolution
+
+### Code Comments Policy
+
+- **Only valuable comments** - Comments should provide useful information that helps someone understand the code
+- **NO file header comments** - Avoid boilerplate comments at the top of files
+- **Explain WHY, not WHAT** - Comments should explain reasoning, edge cases, or business context, not repeat what the code does
+- **JSDoc for public APIs** - Document exported functions, types, and interfaces with clear descriptions and examples
+- **Complex logic clarification** - Explain non-obvious algorithms, workarounds, or performance considerations
+- **Remove redundant comments** - Clean up comments that don't add value or simply restate obvious code
 
 #### TypeScript Path Aliases
 

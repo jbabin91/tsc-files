@@ -2,21 +2,18 @@
  * Core type checking functionality
  */
 
-import { randomBytes } from 'node:crypto';
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  unlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { execa } from 'execa';
 import fastGlob from 'fast-glob';
+import tmp from 'tmp';
 
 import { findTypeScriptCompiler } from '@/detectors/typescript';
 import type { CheckOptions, CheckResult, TypeScriptError } from '@/types';
+
+// Set up graceful cleanup for all temp files
+tmp.setGracefulCleanup();
 
 /**
  * Check if JavaScript files should be included based on TypeScript configuration
@@ -202,28 +199,24 @@ function findTsConfig(cwd: string, projectPath?: string): string {
 }
 
 /**
- * Generate secure temp config path
+ * Generate secure temp config path using tmp library
  */
-function getTempConfigPath(
-  cwd: string,
-  cacheDir?: string,
-): { path: string; dir: string } {
-  // Use provided cache dir or default to node_modules/.cache/tsc-files
-  const baseDir =
-    cacheDir ?? path.join(cwd, 'node_modules', '.cache', 'tsc-files');
-
-  // Create cache directory if it doesn't exist
-  if (!existsSync(baseDir)) {
-    mkdirSync(baseDir, { recursive: true });
-  }
-
-  // Generate secure filename using crypto
-  const randomSuffix = randomBytes(8).toString('hex');
-  const filename = `tsconfig.${randomSuffix}.json`;
+function getTempConfigPath(cacheDir?: string): {
+  path: string;
+  cleanup: () => void;
+} {
+  const tmpFile = tmp.fileSync({
+    prefix: 'tsconfig.',
+    postfix: '.json',
+    mode: 0o600, // Restrictive permissions (owner read/write only)
+    dir: cacheDir, // Use custom cache dir if provided
+    discardDescriptor: false,
+    keep: false, // Auto cleanup on process exit
+  });
 
   return {
-    path: path.join(baseDir, filename),
-    dir: baseDir,
+    path: tmpFile.name,
+    cleanup: tmpFile.removeCallback,
   };
 }
 
@@ -338,7 +331,8 @@ async function checkFilesWithSingleConfig(
   }
 
   // Generate temp config
-  const { path: tempConfigPath } = getTempConfigPath(cwd, options.cacheDir);
+  const { path: tempConfigPath, cleanup: cleanupTempConfig } =
+    getTempConfigPath(options.cacheDir);
 
   const tempConfig = {
     extends: tsconfigPath,
@@ -463,16 +457,16 @@ async function checkFilesWithSingleConfig(
       `Type checking failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   } finally {
-    // Clean up temp config file
+    // Clean up temp config file using tmp library cleanup
     if (tempConfigCreated) {
       try {
-        unlinkSync(tempConfigPath);
+        cleanupTempConfig();
         if (options.verbose) {
           // eslint-disable-next-line no-console
           console.log(`Cleaned up temp config: ${tempConfigPath}`);
         }
       } catch {
-        // Ignore cleanup errors
+        // Ignore cleanup errors - tmp library handles this gracefully
       }
     }
   }

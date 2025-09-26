@@ -11,6 +11,9 @@ importers:
 
   .:
     dependencies:
+      '@types/tmp':
+        specifier: ^0.2.6
+        version: 0.2.6
       commander:
         specifier: ^14.0.1
         version: 14.0.1
@@ -35,6 +38,9 @@ importers:
       ora:
         specifier: ^9.0.0
         version: 9.0.0
+      tmp:
+        specifier: ^0.2.5
+        version: 0.2.5
       tsconfig-paths:
         specifier: ^4.2.0
         version: 4.2.0
@@ -872,6 +878,9 @@ packages:
 
   '@types/node@24.5.2':
     resolution: {integrity: sha512-FYxk1I7wPv3K2XBaoyH2cTnocQEu8AOZ60hPbsyukMPLv5/5qr7V1i8PLHdl6Zf87I+xZXFvPCXYjiTFq+YSDQ==}
+
+  '@types/tmp@0.2.6':
+    resolution: {integrity: sha512-chhaNf2oKHlRkDGt+tiKE2Z5aJ6qalm7Z9rlLdBwmOiAAf09YQvvoLXjWK4HWPF1xU/fqvMgfNfpVoBscA/tKA==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -3975,6 +3984,8 @@ snapshots:
   '@types/node@24.5.2':
     dependencies:
       undici-types: 7.12.0
+
+  '@types/tmp@0.2.6': {}
 
   '@types/unist@2.0.11': {}
 

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createProgram, parseArguments } from '@/cli/command';
 
+import packageJson from '../../../package.json' with { type: 'json' };
+
 describe('CLI Command', () => {
   describe('createProgram', () => {
     it('should create commander program with correct configuration', () => {
@@ -53,6 +55,17 @@ describe('CLI Command', () => {
       const versionOption = program.options.find((opt) => opt.short === '-v');
       expect(versionOption).toBeDefined();
       expect(versionOption?.long).toBe('--version');
+    });
+
+    it('should use package.json version', () => {
+      const mockAction = vi.fn();
+      const program = createProgram(mockAction);
+
+      // Access the internal version property
+      const programVersion = (program as unknown as { _version?: string })
+        ._version;
+      expect(programVersion).toBe(packageJson.version);
+      expect(programVersion).toMatch(/^\d+\.\d+\.\d+/);
     });
 
     it('should include all required options', () => {

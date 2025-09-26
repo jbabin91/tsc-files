@@ -17,7 +17,7 @@ export default defineConfig({
         '.markdownlint-cli2.mjs',
         'eslint.config.js',
         'tsdown.config.ts',
-        'src/cli.ts',
+        'src/cli.ts', // CLI entry point with process.exit() calls
         'scripts/**',
         'bin/**',
       ],

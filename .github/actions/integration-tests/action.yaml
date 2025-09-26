@@ -10,6 +10,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Initialize Timing
+      shell: bash
+      run: |
+        echo "INTEGRATION_START_TIME=$(date +%s)" >> $GITHUB_ENV
+
     - name: Quick Local Test
       shell: bash
       run: |
@@ -22,7 +27,7 @@ runs:
       shell: bash
       run: |
         echo "🔧 Setting up for global CLI tests..."
-        start_time=$(date +%s)
+        setup_start=$(date +%s)
 
         # Pack for installation (don't install globally yet)
         npm pack --silent
@@ -34,7 +39,7 @@ runs:
         npm install -g typescript@latest --silent
 
         setup_end=$(date +%s)
-        echo "✅ Setup completed in $((setup_end - start_time))s"
+        echo "✅ Setup completed in $((setup_end - setup_start))s"
 
     - name: Run Core Tests
       shell: bash
@@ -211,7 +216,7 @@ runs:
       shell: bash
       run: |
         end_time=$(date +%s)
-        total_time=$((end_time - start_time))
+        total_time=$((end_time - INTEGRATION_START_TIME))
 
         echo ""
         echo "🏁 Integration Test Summary"

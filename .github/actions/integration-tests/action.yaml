@@ -121,7 +121,7 @@ runs:
         echo 'export interface User { id: number; name: string; }' > src/types.ts
         echo 'import { User } from "../types"; export const createUser = (data: User) => data;' > src/utils/userService.ts
         echo "  🔍 Testing glob patterns..."
-        if tsc-files "src/**/*.ts"; then
+        if npx tsc-files "src/**/*.ts"; then
           echo "  ✅ Glob patterns test passed"
         else
           echo "  ❌ Glob patterns test failed"
@@ -130,7 +130,7 @@ runs:
 
         # Test 6: JSON output
         echo "  🔍 Testing JSON output..."
-        OUTPUT=$(tsc-files --json src/types.ts 2>/dev/null)
+        OUTPUT=$(npx tsc-files --json src/types.ts 2>/dev/null)
         if echo "$OUTPUT" | grep -q '"success"'; then
           echo "  ✅ JSON output test passed"
         else
@@ -149,7 +149,7 @@ runs:
         }
         EOF
         echo "  🔍 Testing custom tsconfig..."
-        if tsc-files --project custom.tsconfig.json src/types.ts; then
+        if npx tsc-files --project custom.tsconfig.json src/types.ts; then
           echo "  ✅ Custom tsconfig test passed"
         else
           echo "  ❌ Custom tsconfig test failed"

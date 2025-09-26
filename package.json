@@ -67,6 +67,10 @@
     "prepublishOnly": "pnpm test && pnpm build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:profile": "DEBUG=vitest:coverage,vite-node:* vitest run --coverage --reporter=verbose",
+    "test:profile:cpu": "node --cpu-prof --cpu-prof-dir=test-profiles ./node_modules/vitest/vitest.mjs --run",
+    "test:profile:full": "VITEST_PROFILE=1 VITE_NODE_DEBUG_DUMP=true pnpm test:profile",
+    "test:profile:heap": "node --heap-prof --heap-prof-dir=test-profiles ./node_modules/vitest/vitest.mjs --run",
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

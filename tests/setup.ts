@@ -4,7 +4,7 @@
  */
 
 import { execFile } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -20,7 +20,10 @@ const CLI_PATH = path.resolve(process.cwd(), 'dist/cli.js');
 declare global {
   var createTempDir: () => string;
   var cleanupTempDir: (tempDir: string) => void;
-  var createTestProject: (tempDir: string) => {
+  var createTestProject: (
+    tempDir: string,
+    customTsconfig?: object,
+  ) => {
     tsconfig: object;
     srcDir: string;
   };
@@ -29,16 +32,36 @@ declare global {
     cwd: string,
   ) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
   var writeTestFile: (dir: string, filename: string, content: string) => string;
+  var writeTestFiles: (dir: string, files: Record<string, string>) => string[];
 }
 
-// Temp directory utilities - using secure tmp library
+// Shared base directory for better performance
+let sharedTestDir: string | null = null;
+
+// Temp directory utilities - using secure tmp library with optimization
 globalThis.createTempDir = () => {
-  // Use tmp library for secure temporary directory creation
-  // This ensures proper permissions (0700) and unique directory names
+  // In CI, reuse a shared base directory for better performance
+  if (process.env.CI && sharedTestDir && existsSync(sharedTestDir)) {
+    // Create unique subdirectory within shared base
+    const uniqueDir = path.join(
+      sharedTestDir,
+      `test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    );
+    mkdirSync(uniqueDir, { recursive: true });
+    return uniqueDir;
+  }
+
+  // For local dev or first CI run, create full temp directory
   const tempDir = tmp.dirSync({
     prefix: 'tsc-files-test-',
     unsafeCleanup: true, // Allow cleanup of non-empty directories
   });
+
+  // Store first directory as shared base in CI
+  if (process.env.CI && !sharedTestDir) {
+    sharedTestDir = tempDir.name;
+  }
+
   return tempDir.name;
 };
 
@@ -50,9 +73,9 @@ globalThis.cleanupTempDir = (tempDir: string) => {
   }
 };
 
-globalThis.createTestProject = (tempDir: string) => {
-  // Create a basic tsconfig.json
-  const tsconfig = {
+// Pre-computed tsconfig strings for performance
+const DEFAULT_TSCONFIG_JSON = JSON.stringify(
+  {
     compilerOptions: {
       target: 'ES2022',
       module: 'ESNext',
@@ -60,17 +83,27 @@ globalThis.createTestProject = (tempDir: string) => {
       strict: true,
       noEmit: true,
     },
-  };
-  writeFileSync(
-    path.join(tempDir, 'tsconfig.json'),
-    JSON.stringify(tsconfig, null, 2),
-  );
+  },
+  null,
+  2,
+);
+
+globalThis.createTestProject = (tempDir: string, customTsconfig?: object) => {
+  // Use pre-computed JSON or custom config
+  const tsconfigContent = customTsconfig
+    ? JSON.stringify(customTsconfig, null, 2)
+    : DEFAULT_TSCONFIG_JSON;
+
+  writeFileSync(path.join(tempDir, 'tsconfig.json'), tsconfigContent);
 
   // Create src directory
   const srcDir = path.join(tempDir, 'src');
   mkdirSync(srcDir, { recursive: true });
 
-  return { tsconfig, srcDir };
+  return {
+    tsconfig: customTsconfig ?? (JSON.parse(DEFAULT_TSCONFIG_JSON) as object),
+    srcDir,
+  };
 };
 
 globalThis.runCli = async (
@@ -106,6 +139,23 @@ globalThis.writeTestFile = (
   const filePath = path.join(dir, filename);
   writeFileSync(filePath, content);
   return filePath;
+};
+
+// Bulk file creation for better performance
+globalThis.writeTestFiles = (
+  dir: string,
+  files: Record<string, string>,
+): string[] => {
+  const filePaths: string[] = [];
+
+  // Create files in batch to reduce I/O overhead
+  for (const [filename, content] of Object.entries(files)) {
+    const filePath = path.join(dir, filename);
+    writeFileSync(filePath, content);
+    filePaths.push(filePath);
+  }
+
+  return filePaths;
 };
 
 // Custom CLI-specific matchers

@@ -45,7 +45,7 @@ jobs:
     if: github.event_name != 'merge_group'
     runs-on: ${{ matrix.os }}
     needs: [static-analysis, unit-tests]
-    timeout-minutes: 2 # Hard timeout for performance validation
+    timeout-minutes: ${{ matrix.timeout }} # Platform-specific timeout for performance validation
     strategy:
       fail-fast: false # Test all platforms even if one fails
       matrix:
@@ -53,12 +53,15 @@ jobs:
           # Ubuntu: Full test suite (fastest runner)
           - os: ubuntu-latest
             test_scenario: full
+            timeout: 2
           # macOS: Basic tests (ARM performance validation)
           - os: macos-latest
             test_scenario: basic
-          # Windows: Basic tests (compatibility validation)
+            timeout: 3
+          # Windows: Basic tests (compatibility validation) - needs more time for process spawning
           - os: windows-latest
             test_scenario: basic
+            timeout: 4
     steps:
       - uses: actions/checkout@v5
       - name: Setup

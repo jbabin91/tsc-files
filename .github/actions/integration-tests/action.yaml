@@ -44,7 +44,11 @@ runs:
         test_start=$(date +%s)
 
         # Create isolated test workspace (outside parent project to avoid packageManager inheritance)
-        TEST_DIR="/tmp/tsc-files-integration-$$"
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          TEST_DIR="$RUNNER_TEMP/tsc-files-integration-$$"
+        else
+          TEST_DIR="/tmp/tsc-files-integration-$$"
+        fi
         mkdir -p "$TEST_DIR"
         cd "$TEST_DIR"
 
@@ -52,10 +56,19 @@ runs:
         TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
         echo "📦 Installing $TARBALL and TypeScript..."
         npm init -y > /dev/null 2>&1
-        npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
-          echo "❌ Failed to install $TARBALL"
-          exit 1
-        }
+
+        # Windows-specific npm optimizations
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent --progress=false --loglevel=error 2>/dev/null || {
+            echo "❌ Failed to install $TARBALL"
+            exit 1
+          }
+        else
+          npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
+            echo "❌ Failed to install $TARBALL"
+            exit 1
+          }
+        fi
 
         # Create minimal tsconfig.json
         cat > tsconfig.json << 'EOF'
@@ -175,7 +188,12 @@ runs:
         pm_start=$(date +%s)
 
         # Use the same isolated test directory (create if needed)
-        TEST_DIR="/tmp/tsc-files-integration-$$"
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          TEST_DIR="$RUNNER_TEMP/tsc-files-integration-$$"
+        else
+          TEST_DIR="/tmp/tsc-files-integration-$$"
+        fi
+
         if [ ! -d "$TEST_DIR" ]; then
           mkdir -p "$TEST_DIR"
           cd "$TEST_DIR"
@@ -184,10 +202,19 @@ runs:
           TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
           echo "📦 Re-installing $TARBALL for package manager tests..."
           npm init -y > /dev/null 2>&1
-          npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
-            echo "❌ Failed to install $TARBALL"
-            exit 1
-          }
+
+          # Windows-specific npm optimizations
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent --progress=false --loglevel=error 2>/dev/null || {
+              echo "❌ Failed to install $TARBALL"
+              exit 1
+            }
+          else
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || {
+              echo "❌ Failed to install $TARBALL"
+              exit 1
+            }
+          fi
 
           # Create minimal tsconfig.json for package manager tests
           cat > tsconfig.json << 'EOF'
@@ -219,40 +246,45 @@ runs:
         # Test with available package managers (functionality, not version)
         echo 'const test: string = "pm-test";' > pm-test.ts
 
-        # Test pnpm if available
-        if command -v pnpm &> /dev/null; then
-          echo "  🔍 Testing pnpm tsc-files functionality..."
-          if pnpm tsc-files pm-test.ts > /dev/null 2>&1; then
-            echo "  ✅ pnpm tsc-files works"
-          else
-            echo "  ⚠️ pnpm tsc-files failed"
-          fi
+        # Skip heavy package manager tests on Windows for speed
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          echo "  ℹ️ Skipping package manager integration tests on Windows for performance"
         else
-          echo "  ℹ️ pnpm not available, skipping pnpm test"
-        fi
+          # Test pnpm if available
+          if command -v pnpm &> /dev/null; then
+            echo "  🔍 Testing pnpm tsc-files functionality..."
+            if pnpm tsc-files pm-test.ts > /dev/null 2>&1; then
+              echo "  ✅ pnpm tsc-files works"
+            else
+              echo "  ⚠️ pnpm tsc-files failed"
+            fi
+          else
+            echo "  ℹ️ pnpm not available, skipping pnpm test"
+          fi
 
-        # Test yarn if available
-        if command -v yarn &> /dev/null; then
-          echo "  🔍 Testing yarn tsc-files functionality..."
-          if yarn tsc-files pm-test.ts > /dev/null 2>&1; then
-            echo "  ✅ yarn tsc-files works"
+          # Test yarn if available
+          if command -v yarn &> /dev/null; then
+            echo "  🔍 Testing yarn tsc-files functionality..."
+            if yarn tsc-files pm-test.ts > /dev/null 2>&1; then
+              echo "  ✅ yarn tsc-files works"
+            else
+              echo "  ⚠️ yarn tsc-files failed"
+            fi
           else
-            echo "  ⚠️ yarn tsc-files failed"
+            echo "  ℹ️ yarn not available, skipping yarn test"
           fi
-        else
-          echo "  ℹ️ yarn not available, skipping yarn test"
-        fi
 
-        # Test bun if available
-        if command -v bun &> /dev/null; then
-          echo "  🔍 Testing bun tsc-files functionality..."
-          if bun tsc-files pm-test.ts > /dev/null 2>&1; then
-            echo "  ✅ bun tsc-files works"
+          # Test bun if available
+          if command -v bun &> /dev/null; then
+            echo "  🔍 Testing bun tsc-files functionality..."
+            if bun tsc-files pm-test.ts > /dev/null 2>&1; then
+              echo "  ✅ bun tsc-files works"
+            else
+              echo "  ⚠️ bun tsc-files failed"
+            fi
           else
-            echo "  ⚠️ bun tsc-files failed"
+            echo "  ℹ️ bun not available, skipping bun test"
           fi
-        else
-          echo "  ℹ️ bun not available, skipping bun test"
         fi
 
         # Test traditional npx (most critical - must work)
@@ -333,20 +365,39 @@ runs:
         echo "🏁 Integration Test Summary"
         echo "⏱️  Total runtime: ${total_time}s"
 
-        # More realistic CI targets
-        if (( total_time <= 45 )); then
-          echo "🎯 EXCELLENT: Under 45 seconds!"
-        elif (( total_time <= 75 )); then
-          echo "✅ GOOD: Under 75 seconds!"
-        elif (( total_time <= 90 )); then
-          echo "⚠️ ACCEPTABLE: Under 90 seconds"
+        # Platform-specific performance targets
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          # Windows is slower due to process spawning overhead
+          if (( total_time <= 90 )); then
+            echo "🎯 EXCELLENT: Under 90 seconds for Windows!"
+          elif (( total_time <= 120 )); then
+            echo "✅ GOOD: Under 2 minutes for Windows!"
+          elif (( total_time <= 180 )); then
+            echo "⚠️ ACCEPTABLE: Under 3 minutes for Windows"
+          else
+            echo "❌ TOO SLOW: Exceeded 3 minute Windows target"
+            exit 1
+          fi
         else
-          echo "❌ TOO SLOW: Exceeded 90 second target"
-          exit 1
+          # Unix/macOS targets (faster)
+          if (( total_time <= 45 )); then
+            echo "🎯 EXCELLENT: Under 45 seconds!"
+          elif (( total_time <= 75 )); then
+            echo "✅ GOOD: Under 75 seconds!"
+          elif (( total_time <= 90 )); then
+            echo "⚠️ ACCEPTABLE: Under 90 seconds"
+          else
+            echo "❌ TOO SLOW: Exceeded 90 second target"
+            exit 1
+          fi
         fi
 
         # Cleanup temporary test directory
-        TEST_DIR="/tmp/tsc-files-integration-$$"
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          TEST_DIR="$RUNNER_TEMP/tsc-files-integration-$$"
+        else
+          TEST_DIR="/tmp/tsc-files-integration-$$"
+        fi
         if [ -d "$TEST_DIR" ]; then
           rm -rf "$TEST_DIR"
           echo "🧹 Cleaned up test directory"

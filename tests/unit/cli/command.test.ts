@@ -199,6 +199,7 @@ describe('CLI Command', () => {
 
       expect(options).toEqual({
         cache: true,
+        fallback: true,
       });
     });
   });

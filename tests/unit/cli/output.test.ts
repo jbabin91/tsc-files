@@ -41,6 +41,12 @@ describe('CLI Output', () => {
         noEmit: true,
         skipLibCheck: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const context = createOutputContext(options);
@@ -59,6 +65,12 @@ describe('CLI Output', () => {
         noEmit: true,
         skipLibCheck: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const context = createOutputContext(options);
@@ -74,6 +86,12 @@ describe('CLI Output', () => {
         noEmit: true,
         skipLibCheck: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const context = createOutputContext(options);
@@ -92,6 +110,12 @@ describe('CLI Output', () => {
         noEmit: true,
         skipLibCheck: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const context = createOutputContext(options);

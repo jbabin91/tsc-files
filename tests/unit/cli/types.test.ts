@@ -26,6 +26,12 @@ describe('CLI Types', () => {
         json: false,
         cache: true,
         skipLibCheck: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
     });
 
@@ -38,6 +44,12 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
     });
 
@@ -75,6 +87,12 @@ describe('CLI Types', () => {
         verbose: true,
         cache: true,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
     });
 
@@ -85,6 +103,12 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
 
       expect(validateCliOptions({})).toEqual({
@@ -93,6 +117,12 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
     });
 
@@ -103,6 +133,12 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
 
       expect(validateCliOptions(123)).toEqual({
@@ -111,6 +147,12 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       });
     });
   });
@@ -124,6 +166,12 @@ describe('CLI Types', () => {
         verbose: true,
         cache: false,
         json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const result = toCheckOptions(validatedOptions, '/test/cwd');
@@ -134,6 +182,11 @@ describe('CLI Types', () => {
         skipLibCheck: true,
         verbose: true,
         cache: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
         cwd: '/test/cwd',
       });
     });
@@ -146,6 +199,12 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: true, // Not included in CheckOptions
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const result = toCheckOptions(validatedOptions);
@@ -156,6 +215,11 @@ describe('CLI Types', () => {
         skipLibCheck: false,
         verbose: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
         cwd: undefined,
       });
     });
@@ -168,11 +232,63 @@ describe('CLI Types', () => {
         verbose: false,
         cache: true,
         json: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
       };
 
       const result = toCheckOptions(validatedOptions);
 
       expect(result).not.toHaveProperty('json');
+    });
+  });
+
+  describe('Compiler option validation', () => {
+    it('should throw error when both useTsc and useTsgo are true', () => {
+      const rawOptions = {
+        useTsc: true,
+        useTsgo: true,
+      };
+
+      expect(() => validateCliOptions(rawOptions)).toThrow(
+        'Cannot specify both --use-tsc and --use-tsgo flags. Choose one compiler.',
+      );
+    });
+
+    it('should allow useTsc only', () => {
+      const rawOptions = {
+        useTsc: true,
+        useTsgo: false,
+      };
+
+      const result = validateCliOptions(rawOptions);
+      expect(result.useTsc).toBe(true);
+      expect(result.useTsgo).toBe(false);
+    });
+
+    it('should allow useTsgo only', () => {
+      const rawOptions = {
+        useTsc: false,
+        useTsgo: true,
+      };
+
+      const result = validateCliOptions(rawOptions);
+      expect(result.useTsc).toBe(false);
+      expect(result.useTsgo).toBe(true);
+    });
+
+    it('should allow neither compiler flag', () => {
+      const rawOptions = {
+        useTsc: false,
+        useTsgo: false,
+      };
+
+      const result = validateCliOptions(rawOptions);
+      expect(result.useTsc).toBe(false);
+      expect(result.useTsgo).toBe(false);
     });
   });
 });

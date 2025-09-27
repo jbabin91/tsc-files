@@ -56,6 +56,24 @@ export function createProgram(
       '--skip-lib-check',
       'skip type checking of declaration files for faster execution',
     )
+    .option('--use-tsc', 'force use of tsc compiler even if tsgo is available')
+    .option('--use-tsgo', 'force use of tsgo compiler (fail if not available)')
+    .option(
+      '--show-compiler',
+      'display which TypeScript compiler is being used',
+    )
+    .option(
+      '--benchmark',
+      'run performance comparison between available compilers',
+    )
+    .option(
+      '--no-fallback',
+      'disable automatic fallback from tsgo to tsc on failure',
+    )
+    .option(
+      '--tips',
+      'show performance optimization tips for git hooks and TypeScript compilation',
+    )
     .hook('preAction', (_, actionCommand) => {
       const options = actionCommand.opts();
       if (options.verbose) {
@@ -115,6 +133,12 @@ ${kleur.bold('Examples:')}
 
   ${kleur.dim('# Git hook usage (lint-staged)')}
   tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$')
+
+  ${kleur.dim('# Compiler selection')}
+  tsc-files --use-tsgo "src/**/*.ts"     # Force use tsgo for speed
+  tsc-files --use-tsc "src/**/*.ts"      # Force use tsc for compatibility
+  tsc-files --show-compiler "src/**/*.ts" # Show which compiler is used
+  tsc-files --benchmark "src/**/*.ts"    # Compare compiler performance
 
 ${kleur.bold('Glob Patterns:')}
   ${kleur.yellow('"src/**/*.ts"')}       All .ts files in src/ and subdirectories

@@ -11,6 +11,12 @@ export type RawCliOptions = {
   json?: boolean;
   cache?: boolean;
   skipLibCheck?: boolean;
+  useTsc?: boolean;
+  useTsgo?: boolean;
+  showCompiler?: boolean;
+  benchmark?: boolean;
+  fallback?: boolean;
+  tips?: boolean;
 };
 
 /**
@@ -23,6 +29,12 @@ export type ValidatedCliOptions = {
   verbose: boolean;
   cache: boolean;
   json: boolean;
+  useTsc: boolean;
+  useTsgo: boolean;
+  showCompiler: boolean;
+  benchmark: boolean;
+  fallback: boolean;
+  tips: boolean;
 };
 
 /**
@@ -53,6 +65,12 @@ export const CliOptionsSchema = z.object({
   verbose: z.boolean().default(false),
   cache: z.boolean().default(true),
   json: z.boolean().default(false),
+  useTsc: z.boolean().default(false),
+  useTsgo: z.boolean().default(false),
+  showCompiler: z.boolean().default(false),
+  benchmark: z.boolean().default(false),
+  fallback: z.boolean().default(true),
+  tips: z.boolean().default(false),
 });
 
 /**
@@ -68,6 +86,11 @@ export function toCheckOptions(
     skipLibCheck: validated.skipLibCheck,
     verbose: validated.verbose,
     cache: validated.cache,
+    useTsc: validated.useTsc,
+    useTsgo: validated.useTsgo,
+    showCompiler: validated.showCompiler,
+    benchmark: validated.benchmark,
+    fallback: validated.fallback,
     cwd,
   };
 }
@@ -76,7 +99,16 @@ export function toCheckOptions(
  * Validate raw CLI options
  */
 export function validateCliOptions(rawOptions: unknown): ValidatedCliOptions {
-  return CliOptionsSchema.parse(
+  const parsed = CliOptionsSchema.parse(
     typeof rawOptions === 'object' && rawOptions !== null ? rawOptions : {},
   );
+
+  // Validate conflicting compiler options
+  if (parsed.useTsc && parsed.useTsgo) {
+    throw new Error(
+      'Cannot specify both --use-tsc and --use-tsgo flags. Choose one compiler.',
+    );
+  }
+
+  return parsed;
 }

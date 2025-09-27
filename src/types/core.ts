@@ -18,6 +18,16 @@ export type CheckOptions = {
   cwd?: string;
   /** Throw error instead of returning result */
   throwOnError?: boolean;
+  /** Force use of tsc compiler even if tsgo is available */
+  useTsc?: boolean;
+  /** Force use of tsgo compiler (fail if not available) */
+  useTsgo?: boolean;
+  /** Show which compiler is being used */
+  showCompiler?: boolean;
+  /** Run benchmark comparison between available compilers */
+  benchmark?: boolean;
+  /** Enable automatic fallback from tsgo to tsc (default: true) */
+  fallback?: boolean;
 };
 
 /**

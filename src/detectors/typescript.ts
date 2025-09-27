@@ -14,6 +14,9 @@ export type TypeScriptInfo = {
   packageManager: PackageManagerInfo;
   isWindows: boolean;
   quotedExecutable?: string; // For Windows paths with spaces
+  compilerType: 'tsc' | 'tsgo'; // Type of TypeScript compiler being used
+  version?: string; // Compiler version for user messaging
+  fallbackAvailable?: boolean; // Whether alternative compiler is available as fallback
 };
 
 const isWindows = process.platform === 'win32';
@@ -50,9 +53,74 @@ function getWindowsExecutable(executable: string): string {
 }
 
 /**
+ * Detection result for tsgo compiler
+ */
+export type TsgoDetectionResult = {
+  available: boolean;
+  executable?: string;
+  version?: string;
+  args?: string[];
+  useShell?: boolean;
+  quotedExecutable?: string;
+};
+
+/**
+ * Detect tsgo (TypeScript native preview) compiler
+ * @param cwd - Current working directory to search for tsgo
+ * @returns tsgo detection information
+ */
+export function detectTsgo(cwd: string): TsgoDetectionResult {
+  try {
+    // Check for @typescript/native-preview package in node_modules
+    const require = createRequire(path.join(cwd, 'package.json'));
+
+    try {
+      const tsgoPackagePath = require.resolve(
+        '@typescript/native-preview/package.json',
+      );
+      const tsgoPackageDir = path.dirname(tsgoPackagePath);
+
+      // Look for tsgo executable in the package
+      const tsgoPaths = [
+        path.join(tsgoPackageDir, 'bin', 'tsgo'),
+        path.join(tsgoPackageDir, 'tsgo'),
+        path.join(cwd, 'node_modules', '.bin', 'tsgo'),
+      ];
+
+      for (const tsgoPath of tsgoPaths) {
+        if (existsSync(tsgoPath)) {
+          const quotedPath = quoteWindowsPath(tsgoPath);
+
+          // For now, assume it works if the file exists
+          // Version check and execution verification can be added later
+          return {
+            available: true,
+            executable: tsgoPath,
+            version: undefined, // Version detection can be added later
+            args: [],
+            useShell: false,
+            quotedExecutable: quotedPath === tsgoPath ? undefined : quotedPath,
+          };
+        }
+      }
+
+      // Package exists but executable not found
+      return { available: false };
+    } catch {
+      // @typescript/native-preview package not found
+      return { available: false };
+    }
+  } catch {
+    // Error in detection process
+    return { available: false };
+  }
+}
+
+/**
  * Find TypeScript compiler executable with enhanced detection
  * Integrates with package manager detection for optimal execution
  * @param cwd - Current working directory to search for TypeScript compiler
+ * @param options - Options to override compiler selection behavior
  * @returns Complete TypeScript execution information including executable path, args, and package manager info
  * @example
  * ```typescript
@@ -64,8 +132,54 @@ function getWindowsExecutable(executable: string): string {
  */
 export function findTypeScriptCompiler(
   cwd: string = process.cwd(),
+  options?: {
+    useTsc?: boolean;
+    useTsgo?: boolean;
+  },
 ): TypeScriptInfo {
   const packageManagerInfo = detectPackageManagerAdvanced(cwd);
+
+  // Handle forced compiler selection
+  if (options?.useTsgo) {
+    // User explicitly wants tsgo - fail if not available
+    const tsgoInfo = detectTsgo(cwd);
+    if (tsgoInfo.available && tsgoInfo.executable) {
+      return {
+        executable: tsgoInfo.executable,
+        args: tsgoInfo.args ?? [],
+        useShell: tsgoInfo.useShell ?? false,
+        packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: tsgoInfo.quotedExecutable,
+        compilerType: 'tsgo',
+        version: tsgoInfo.version,
+        fallbackAvailable: true, // tsc is available as fallback
+      };
+    } else {
+      throw new Error(
+        'tsgo compiler not found. Install with: npm install -D @typescript/native-preview\n' +
+          'Or remove --use-tsgo flag to use standard tsc compiler.',
+      );
+    }
+  }
+
+  // Try tsgo first unless user explicitly wants tsc
+  if (!options?.useTsc) {
+    const tsgoInfo = detectTsgo(cwd);
+    if (tsgoInfo.available && tsgoInfo.executable) {
+      return {
+        executable: tsgoInfo.executable,
+        args: tsgoInfo.args ?? [],
+        useShell: tsgoInfo.useShell ?? false,
+        packageManager: packageManagerInfo,
+        isWindows,
+        quotedExecutable: tsgoInfo.quotedExecutable,
+        compilerType: 'tsgo',
+        version: tsgoInfo.version,
+        fallbackAvailable: true, // tsc is available as fallback
+      };
+    }
+  }
 
   if (packageManagerInfo.tscPath && existsSync(packageManagerInfo.tscPath)) {
     const executablePath = packageManagerInfo.tscPath;
@@ -78,6 +192,9 @@ export function findTypeScriptCompiler(
       packageManager: packageManagerInfo,
       isWindows,
       quotedExecutable: quotedPath === executablePath ? undefined : quotedPath,
+      compilerType: 'tsc',
+      version: undefined, // Version detection can be added later
+      fallbackAvailable: false, // Will be updated when tsgo detection is added
     };
   }
 
@@ -92,6 +209,9 @@ export function findTypeScriptCompiler(
       packageManager: packageManagerInfo,
       isWindows,
       quotedExecutable: quotedPath === localTsc ? undefined : quotedPath,
+      compilerType: 'tsc',
+      version: undefined,
+      fallbackAvailable: false,
     };
   }
 
@@ -113,6 +233,9 @@ export function findTypeScriptCompiler(
         packageManager: packageManagerInfo,
         isWindows,
         quotedExecutable: quotedPath === tscPath ? undefined : quotedPath,
+        compilerType: 'tsc',
+        version: undefined,
+        fallbackAvailable: false,
       };
     }
   }
@@ -134,6 +257,9 @@ export function findTypeScriptCompiler(
         packageManager: packageManagerInfo,
         isWindows,
         quotedExecutable: quotedPath === tscPath ? undefined : quotedPath,
+        compilerType: 'tsc',
+        version: undefined,
+        fallbackAvailable: false,
       };
     }
   } catch {
@@ -153,6 +279,9 @@ export function findTypeScriptCompiler(
         packageManager: packageManagerInfo,
         isWindows,
         quotedExecutable: quotedPath === executable ? undefined : quotedPath,
+        compilerType: 'tsc',
+        version: undefined,
+        fallbackAvailable: false,
       };
     }
 
@@ -167,6 +296,9 @@ export function findTypeScriptCompiler(
         packageManager: packageManagerInfo,
         isWindows,
         quotedExecutable: quotedPath === executable ? undefined : quotedPath,
+        compilerType: 'tsc',
+        version: undefined,
+        fallbackAvailable: false,
       };
     }
 
@@ -181,6 +313,9 @@ export function findTypeScriptCompiler(
         packageManager: packageManagerInfo,
         isWindows,
         quotedExecutable: quotedPath === executable ? undefined : quotedPath,
+        compilerType: 'tsc',
+        version: undefined,
+        fallbackAvailable: false,
       };
     }
 
@@ -195,6 +330,9 @@ export function findTypeScriptCompiler(
         packageManager: packageManagerInfo,
         isWindows,
         quotedExecutable: quotedPath === executable ? undefined : quotedPath,
+        compilerType: 'tsc',
+        version: undefined,
+        fallbackAvailable: false,
       };
     }
   }

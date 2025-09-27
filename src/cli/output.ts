@@ -133,3 +133,17 @@ export function outputError(message: string, tip?: string): void {
     console.error(`\n${tip}`); // eslint-disable-line no-console
   }
 }
+
+/**
+ * Output educational tips to console
+ */
+export function outputTip(message: string): void {
+  console.info(kleur.dim(`💡 ${message}`)); // eslint-disable-line no-console
+}
+
+/**
+ * Output performance insight to console
+ */
+export function outputPerformanceInsight(message: string): void {
+  console.info(kleur.cyan(`⚡ ${message}`)); // eslint-disable-line no-console
+}

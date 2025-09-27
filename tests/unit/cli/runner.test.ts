@@ -20,6 +20,27 @@ vi.mock('@/core/checker', () => ({
   checkFiles: vi.fn(),
 }));
 
+// Mock the education module
+vi.mock('@/cli/education', () => ({
+  provideCompilerEducation: vi.fn(),
+  provideGitHookOptimization: vi.fn(),
+  provideUsageOptimization: vi.fn(),
+  isLikelyFirstTsgoRun: vi.fn(() => false),
+}));
+
+// Mock the TypeScript detector
+vi.mock('@/detectors/typescript', () => ({
+  findTypeScriptCompiler: vi.fn(() => ({
+    executable: '/usr/bin/tsc',
+    args: [],
+    useShell: false,
+    packageManager: { manager: 'npm' },
+    isWindows: false,
+    compilerType: 'tsc',
+    fallbackAvailable: false,
+  })),
+}));
+
 // Mock console methods
 vi.mock('@/cli/output', () => ({
   createOutputContext: vi.fn(() => ({
@@ -35,6 +56,8 @@ vi.mock('@/cli/output', () => ({
   })),
   outputToConsole: vi.fn(),
   outputError: vi.fn(),
+  outputTip: vi.fn(),
+  outputPerformanceInsight: vi.fn(),
 }));
 
 const mockCheckFiles = vi.mocked(checkFiles);
@@ -84,6 +107,11 @@ describe('CLI Runner', () => {
         skipLibCheck: false,
         verbose: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
         cwd: undefined,
       });
     });
@@ -198,6 +226,11 @@ describe('CLI Runner', () => {
         skipLibCheck: false,
         verbose: true,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
         cwd: undefined,
       });
     });
@@ -266,6 +299,11 @@ describe('CLI Runner', () => {
         skipLibCheck: false,
         verbose: false,
         cache: true,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
         cwd: '/custom/cwd',
       });
     });

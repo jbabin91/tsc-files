@@ -1,5 +1,6 @@
 import { execa, type ExecaError } from 'execa';
 
+import { provideFallbackEducation } from '@/cli/education';
 import { findTypeScriptCompiler } from '@/detectors/typescript';
 import { parseAndSeparateOutput } from '@/execution/output-parser';
 import type { CheckOptions, CheckResult } from '@/types/core';
@@ -62,9 +63,12 @@ function extractExecutionDetails(execError: ExecaError): {
 export async function executeTypeScriptCompiler(
   tempConfigPath: string,
   cwd: string,
-  options: Pick<CheckOptions, 'verbose'>,
+  options: Pick<CheckOptions, 'verbose' | 'useTsc' | 'useTsgo'>,
 ): Promise<ExecutionResult> {
-  const tsInfo = findTypeScriptCompiler(cwd);
+  const tsInfo = findTypeScriptCompiler(cwd, {
+    useTsc: options.useTsc,
+    useTsgo: options.useTsgo,
+  });
   const args = [...tsInfo.args, '--project', tempConfigPath];
 
   if (options.verbose) {
@@ -134,6 +138,108 @@ export async function executeTypeScriptCompiler(
 }
 
 /**
+ * Execute TypeScript compiler with graceful fallback from tsgo to tsc
+ * @param tempConfigPath - Path to temporary TypeScript configuration
+ * @param checkedFiles - List of files being checked
+ * @param cwd - Current working directory
+ * @param options - Check options
+ * @param startTime - Start time for duration calculation
+ * @returns Promise resolving to check result
+ */
+export async function executeWithFallback(
+  tempConfigPath: string,
+  checkedFiles: string[],
+  cwd: string,
+  options: CheckOptions,
+  startTime: number,
+): Promise<CheckResult> {
+  // First attempt with user-configured compiler
+  try {
+    const executionResult = await executeTypeScriptCompiler(
+      tempConfigPath,
+      cwd,
+      options,
+    );
+
+    const { errors, warnings } = parseAndSeparateOutput(
+      executionResult.allOutput,
+    );
+
+    // If execution succeeded or we got parseable TypeScript errors, return the result
+    if (executionResult.success || errors.length > 0) {
+      return {
+        success: errors.length === 0,
+        errorCount: errors.length,
+        warningCount: warnings.length,
+        errors,
+        warnings,
+        duration: Math.round(performance.now() - startTime),
+        checkedFiles,
+      };
+    }
+
+    // If execution failed with no parseable errors, check if we can fallback
+    const tsInfo = findTypeScriptCompiler(cwd, {
+      useTsc: options.useTsc,
+      useTsgo: options.useTsgo,
+    });
+
+    // Only attempt fallback if we were using tsgo, user didn't force it, and fallback is enabled
+    if (
+      tsInfo.compilerType === 'tsgo' &&
+      !options.useTsgo &&
+      options.fallback !== false &&
+      tsInfo.fallbackAvailable
+    ) {
+      // Provide educational messaging about the fallback
+      provideFallbackEducation(
+        'tsgo',
+        'tsc',
+        executionResult.errorMessage ?? 'Execution failed',
+      );
+
+      // Retry with tsc
+      const fallbackOptions = { ...options, useTsc: true, useTsgo: false };
+      const fallbackResult = await executeTypeScriptCompiler(
+        tempConfigPath,
+        cwd,
+        fallbackOptions,
+      );
+
+      const { errors: fbErrors, warnings: fbWarnings } = parseAndSeparateOutput(
+        fallbackResult.allOutput,
+      );
+
+      if (fallbackResult.success || fbErrors.length > 0) {
+        if (options.verbose) {
+          logger.info('✅ Fallback to tsc successful');
+        }
+        return {
+          success: fbErrors.length === 0,
+          errorCount: fbErrors.length,
+          warningCount: fbWarnings.length,
+          errors: fbErrors,
+          warnings: fbWarnings,
+          duration: Math.round(performance.now() - startTime),
+          checkedFiles,
+        };
+      }
+    }
+
+    // If we get here, both compilers failed
+    const errorMessage =
+      executionResult.allOutput ??
+      executionResult.errorMessage ??
+      'TypeScript compiler execution failed';
+    throw new Error(`TypeScript compiler failed: ${errorMessage}`);
+  } catch (error) {
+    // Handle unexpected errors during execution
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`TypeScript compiler failed: ${errorMessage}`);
+  }
+}
+
+/**
  * Execute TypeScript compiler and parse results into CheckResult
  * @param tempConfigPath - Path to temporary TypeScript configuration
  * @param checkedFiles - List of files being checked
@@ -149,36 +255,12 @@ export async function executeAndParseTypeScript(
   options: CheckOptions,
   startTime: number,
 ): Promise<CheckResult> {
-  const executionResult = await executeTypeScriptCompiler(
+  // Use the fallback mechanism unless user explicitly disabled it
+  return executeWithFallback(
     tempConfigPath,
+    checkedFiles,
     cwd,
     options,
+    startTime,
   );
-  const { errors, warnings } = parseAndSeparateOutput(
-    executionResult.allOutput,
-  );
-
-  // If no errors were parsed but execution failed with non-zero exit code,
-  // treat it as a system error
-  if (
-    errors.length === 0 &&
-    !executionResult.success &&
-    executionResult.exitCode !== 0
-  ) {
-    const errorMessage =
-      executionResult.allOutput ??
-      executionResult.errorMessage ??
-      'Unknown error';
-    throw new Error(`TypeScript compiler failed: ${errorMessage}`);
-  }
-
-  return {
-    success: errors.length === 0,
-    errorCount: errors.length,
-    warningCount: warnings.length,
-    errors,
-    warnings,
-    duration: Math.round(performance.now() - startTime),
-    checkedFiles,
-  };
 }

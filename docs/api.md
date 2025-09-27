@@ -45,6 +45,48 @@ tsc-files [options] <files...>
 - `--json` - Output results as JSON for CI/CD integration
 - `--no-cache` - Disable temporary file caching for debugging
 - `--skip-lib-check` - Skip type checking of declaration files for faster execution
+- `--use-tsc` - Force use of tsc compiler even if tsgo is available
+- `--use-tsgo` - Force use of tsgo compiler (fail if not available)
+- `--show-compiler` - Display which TypeScript compiler is being used
+- `--benchmark` - Run performance comparison between available compilers
+- `--no-fallback` - Disable automatic fallback from tsgo to tsc on failure
+- `--tips` - Show performance optimization tips for git hooks and TypeScript compilation
+
+### Compiler Selection
+
+**tsgo (TypeScript Native Compiler)**
+
+tsc-files automatically detects and can use `tsgo`, Microsoft's experimental native TypeScript compiler that offers up to 10x faster compilation:
+
+```bash
+# Auto-detect and use tsgo if available
+tsc-files "src/**/*.ts"
+
+# Force use tsgo (fail if not available)
+tsc-files --use-tsgo "src/**/*.ts"
+
+# Show which compiler is being used
+tsc-files --show-compiler "src/**/*.ts"
+
+# Compare performance between tsc and tsgo
+tsc-files --benchmark "src/**/*.ts"
+
+# Disable automatic fallback to tsc if tsgo fails
+tsc-files --use-tsgo --no-fallback "src/**/*.ts"
+```
+
+**Installation for tsgo:**
+
+```bash
+npm install -D @typescript/native-preview
+```
+
+**Benefits:**
+
+- Up to 10x faster compilation than tsc
+- Identical type checking results
+- Automatic fallback to tsc if needed
+- Perfect for git hooks and CI/CD
 
 ### Enhanced Features
 
@@ -109,6 +151,16 @@ export type CheckOptions = {
   cwd?: string;
   /** Throw error instead of returning result */
   throwOnError?: boolean;
+  /** Force use of tsc compiler */
+  useTsc?: boolean;
+  /** Force use of tsgo compiler */
+  useTsgo?: boolean;
+  /** Show which compiler is being used */
+  showCompiler?: boolean;
+  /** Run benchmark comparison between compilers */
+  benchmark?: boolean;
+  /** Disable automatic fallback from tsgo to tsc */
+  fallback?: boolean;
 };
 
 /**
@@ -258,6 +310,12 @@ tsc-files "packages/*/src/**/*.ts"
 
 # Using environment variable for consistency
 TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
+
+# Optimize performance with tsgo
+tsc-files --use-tsgo "packages/*/src/**/*.ts"
+
+# Benchmark different compilers across packages
+tsc-files --benchmark "packages/*/src/**/*.ts"
 ```
 
 ## Glob Patterns
@@ -269,7 +327,31 @@ TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
 
 ## Performance Tips
 
+### tsgo Optimization
+
+- **Install tsgo**: `npm install -D @typescript/native-preview` for up to 10x faster compilation
+- **Auto-detection**: tsc-files automatically uses tsgo when available
+- **Force tsgo**: Use `--use-tsgo` for guaranteed performance (fails if tsgo not available)
+- **Benchmark**: Use `--benchmark` to compare tsc vs tsgo performance on your codebase
+- **Git hooks**: tsgo is perfect for git hooks where speed matters most
+
+### General Performance
+
 - Use `--skip-lib-check` for faster execution in CI environments
 - Enable `--cache` (default) for repeated runs
 - Use `--json` output for programmatic processing
 - Set `TSC_PROJECT` environment variable to avoid repetitive `--project` flags
+- Use `--tips` flag to get personalized optimization suggestions
+
+### Git Hook Optimization
+
+```bash
+# Get optimization tips
+tsc-files --tips
+
+# Fast git hook with tsgo
+tsc-files --use-tsgo --skip-lib-check "src/**/*.ts"
+
+# Show compiler information for debugging
+tsc-files --show-compiler --verbose "src/**/*.ts"
+```

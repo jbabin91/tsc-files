@@ -287,10 +287,56 @@ test('findTypeScriptCompiler works', async () => {
 
 ### Testing Strategy
 
-- **No mocking of core functions**: Tests run against real implementations for better integration testing
-- **Use test fixtures**: Automatic temp directory creation and cleanup
-- **Real TypeScript execution**: Tests use actual TypeScript compiler for authentic behavior
-- **Isolated test environments**: Each test gets its own temporary directory
+**As of ADR 011, we use a Coverage-First Hybrid Testing Strategy:**
+
+- **Hybrid Approach**: Combines real behavior testing with strategic mocking
+- **Real Testing for Happy Paths**: Uses actual file systems, real TypeScript execution
+- **Strategic Mocks for Edge Cases**: Mock complex error scenarios and platform-specific behavior
+- **Coverage-First**: Always ensure coverage thresholds are met before refactoring
+- **Component Testing**: Use test fixtures and isolated environments
+
+#### When to Use Real vs Mock Testing
+
+**Use Real Testing For:**
+
+- Happy path scenarios
+- Integration workflows
+- File system operations that can be isolated
+- Actual TypeScript compilation and type checking
+
+**Use Mock Testing For:**
+
+- Complex error scenarios (permission denied, disk full)
+- Platform-specific behavior testing (Windows vs Unix)
+- External API failures
+- Edge cases difficult to reproduce with real systems
+
+#### Example Hybrid Test Structure
+
+```typescript
+describe('TypeScript Detection - Hybrid Approach', () => {
+  describe('Real Detection (Happy Paths)', () => {
+    it('should detect real TypeScript in temp project', () => {
+      const tempDir = createTempDir();
+      setupTypeScriptProject(tempDir);
+      installFakeTypeScript(tempDir);
+
+      const result = findTypeScriptCompiler(tempDir);
+
+      expect(result.executable).toContain('node_modules/.bin/tsc');
+    });
+  });
+
+  describe('Mock Detection (Edge Cases)', () => {
+    it('should handle require.resolve errors', () => {
+      setupMockRequire(() => {
+        throw new Error('Permission denied');
+      });
+      // Test error handling - maintain coverage of error branches
+    });
+  });
+});
+```
 
 ```typescript
 import { test } from 'vitest';
@@ -323,18 +369,45 @@ The project uses different coverage thresholds for different code areas based on
 - **Functions**: 100% - Every function must be tested (zero-tolerance)
 - **Lines/Statements**: 90% - Maximum coverage for core functionality
 
-#### Detector Modules (`src/detectors/**`) - **Progressive Standards**
+#### CLI Modules (`src/cli/**`) - **High User-Facing Standards**
 
-- **Branches**: 29% - Current baseline, can be increased over time
-- **Functions**: 62% - Moderate function coverage requirement
-- **Lines/Statements**: 35% - Lower initial threshold due to cross-platform complexity
+- **Branches**: 85% - User interface logic must be well-tested
+- **Functions**: 94% - Nearly all CLI functions must be exercised
+- **Lines/Statements**: 89% - High coverage for user-facing functionality
+
+#### Execution Modules (`src/execution/**`) - **Highest Performance Standards**
+
+- **Branches**: 85% - Critical execution paths must be tested
+- **Functions**: 100% - Every execution function must be tested (zero-tolerance)
+- **Lines/Statements**: 95% - Maximum coverage for performance-critical code
+
+#### Detector Modules (`src/detectors/**`) - **Comprehensive Detection Standards**
+
+- **Branches**: 75% - Detection logic must handle multiple scenarios
+- **Functions**: 100% - Every detection function must be tested
+- **Lines/Statements**: 65% - Good coverage accounting for platform complexity
+
+#### Utils Modules (`src/utils/**`) - **Perfect Utility Standards**
+
+- **Branches**: 90% - Utility functions must handle edge cases
+- **Functions**: 100% - Every utility function must be tested
+- **Lines/Statements**: 95% - Near-perfect coverage for reusable utilities
 
 ### Coverage Philosophy
 
-1. **Zero-Tolerance for Core**: Core business logic must have near-perfect coverage
-2. **Progressive for Infrastructure**: Detector modules have lower initial thresholds that can be raised as tests are added
-3. **Practical Approach**: Acknowledges that some cross-platform and environment-specific code is harder to test
+1. **Zero-Tolerance for Critical Code**: Core business logic, execution, and utilities must have near-perfect coverage
+2. **High Standards for User-Facing**: CLI modules have high thresholds due to user impact
+3. **Comprehensive Detection**: Detector modules must handle multiple scenarios but account for platform complexity
 4. **Quality Gates**: All thresholds are enforced in CI - coverage regressions block merges
+5. **Coverage-First Refactoring**: Never refactor tests without ensuring coverage is maintained
+
+### Recent Coverage Focus Areas
+
+**Post-tsgo Integration (ADR 011):**
+
+- **education.ts**: New module needs comprehensive test coverage (40% → 89%)
+- **typescript.ts**: tsgo detection features need testing (48% → 65%)
+- **CLI integration**: New flags (`--tips`, `--benchmark`, `--show-compiler`) need testing
 
 ### Improving Coverage
 

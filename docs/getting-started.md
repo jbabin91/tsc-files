@@ -127,6 +127,47 @@ tsc-files automatically detects and works with:
 
 No configuration needed - it just works!
 
+## TypeScript Compiler Support
+
+tsc-files supports both TypeScript compilers:
+
+### tsc (Standard Compiler)
+
+- Built-in TypeScript compiler
+- Reliable and well-tested
+- Default choice for compatibility
+
+### tsgo (Native Compiler)
+
+- **Up to 10x faster** than tsc
+- Microsoft's experimental native TypeScript compiler
+- Perfect for git hooks and CI/CD where speed matters
+
+**Installation:**
+
+```bash
+npm install -D @typescript/native-preview
+```
+
+**Auto-detection:**
+tsc-files automatically detects and uses tsgo when available, with automatic fallback to tsc if needed.
+
+**Manual selection:**
+
+```bash
+# Force use tsgo (fail if not available)
+tsc-files --use-tsgo "src/**/*.ts"
+
+# Force use tsc (skip tsgo even if available)
+tsc-files --use-tsc "src/**/*.ts"
+
+# Show which compiler is being used
+tsc-files --show-compiler "src/**/*.ts"
+
+# Compare performance between both compilers
+tsc-files --benchmark "src/**/*.ts"
+```
+
 ## Next Steps
 
 - [API Reference](./api.md) - Complete CLI and programmatic API documentation

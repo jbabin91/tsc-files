@@ -223,15 +223,46 @@ src/
 - ✅ **Package Manager Integration**: npm/yarn/pnpm/bun detection with environment detection
 - ✅ **TypeScript Compiler Detection**: Advanced detection with cross-platform path resolution
 
-## Phase 3: Advanced Features & Polish 🔮 FUTURE
+## Phase 3.1: Performance & Reliability Enhancements 🚀 CURRENT
 
-**Potential Enhancement Areas** (Feature Complete - Enhancements Optional):
+**Focused Git Hook Optimization** (4-6 weeks implementation):
 
-- [ ] **Advanced Configuration**: Enhanced tsconfig extends chain validation and error messages
-- [ ] **Performance Benchmarking**: Systematic performance testing and optimization
-- [ ] **Enterprise Caching**: Advanced file-level caching strategies
-- [ ] **Enhanced Error Messages**: More detailed diagnostic information and suggestions
-- [ ] **Plugin System**: Extensible architecture for custom type checking rules
-- [ ] **IDE Integration**: Language server protocol support for editor integrations
+### ✅ **tsgo Integration** (Weeks 1-2) - HIGH PRIORITY
 
-This systematic approach ensures secure, high-quality implementation while leveraging all ClaudeLog foundation mechanics for optimal development efficiency.
+- **User-managed installation**: Detect `@typescript/native-preview`, fallback to tsc
+- **10x performance boost**: Git hooks complete in milliseconds instead of seconds
+- **Smart compiler selection**: Auto-detect with CLI override options (`--use-tsc`, `--benchmark`)
+- **Graceful fallback**: Handle tsgo limitations with automatic tsc fallback
+- **Educational messaging**: Guide users to performance improvements
+
+### 🔄 **Enhanced Error Messages** (Week 3) - HIGH PRIORITY
+
+- **Git hook context**: Clear guidance when commits fail due to TypeScript errors
+- **Actionable diagnostics**: Show file locations and suggested fixes
+- **Improved formatting**: Better error output for lint-staged workflows
+- **User-friendly guidance**: Help developers fix issues quickly
+
+### ⚙️ **Advanced Configuration** (Week 4) - MEDIUM PRIORITY
+
+- **Robust tsconfig handling**: Better extends chain resolution and validation
+- **Monorepo reliability**: Improved config discovery in complex workspace setups
+- **Clear error messages**: Actionable guidance for configuration problems
+- **Edge case coverage**: Handle malformed configs gracefully
+
+### 📦 **Bun Runtime Support** (Week 5) - MEDIUM PRIORITY
+
+- **Package manager detection**: Extend existing detection to include Bun
+- **Future-proofing**: Ready for Bun ecosystem adoption
+- **Consistent experience**: Same reliability across npm/yarn/pnpm/bun
+
+**Phase 3.1 Outcome**: tsc-files becomes THE definitive TypeScript file checker for git hooks - fastest performance, clearest errors, most reliable configuration handling.
+
+## Post-Phase 3.1: Maintenance Mode 🎯
+
+After Phase 3.1, tsc-files will be feature-complete for its core git hook mission. Future work will focus on:
+
+- Ecosystem updates (new TypeScript versions, runtime support)
+- Bug fixes and performance optimizations
+- Community-driven enhancements
+
+**Strategic Position**: "The fastest, most reliable TypeScript file checker for git hooks and lint-staged workflows"

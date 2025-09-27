@@ -1,6 +1,7 @@
 import { Command, InvalidArgumentError, Option } from 'commander';
 import kleur from 'kleur';
 
+import type { RawCliOptions } from '@/types/cli';
 import { logger } from '@/utils/logger';
 
 import packageJson from '../../package.json' with { type: 'json' };
@@ -161,7 +162,7 @@ For more information, visit: ${kleur.cyan('https://github.com/jbabin91/tsc-files
 export function parseArguments(
   program: Command,
   args?: string[],
-): { files: string[]; options: unknown } {
+): { files: string[]; options: RawCliOptions } {
   const parsedArgs = program.parse(args, { from: 'user' });
   return {
     files: parsedArgs.args,

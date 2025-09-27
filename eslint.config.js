@@ -93,6 +93,7 @@ export default defineConfig(
   {
     files: ['tests/**/*', '**/*.test.*', '**/*.spec.*'],
     rules: {
+      '@typescript-eslint/unbound-method': 'off',
       'no-console': 'off',
       'no-empty-pattern': 'off',
     },

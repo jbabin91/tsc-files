@@ -77,6 +77,49 @@ describe('CLI Command', () => {
       expect(options).toContain('--verbose');
       expect(options).toContain('--json');
       expect(options).toContain('--skip-lib-check');
+      expect(options).toContain('--tips');
+      expect(options).toContain('--benchmark');
+      expect(options).toContain('--show-compiler');
+    });
+
+    it('should validate project path - reject empty string', () => {
+      const mockAction = vi.fn();
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--project', '', 'test.ts']);
+      }).toThrow('Project path cannot be empty');
+    });
+
+    it('should validate project path - reject non-JSON files', () => {
+      const mockAction = vi.fn();
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--project', 'tsconfig.xml', 'test.ts']);
+      }).toThrow('Project path must point to a JSON file');
+    });
+
+    it('should validate project path - accept valid JSON files', () => {
+      const mockAction = vi.fn();
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { options } = parseArguments(program, [
+        '--project',
+        'tsconfig.json',
+        'test.ts',
+      ]);
+
+      expect(options.project).toBe('tsconfig.json');
     });
 
     it('should handle no-cache option correctly', () => {
@@ -200,6 +243,96 @@ describe('CLI Command', () => {
       expect(options).toEqual({
         cache: true,
         fallback: true,
+      });
+    });
+
+    it('should parse tips flag correctly', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { files, options } = parseArguments(program, ['--tips', 'test.ts']);
+
+      expect(files).toEqual(['test.ts']);
+      expect(options).toMatchObject({
+        tips: true,
+      });
+    });
+
+    it('should parse benchmark flag correctly', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { files, options } = parseArguments(program, [
+        '--benchmark',
+        'test.ts',
+      ]);
+
+      expect(files).toEqual(['test.ts']);
+      expect(options).toMatchObject({
+        benchmark: true,
+      });
+    });
+
+    it('should parse show-compiler flag correctly', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { files, options } = parseArguments(program, [
+        '--show-compiler',
+        'test.ts',
+      ]);
+
+      expect(files).toEqual(['test.ts']);
+      expect(options).toMatchObject({
+        showCompiler: true,
+      });
+    });
+
+    it('should parse multiple new flags together', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { files, options } = parseArguments(program, [
+        '--tips',
+        '--benchmark',
+        '--show-compiler',
+        '--verbose',
+        'test.ts',
+      ]);
+
+      expect(files).toEqual(['test.ts']);
+      expect(options).toMatchObject({
+        tips: true,
+        benchmark: true,
+        showCompiler: true,
+        verbose: true,
+      });
+    });
+
+    it('should parse tsgo compiler flags correctly', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { files, options } = parseArguments(program, [
+        '--use-tsgo',
+        '--no-fallback',
+        'test.ts',
+      ]);
+
+      expect(files).toEqual(['test.ts']);
+      expect(options).toMatchObject({
+        useTsgo: true,
+        fallback: false,
       });
     });
   });

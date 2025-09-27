@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  provideCompilerEducation,
+  provideGitHookOptimization,
+} from '@/cli/education';
+import {
   createOutputContext,
   formatOutput,
   outputToConsole,
@@ -24,8 +28,6 @@ vi.mock('@/core/checker', () => ({
 vi.mock('@/cli/education', () => ({
   provideCompilerEducation: vi.fn(),
   provideGitHookOptimization: vi.fn(),
-  provideUsageOptimization: vi.fn(),
-  isLikelyFirstTsgoRun: vi.fn(() => false),
 }));
 
 // Mock the TypeScript detector
@@ -66,6 +68,10 @@ const mockStartProgress = vi.mocked(startProgress);
 const mockUpdateProgress = vi.mocked(updateProgress);
 const mockFormatOutput = vi.mocked(formatOutput);
 const mockOutputToConsole = vi.mocked(outputToConsole);
+
+// Education module mocks
+const mockProvideCompilerEducation = vi.mocked(provideCompilerEducation);
+const mockProvideGitHookOptimization = vi.mocked(provideGitHookOptimization);
 
 describe('CLI Runner', () => {
   beforeEach(() => {
@@ -333,6 +339,185 @@ describe('CLI Runner', () => {
         expect.anything(),
         mockResult,
       );
+    });
+
+    it('should handle --tips flag and exit early', async () => {
+      const result = await runTypeCheck(['test.ts'], {
+        tips: true,
+        json: false,
+        verbose: false,
+      });
+
+      expect(result).toEqual({
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+      });
+
+      // Should call education functions
+      expect(mockProvideGitHookOptimization).toHaveBeenCalled();
+      expect(mockProvideCompilerEducation).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(String), // cwd parameter
+        true, // isFirstRun - tips flag shows first-run education
+      );
+
+      // Should NOT call checkFiles since we exit early
+      expect(mockCheckFiles).not.toHaveBeenCalled();
+    });
+
+    it('should handle --tips flag with json mode (no early exit)', async () => {
+      const mockResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 100,
+        checkedFiles: ['test.ts'],
+      };
+
+      mockCheckFiles.mockResolvedValue(mockResult);
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      const result = await runTypeCheck(['test.ts'], {
+        tips: true,
+        json: true, // JSON mode prevents early exit
+        verbose: false,
+      });
+
+      expect(result).toEqual({
+        exitCode: 0,
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      // Should still call checkFiles in JSON mode
+      expect(mockCheckFiles).toHaveBeenCalled();
+    });
+
+    it('should handle --benchmark flag and run comparison', async () => {
+      const mockTscResult: CheckResult = {
+        success: true,
+        errorCount: 1,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 200,
+        checkedFiles: ['test.ts'],
+      };
+
+      const mockTsgoResult: CheckResult = {
+        success: true,
+        errorCount: 1,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 100,
+        checkedFiles: ['test.ts'],
+      };
+
+      const mockFinalResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 150,
+        checkedFiles: ['test.ts'],
+      };
+
+      // Mock the three checkFiles calls for benchmark
+      mockCheckFiles
+        .mockResolvedValueOnce(mockTscResult) // tsc run
+        .mockResolvedValueOnce(mockTsgoResult) // tsgo run
+        .mockResolvedValueOnce(mockFinalResult); // final run
+
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      const result = await runTypeCheck(['test.ts'], {
+        benchmark: true,
+        verbose: false,
+        json: false,
+      });
+
+      expect(result).toEqual({
+        exitCode: 0,
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      // Should call checkFiles three times
+      expect(mockCheckFiles).toHaveBeenCalledTimes(3);
+
+      // First call should force tsc
+      expect(mockCheckFiles).toHaveBeenNthCalledWith(
+        1,
+        ['test.ts'],
+        expect.objectContaining({
+          useTsc: true,
+          useTsgo: false,
+        }),
+      );
+
+      // Second call should force tsgo
+      expect(mockCheckFiles).toHaveBeenNthCalledWith(
+        2,
+        ['test.ts'],
+        expect.objectContaining({
+          useTsc: false,
+          useTsgo: true,
+        }),
+      );
+
+      // Third call should use original options (no forced compiler)
+      const thirdCallArgs = mockCheckFiles.mock.calls[2];
+      expect(thirdCallArgs[0]).toEqual(['test.ts']);
+      expect(thirdCallArgs[1]).not.toHaveProperty('useTsc');
+      expect(thirdCallArgs[1]).not.toHaveProperty('useTsgo');
+    });
+
+    it('should handle --benchmark flag error and fallback gracefully', async () => {
+      const mockFinalResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 150,
+        checkedFiles: ['test.ts'],
+      };
+
+      // Make first benchmark call fail
+      mockCheckFiles
+        .mockRejectedValueOnce(new Error('Benchmark failed'))
+        .mockResolvedValueOnce(mockFinalResult); // fallback run
+
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      const result = await runTypeCheck(['test.ts'], {
+        benchmark: true,
+        verbose: false,
+        json: false,
+      });
+
+      expect(result).toEqual({
+        exitCode: 0,
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      // Should call checkFiles twice (failed benchmark + fallback)
+      expect(mockCheckFiles).toHaveBeenCalledTimes(2);
     });
   });
 

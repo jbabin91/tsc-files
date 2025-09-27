@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createCli } from '@/cli/main';
+import { createCli, main } from '@/cli/main';
 
 // Mock process.exit to prevent actual exits in tests
 const mockExit = vi.fn();
+const mockProcessOn = vi.fn();
 vi.stubGlobal('process', {
   ...process,
   exit: mockExit,
   cwd: vi.fn(() => '/test/cwd'),
+  on: mockProcessOn,
 });
 
 describe('CLI Main', () => {
@@ -88,6 +90,124 @@ describe('CLI Main', () => {
 
       // Should get exit code from configuration error (no tsconfig found)
       expect(exitCode).toBe(0);
+    });
+
+    it('should handle error with stderr output in parseAsync', async () => {
+      const cli = createCli();
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {
+        /* empty */
+      });
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
+
+      // Use invalid option to trigger commander error
+      const exitCode = await cli.parseAsync([
+        'node',
+        'tsc-files',
+        '--invalid-option',
+      ]);
+
+      // Should handle error path with stderr output
+      expect(exitCode).toBe(99);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle exitOverride error with stderr output', async () => {
+      const cli = createCli();
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
+
+      // Mock program.parseAsync to throw an error that will trigger exitOverride
+      const exitCode = await cli.parseAsync(['node', 'tsc-files', '--help']);
+
+      // Should handle exitOverride path
+      expect(exitCode).toBe(99);
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('main', () => {
+    it('should set up unhandled rejection handler and handle errors', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
+
+      // Test the unhandled rejection handler by checking process.on was called
+      // This is enough to cover the main function setup without complex mocking
+      try {
+        // Just call main with help to trigger the process.on setup and quick exit
+        await main(['node', 'tsc-files', '--help']);
+      } catch {
+        // Ignore errors from --help exit
+      }
+
+      // Verify process.on was called to set up unhandled rejection handler
+      expect(mockProcessOn).toHaveBeenCalledWith(
+        'unhandledRejection',
+        expect.any(Function),
+      );
+
+      // Test the unhandled rejection handler directly
+      const rejectionHandler = mockProcessOn.mock.calls.find(
+        (call) => call[0] === 'unhandledRejection',
+      )?.[1] as (error: Error) => void;
+
+      if (rejectionHandler) {
+        rejectionHandler(new Error('Test error'));
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Unhandled rejection:',
+          expect.any(Error),
+        );
+        expect(mockExit).toHaveBeenCalledWith(99);
+      }
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should handle main function execution flow', async () => {
+      // Test that main function calls process.exit with correct code
+      // The actual CLI logic is tested in other tests, we just need to verify
+      // the main function flow (process.on setup and process.exit call)
+
+      try {
+        await main(['node', 'tsc-files', '--version']);
+      } catch {
+        // Ignore errors from --version exit
+      }
+
+      // Verify process.on was called (main function was executed)
+      expect(mockProcessOn).toHaveBeenCalled();
+      // Verify process.exit was called at some point
+      expect(mockExit).toHaveBeenCalled();
+    });
+
+    it('should handle main function with no arguments', async () => {
+      mockExit.mockClear();
+      mockProcessOn.mockClear();
+
+      try {
+        await main();
+      } catch {
+        // Ignore commander errors
+      }
+
+      // Verify the main function flow was executed
+      expect(mockProcessOn).toHaveBeenCalledWith(
+        'unhandledRejection',
+        expect.any(Function),
+      );
     });
   });
 });

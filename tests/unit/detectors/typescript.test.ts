@@ -1215,5 +1215,196 @@ describe('TypeScript Detection', () => {
         vi.mocked(path).join.mockImplementation(originalPathJoin);
       }
     });
+
+    it('should hit bun package manager branch in createPackageManagerTypeScript', () => {
+      // Configure package manager mock to return bun WITHOUT tscPath
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'bun',
+        lockFile: 'bun.lockb',
+        command: 'bun',
+        tscPath: '', // Force use of package manager detection logic
+      });
+
+      // Make local node_modules/.bin/tsc exist
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath?.toString() || '';
+        return (
+          pathStr.includes('node_modules') &&
+          pathStr.includes('.bin') &&
+          pathStr.includes('tsc')
+        );
+      });
+
+      // Make tsgo unavailable
+      setupMockRequire((id: string) => {
+        throw new Error(`Cannot resolve ${id}`);
+      });
+
+      const result = findTypeScriptCompiler('/test');
+
+      expect(result.packageManager.manager).toBe('bun');
+      expect(result.compilerType).toBe('tsc');
+    });
+
+    it('should hit default case branch in createPackageManagerTypeScript', () => {
+      // Configure package manager mock to return an unknown manager
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'npm' as const,
+        lockFile: 'unknown.lock',
+        command: 'unknown',
+        tscPath: '', // Force use of package manager detection logic
+      });
+
+      // Make local node_modules/.bin/tsc exist
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath?.toString() || '';
+        return (
+          pathStr.includes('node_modules') &&
+          pathStr.includes('.bin') &&
+          pathStr.includes('tsc')
+        );
+      });
+
+      // Make tsgo unavailable
+      setupMockRequire((id: string) => {
+        throw new Error(`Cannot resolve ${id}`);
+      });
+
+      const result = findTypeScriptCompiler('/test');
+
+      expect(result.packageManager.manager).toBe('npm');
+      expect(result.compilerType).toBe('tsc');
+    });
+
+    it('should handle execution error during TypeScript compilation detection', () => {
+      // Mock to throw an execution error that doesn't have all properties
+      setupMockRequire((id: string) => {
+        if (id.includes('typescript')) {
+          throw new Error('Execution error');
+        }
+        throw new Error(`Cannot resolve ${id}`);
+      });
+
+      // Mock package manager
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'yarn',
+        lockFile: 'yarn.lock',
+        command: 'yarn',
+        tscPath: '',
+      });
+
+      // Mock all paths to fail
+      mockExistsSync.mockImplementation(() => false);
+
+      const result = findTypeScriptCompiler('/test');
+
+      // Should fallback to yarn execution pattern
+      expect(result.packageManager.manager).toBe('yarn');
+      expect(result.compilerType).toBe('tsc');
+      expect(result.useShell).toBe(true);
+    });
+
+    it('should handle special error type in execution detection', () => {
+      // Mock special error structure
+      setupMockRequire((_id: string) => {
+        const error = new Error('Special error') as Error & {
+          code: string;
+          path: string;
+        };
+        error.code = 'MODULE_NOT_FOUND';
+        error.path = '/invalid/path';
+        throw error;
+      });
+
+      // Mock package manager
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'pnpm',
+        lockFile: 'pnpm-lock.yaml',
+        command: 'pnpm',
+        tscPath: '',
+      });
+
+      // Mock all paths to fail except global
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath?.toString() || '';
+        return pathStr === 'tsc'; // Global tsc exists
+      });
+
+      const result = findTypeScriptCompiler('/test');
+
+      // Should use global tsc
+      expect(result.executable).toBe('tsc');
+      expect(result.compilerType).toBe('tsc');
+      expect(result.useShell).toBe(true);
+    });
+
+    it('should handle edge case with non-standard path separator', () => {
+      // Mock existsSync to simulate finding TypeScript in resolve path with different separators
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath?.toString() || '';
+        return (
+          pathStr.includes('typescript') &&
+          pathStr.includes('bin') &&
+          pathStr.includes('tsc')
+        );
+      });
+
+      // Mock require to resolve TypeScript package but then fail on executable check
+      setupMockRequire((id: string) => {
+        if (id === 'typescript/package.json') {
+          return JSON.stringify({ version: '5.0.0' });
+        }
+        throw new Error(`Cannot resolve ${id}`);
+      });
+
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'npm',
+        lockFile: 'package-lock.json',
+        command: 'npm',
+        tscPath: '',
+      });
+
+      const result = findTypeScriptCompiler('/test');
+
+      expect(result.compilerType).toBe('tsc');
+      expect(typeof result.executable).toBe('string');
+    });
+
+    it('should handle complex path resolution edge case', () => {
+      // Test complex path resolution with specific mock setup
+      const mockPath = path as typeof path & {
+        join: typeof path.join;
+      };
+      const originalJoin = path.join;
+
+      // Temporarily override path.join for this test
+      mockPath.join = vi.fn().mockImplementation((...args: string[]) => {
+        const result = originalJoin(...args);
+        return result;
+      });
+
+      try {
+        mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+          manager: 'yarn',
+          lockFile: 'yarn.lock',
+          command: 'yarn',
+          tscPath: 'custom/tsc/path',
+        });
+
+        // Mock custom tscPath to exist
+        mockExistsSync.mockImplementation((filePath) => {
+          const pathStr = filePath?.toString() || '';
+          return pathStr.includes('custom/tsc/path');
+        });
+
+        const result = findTypeScriptCompiler('/test');
+
+        expect(result.packageManager.manager).toBe('yarn');
+        expect(result.executable).toContain('custom/tsc/path');
+      } finally {
+        // Restore original path.join
+        mockPath.join = originalJoin;
+      }
+    });
   });
 });

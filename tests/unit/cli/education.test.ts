@@ -23,7 +23,7 @@ vi.mock('@/detectors/typescript', () => ({
   detectTsgo: vi.fn(),
 }));
 
-// Mock logger
+// Mock the logger
 vi.mock('@/utils/logger', () => ({
   logger: {
     warn: vi.fn(),

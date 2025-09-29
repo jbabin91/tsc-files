@@ -154,14 +154,19 @@ pnpm typecheck
 
 **Key ESLint Rules We Follow:**
 
+See @eslint.config.js for complete configuration. Notable rules:
+
 - **Import sorting** (`simple-import-sort`) - Automatically organized imports
 - **Type consistency** (`@typescript-eslint/consistent-type-imports`) - Inline type imports
 - **No unused vars** - Prefix unused with `_` (e.g., `_unusedParam`)
-- **Types over interfaces** (`@typescript-eslint/consistent-type-definitions`)
+- **Types over interfaces** (`@typescript-eslint/consistent-type-definitions: ['error', 'type']`)
 - **Kebab-case filenames** (`unicorn/filename-case`)
+- **No explicit any** (`@typescript-eslint/no-explicit-any: 'error'`)
 - **No console.log in production** (`no-console: warn`)
 
 **Key Prettier Rules We Follow:**
+
+See @.prettierrc.js for complete configuration. Key settings:
 
 - **Single quotes** (`singleQuote: true`)
 - **No semicolons** (default)

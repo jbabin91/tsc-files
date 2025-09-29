@@ -86,55 +86,33 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 
 ## 🛠️ Development Commands
 
-### 📦 Package Manager
+**Source of Truth**: See @package.json for complete list of available commands.
 
-- Use `pnpm` as the primary package manager (required Node.js >=22.19.0)
-- `pnpm install` - Install dependencies
+### Key Commands for AI Development
 
-### 🔄 Development Workflow
+**Quality Assurance (MUST pass before commits):**
 
-- `pnpm dev` - Start development with file watching (tsdown --watch)
-- `pnpm test:watch` - Run tests in watch mode (for active development)
+- `pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build`
 
-### ✅ Quality Assurance (Zero-Tolerance)
+**Individual Quality Checks:**
 
-**Critical Commands (MUST pass before commits):**
+- `pnpm lint` - ESLint (zero warnings policy)
+- `pnpm typecheck` - TypeScript strict mode
+- `pnpm test:coverage` - Tests + coverage thresholds (see @vitest.config.ts)
+- `pnpm build` - Build with tsdown
 
-- `pnpm lint` ⚠️ **CRITICAL** - ESLint with zero warnings policy
-- `pnpm format` ⚠️ **CRITICAL** - Format code with Prettier
-- `pnpm typecheck` ⚠️ **CRITICAL** - TypeScript type checking
-- `pnpm test:coverage` ⚠️ **CRITICAL** - Tests + coverage thresholds (see @vitest.config.ts)
-- `pnpm lint:md` ⚠️ **CRITICAL** - Lint markdown files
+**Auto-Fix Commands:**
 
-**Helper Commands:**
-
+- `pnpm format` - Format with Prettier
 - `pnpm lint:fix` - Auto-fix linting issues
-- `pnpm format:check` - Check formatting without changes
-- `pnpm lint:md:fix` - Auto-fix markdown linting issues
-- `pnpm test:coverage` - Generate coverage reports
+- `pnpm lint:md:fix` - Fix markdown issues
 
-### 🏗️ Build & Validation
+**Development Workflow:**
 
-- `pnpm build` - Build the project with tsdown and format code
-- `pnpm check-exports` - Validate package exports with arethetypeswrong
-- `pnpm prepublishOnly` - Pre-publish validation (runs tests + build)
+- `pnpm dev` - Watch mode for development
+- `pnpm test:watch` - Watch mode for tests
 
-### 🚀 Release Management
-
-- `pnpm changeset:auto` - Generate changesets from conventional commits
-- `pnpm changeset:version` - Bump versions and update CHANGELOG.md
-- `pnpm changeset:release` - Build and publish package (used by CI)
-- `pnpm changeset:local-release` - Complete local release workflow (version + release)
-- `npx changeset` - Create a changeset manually (standard changesets CLI)
-- `pnpm commit` - Interactive commit with commitizen
-
-### 🔍 Troubleshooting & Debugging
-
-- `pnpm audit` - Check for security vulnerabilities
-- `node --version && pnpm --version` - Verify environment
-- `pnpm why <package>` - Analyze dependency tree
-- `npx tsc --showConfig` - Debug TypeScript configuration
-- `git status` - Check working directory state
+For complete list of commands (release, troubleshooting, etc.), see @package.json scripts section.
 
 ## 📋 Task Management Guidelines
 

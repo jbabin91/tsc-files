@@ -1,5 +1,18 @@
 # @jbabin91/tsc-files
 
+## 0.4.0
+
+### Minor Changes
+
+- [`281a104`](https://github.com/jbabin91/tsc-files/commit/281a10438dab1984ee799d5f22638114af981c6d) Thanks [@jbabin91](https://github.com/jbabin91)! - ### ✨ Features
+  - **core**: :sparkles: implement proactive tsgo compatibility checking
+  - **core**: :sparkles: implement user environment preservation for TypeScript checking
+  - **cli**: ✨ enhance CLI with TypeScript compiler education and fallback
+
+  ### 🐛 Bug Fixes
+
+  - **lint**: :bug: resolve TypeScript type issues and ESLint violations
+
 ## 0.3.0
 
 ### Minor Changes

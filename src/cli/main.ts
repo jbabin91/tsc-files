@@ -1,5 +1,6 @@
 import { createProgram } from '@/cli/command';
 import { handleCommanderError, runTypeCheckWithOutput } from '@/cli/runner';
+import { logger } from '@/utils/logger';
 
 /**
  * Create and configure the CLI program
@@ -20,10 +21,10 @@ export function createCli(): {
   program.exitOverride((err) => {
     const result = handleCommanderError(err);
     if (result.stdout) {
-      console.log(result.stdout.replace(/\n$/, '')); // eslint-disable-line no-console
+      logger.info(result.stdout.replace(/\n$/, ''));
     }
     if (result.stderr) {
-      console.error(result.stderr.replace(/\n$/, '')); // eslint-disable-line no-console
+      logger.error(result.stderr.replace(/\n$/, ''));
     }
     process.exit(result.exitCode); // eslint-disable-line unicorn/no-process-exit
   });
@@ -36,10 +37,10 @@ export function createCli(): {
       } catch (error) {
         const result = handleCommanderError(error as Error);
         if (result.stdout) {
-          console.log(result.stdout.replace(/\n$/, '')); // eslint-disable-line no-console
+          logger.info(result.stdout.replace(/\n$/, ''));
         }
         if (result.stderr) {
-          console.error(result.stderr.replace(/\n$/, '')); // eslint-disable-line no-console
+          logger.error(result.stderr.replace(/\n$/, ''));
         }
         return result.exitCode;
       }
@@ -53,7 +54,7 @@ export function createCli(): {
 export async function main(args?: string[]): Promise<void> {
   // Handle unhandled rejections
   process.on('unhandledRejection', (error) => {
-    console.error('Unhandled rejection:', error); // eslint-disable-line no-console
+    logger.error(`Unhandled rejection: ${error}`);
     process.exit(99);
   });
 

@@ -254,13 +254,26 @@ export async function executeAndParseTypeScript(
   cwd: string,
   options: CheckOptions,
   startTime: number,
+  compilerPreference?: {
+    useTsgo?: boolean;
+    reason?: string;
+  },
 ): Promise<CheckResult> {
   // Use the fallback mechanism unless user explicitly disabled it
+  // Apply compiler preference if provided
+  const effectiveOptions = compilerPreference
+    ? {
+        ...options,
+        useTsgo: compilerPreference.useTsgo,
+        useTsc: !compilerPreference.useTsgo,
+      }
+    : options;
+
   return executeWithFallback(
     tempConfigPath,
     checkedFiles,
     cwd,
-    options,
+    effectiveOptions,
     startTime,
   );
 }

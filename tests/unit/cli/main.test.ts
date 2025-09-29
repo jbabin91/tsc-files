@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createCli, main } from '@/cli/main';
+import { logger } from '@/utils/logger';
 
 // Mock process.exit to prevent actual exits in tests
 const mockExit = vi.fn();
@@ -41,7 +42,7 @@ describe('CLI Main', () => {
 
     it('should handle help flag', async () => {
       const cli = createCli();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {
         /* empty */
       });
 
@@ -49,12 +50,12 @@ describe('CLI Main', () => {
 
       // Help should exit with specific code (99 from commander error handling)
       expect(exitCode).toBe(99);
-      consoleSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
 
     it('should handle version flag', async () => {
       const cli = createCli();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {
         /* empty */
       });
 
@@ -62,12 +63,12 @@ describe('CLI Main', () => {
 
       // Version should exit with specific code (99 from commander error handling)
       expect(exitCode).toBe(99);
-      consoleSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
 
     it('should handle unknown arguments gracefully', async () => {
       const cli = createCli();
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => {
         /* empty */
       });
 
@@ -79,7 +80,7 @@ describe('CLI Main', () => {
 
       // Commander errors are handled by our error handler (exit code 99)
       expect(exitCode).toBe(99);
-      consoleSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
 
     it('should handle configuration error paths', async () => {
@@ -94,11 +95,11 @@ describe('CLI Main', () => {
 
     it('should handle error with stderr output in parseAsync', async () => {
       const cli = createCli();
-      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {
+      const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
         /* empty */
       });
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
         .mockImplementation(() => {
           /* empty */
         });
@@ -112,16 +113,16 @@ describe('CLI Main', () => {
 
       // Should handle error path with stderr output
       expect(exitCode).toBe(99);
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalled();
 
-      consoleLogSpy.mockRestore();
-      consoleErrorSpy.mockRestore();
+      loggerInfoSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
 
     it('should handle exitOverride error with stderr output', async () => {
       const cli = createCli();
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
         .mockImplementation(() => {
           /* empty */
         });
@@ -132,14 +133,14 @@ describe('CLI Main', () => {
       // Should handle exitOverride path
       expect(exitCode).toBe(99);
 
-      consoleErrorSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
   });
 
   describe('main', () => {
     it('should set up unhandled rejection handler and handle errors', async () => {
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
         .mockImplementation(() => {
           /* empty */
         });
@@ -166,14 +167,13 @@ describe('CLI Main', () => {
 
       if (rejectionHandler) {
         rejectionHandler(new Error('Test error'));
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          'Unhandled rejection:',
-          expect.any(Error),
+        expect(loggerErrorSpy).toHaveBeenCalledWith(
+          'Unhandled rejection: Error: Test error',
         );
         expect(mockExit).toHaveBeenCalledWith(99);
       }
 
-      consoleErrorSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
     });
 
     it('should handle main function execution flow', async () => {

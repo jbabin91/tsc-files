@@ -128,9 +128,9 @@ export function outputToConsole(stdout: string, stderr: string): void {
  * Output error messages to console
  */
 export function outputError(message: string, tip?: string): void {
-  console.error(message); // eslint-disable-line no-console
+  logger.error(message);
   if (tip) {
-    console.error(`\n${tip}`); // eslint-disable-line no-console
+    logger.error(`\n${tip}`);
   }
 }
 
@@ -138,12 +138,12 @@ export function outputError(message: string, tip?: string): void {
  * Output educational tips to console
  */
 export function outputTip(message: string): void {
-  console.info(kleur.dim(`💡 ${message}`)); // eslint-disable-line no-console
+  logger.info(kleur.dim(`💡 ${message}`));
 }
 
 /**
  * Output performance insight to console
  */
 export function outputPerformanceInsight(message: string): void {
-  console.info(kleur.cyan(`⚡ ${message}`)); // eslint-disable-line no-console
+  logger.info(kleur.cyan(`⚡ ${message}`));
 }

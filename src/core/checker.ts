@@ -3,6 +3,7 @@ import path from 'node:path';
 import { findTsConfig } from '@/config/discovery';
 import { parseTypeScriptConfig } from '@/config/parser';
 import { createTempConfig } from '@/config/temp-config';
+import { shouldUseTsgo } from '@/config/tsgo-compatibility';
 import { resolveFiles } from '@/core/file-resolver';
 import { executeAndParseTypeScript } from '@/execution/executor';
 import type { CheckOptions, CheckResult } from '@/types/core';
@@ -72,6 +73,28 @@ async function processFileGroup(
   // Parse original config
   const originalConfig = parseTypeScriptConfig(tsconfigPath);
 
+  // Analyze tsgo compatibility and determine optimal compiler
+  const tsgoDecision = shouldUseTsgo(
+    originalConfig,
+    {
+      useTsc: options.useTsc,
+      useTsgo: options.useTsgo,
+    },
+    cwd,
+  );
+
+  // Provide user feedback about compiler selection
+  if (options.verbose && tsgoDecision.compatibilityResult) {
+    if (tsgoDecision.useTsgo) {
+      logger.info('Using tsgo for optimal performance');
+    } else {
+      logger.info(`Using tsc: ${tsgoDecision.reason}`);
+      if (tsgoDecision.compatibilityResult.recommendation) {
+        logger.info(`💡 ${tsgoDecision.compatibilityResult.recommendation}`);
+      }
+    }
+  }
+
   // Create temporary config
   const originalConfigDir = path.dirname(tsconfigPath);
   const tempHandle = createTempConfig(
@@ -98,6 +121,10 @@ async function processFileGroup(
       originalConfigDir,
       options,
       startTime,
+      {
+        useTsgo: tsgoDecision.useTsgo,
+        reason: tsgoDecision.reason,
+      },
     );
 
     return result;

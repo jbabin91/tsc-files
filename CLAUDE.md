@@ -5,55 +5,44 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 📋 Project References
+## 📋 Core Project Context
 
-For commit conventions, see @.claude/commit-conventions.md for emoji usage and scoping rules.
+These files are automatically loaded into Claude Code's context:
 
-For OpenSpec workflow instructions, see @openspec/AGENTS.md for spec-driven development guidance.
+**Project Overview & Commands:**
+
+- @README.md - Project overview, features, installation, usage examples
+- @package.json - Available npm commands and dependencies
+
+**Development Conventions:**
+
+- @.claude/commit-conventions.md - Commit message format and gitmoji usage
+- @openspec/AGENTS.md - Spec-driven development workflow
+- @openspec/project.md - Project conventions and tech stack
 
 ## 📚 Documentation Map
 
-Use `@` syntax to import these files into Claude Code context when needed.
+Import these files with `@` syntax when you need specific guidance:
 
-### For Users
+**For Contributors:**
 
-- Quick Start: README.md
-- Detailed Usage: docs/api.md, docs/usage-examples.md
-- Troubleshooting: docs/troubleshooting-guide.md
+- @docs/CONTRIBUTING.md - Quick start for contributors
+- @docs/contributing/setup.md - Development environment setup
+- @docs/contributing/coding-standards.md - TypeScript guidelines and code style
+- @docs/contributing/pull-requests.md - PR workflow and code review
+- @docs/testing/README.md - Testing overview and quick start
+- @docs/architecture/README.md - System design and components
 
-### For Contributors
+**For Troubleshooting:**
 
-- Getting Started: docs/CONTRIBUTING.md
-- Development Setup: docs/contributing/setup.md
-- Coding Standards: docs/contributing/coding-standards.md
-- Pull Requests: docs/contributing/pull-requests.md
-- Testing: docs/testing/README.md
-- Architecture: docs/architecture/README.md
-- Security: docs/architecture/security.md
+- @docs/troubleshooting-guide.md - Common issues and solutions
+- @docs/api.md - CLI options and programmatic API reference
 
-### For AI Assistants (Auto-Loaded)
+**For Deep Dives:**
 
-- Project Instructions: CLAUDE.md (this file)
-- Workflow Patterns: .claude/claude-code-workflows.md
-- Commit Format: .claude/commit-conventions.md
-- Spec-Driven Development: openspec/AGENTS.md
-- Project Conventions: openspec/project.md
-
-### For Specifications
-
-- Current Capabilities: openspec/specs/
-- Planned Changes: openspec/changes/
-- Change Archive: openspec/changes/archive/ (empty until first OpenSpec-driven deployment)
-
-**Important Files Already Auto-Loaded:**
-
-These files are automatically loaded by Claude Code when referenced with `@`:
-
-- @README.md
-- @CLAUDE.md
-- @.claude/commit-conventions.md
-- @openspec/AGENTS.md
-- @openspec/project.md
+- @docs/architecture/details.md - In-depth implementation details
+- @docs/architecture/security.md - Comprehensive security requirements
+- @docs/testing/strategy.md - Complete testing approach
 
 ## 🎯 Project Mission
 

@@ -11,6 +11,50 @@ For commit conventions, see @.claude/commit-conventions.md for emoji usage and s
 
 For OpenSpec workflow instructions, see @openspec/AGENTS.md for spec-driven development guidance.
 
+## 📚 Documentation Map
+
+Use `@` syntax to import these files into Claude Code context when needed.
+
+### For Users
+
+- Quick Start: README.md
+- Detailed Usage: docs/api.md, docs/usage-examples.md
+- Troubleshooting: docs/troubleshooting-guide.md
+
+### For Contributors
+
+- Getting Started: docs/CONTRIBUTING.md
+- Development Setup: docs/contributing/setup.md
+- Coding Standards: docs/contributing/coding-standards.md
+- Pull Requests: docs/contributing/pull-requests.md
+- Testing: docs/testing/README.md
+- Architecture: docs/architecture/README.md
+- Security: docs/architecture/security.md
+
+### For AI Assistants (Auto-Loaded)
+
+- Project Instructions: CLAUDE.md (this file)
+- Workflow Patterns: .claude/claude-code-workflows.md
+- Commit Format: .claude/commit-conventions.md
+- Spec-Driven Development: openspec/AGENTS.md
+- Project Conventions: openspec/project.md
+
+### For Specifications
+
+- Current Capabilities: openspec/specs/
+- Planned Changes: openspec/changes/
+- Change Archive: openspec/changes/archive/ (empty until first OpenSpec-driven deployment)
+
+**Important Files Already Auto-Loaded:**
+
+These files are automatically loaded by Claude Code when referenced with `@`:
+
+- @README.md
+- @CLAUDE.md
+- @.claude/commit-conventions.md
+- @openspec/AGENTS.md
+- @openspec/project.md
+
 ## 🎯 Project Mission
 
 Build a TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration. Designed for git hooks, lint-staged, and CI/CD workflows.

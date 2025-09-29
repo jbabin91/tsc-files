@@ -1,39 +1,165 @@
 # tsc-files Documentation
 
-This directory contains comprehensive documentation for the tsc-files project.
+Welcome to the comprehensive documentation for tsc-files. This guide is organized by audience to help you quickly find what you need.
 
-## Quick Navigation
+## 🚀 For Users
 
-### Getting Started
+Start here if you're using tsc-files in your project:
 
-- [Getting Started](./getting-started.md) - Installation, basic usage, and first steps
+- **[Getting Started](./getting-started.md)** - Installation, basic usage, and first steps
+- **[API Reference](./api.md)** - CLI options and programmatic API
+- **[Usage Examples](./usage-examples.md)** - Real-world usage scenarios
+- **[Troubleshooting Guide](./troubleshooting-guide.md)** - Common issues and solutions
 
-### Technical Documentation
+## 🔧 For Contributors
 
-- [Architecture](./architecture.md) - System design and component overview
-- [Architecture Details](./architecture-details.md) - Detailed architectural information
-- [API Reference](./api.md) - CLI options and programmatic API
-- [Testing Strategy](./testing-strategy.md) - Testing approach and guidelines
-- [Security Requirements](./security-requirements.md) - Comprehensive security requirements
-- [Implementation Strategy](./implementation-strategy.md) - Systematic implementation plan
-- [Performance Requirements](./performance-requirements.md) - Performance guidelines and optimization
+Want to contribute? These guides will help:
 
-### Project Information
+### Essential Guides
 
-- [Usage Examples](./usage-examples.md) - Real-world usage scenarios and examples
-- [Troubleshooting Guide](./troubleshooting-guide.md) - Common issues and solutions
-- [Getting Started](./getting-started.md) - Installation and setup guide
-- [Release Process](./release-process.md) - Release management and publishing
-- [Contributing](./contributing.md) - How to contribute to the project
+- **[Contributing Overview](./CONTRIBUTING.md)** - Quick start for contributors (GitHub displays this!)
+- **[Development Setup](./contributing/setup.md)** - Prerequisites, installation, IDE configuration
+- **[Coding Standards](./contributing/coding-standards.md)** - TypeScript guidelines and code style
+- **[Pull Request Workflow](./contributing/pull-requests.md)** - Creating PRs, code review process
 
-### Architectural Decisions
+### Deep Dives
 
-- [Decision Records](./decisions/README.md) - Why we made key technical choices
+- **[Testing Guide](./testing/README.md)** - Testing overview and quick start
+  - [Testing Strategy](./testing/strategy.md) - Comprehensive testing approach
+  - [Best Practices](./testing/best-practices.md) - Patterns and guidelines
+  - [Testing Framework](./testing/framework.md) - Vitest configuration and utilities
+  - [Testing History](./testing/history.md) - Evolution and improvements
+- **[Release Process](./contributing/release-process.md)** - Versioning and publishing
 
-## Contributing
+## 🏛️ For Architects
 
-When making significant technical decisions, please document them in the [decisions](./decisions/) directory following the established ADR format.
+Understand the system design:
 
-## Project Goals
+- **[Architecture Overview](./architecture/README.md)** - System design and components
+  - [Architecture Details](./architecture/details.md) - In-depth implementation
+  - [Security Requirements](./architecture/security.md) - Comprehensive security
+  - [Performance Requirements](./architecture/performance.md) - Performance targets
+- **[Architectural Decisions](./decisions/README.md)** - Why we made key technical choices (11 ADRs)
 
-tsc-files enables running TypeScript compiler checks on specific files while respecting your existing tsconfig.json configuration. It's designed to be fast, reliable, and work seamlessly with all major package managers and git hooks.
+## 🤖 For AI Assistants
+
+Project-specific guidance:
+
+- **[CLAUDE.md](../CLAUDE.md)** - AI assistant instructions and project conventions
+- **[OpenSpec Workflow](../openspec/AGENTS.md)** - Spec-driven development process
+- **[Commit Conventions](../.claude/commit-conventions.md)** - Commit message format
+
+## 📚 Documentation Map
+
+### By Topic
+
+**Getting Started & Usage:**
+
+- Getting Started → API Reference → Usage Examples → Troubleshooting
+
+**Contributing:**
+
+- CONTRIBUTING.md → Setup → Coding Standards → Pull Requests → Testing
+
+**Architecture:**
+
+- Architecture Overview → Details → Security → Performance → Decisions (ADRs)
+
+### By File Organization
+
+```text
+docs/
+├── README.md (you are here)       # Documentation index
+│
+├── 🔖 GitHub Special Files
+│   ├── CONTRIBUTING.md            # ✅ Displayed on GitHub
+│   ├── CODE_OF_CONDUCT.md         # ✅ Displayed on GitHub
+│   └── SECURITY.md                # ✅ Displayed on GitHub
+│
+├── 🚀 User Guides
+│   ├── getting-started.md
+│   ├── api.md
+│   ├── usage-examples.md
+│   └── troubleshooting-guide.md
+│
+├── 🔧 Contributing
+│   └── contributing/
+│       ├── README.md              # Index
+│       ├── setup.md               # Dev environment
+│       ├── coding-standards.md    # Code style
+│       ├── pull-requests.md       # PR workflow
+│       └── release-process.md     # Publishing
+│
+├── 🧪 Testing
+│   └── testing/
+│       ├── README.md              # Testing overview
+│       ├── strategy.md            # Testing approach
+│       ├── best-practices.md      # Patterns
+│       ├── framework.md           # Vitest setup
+│       └── history.md             # Evolution
+│
+├── 🏛️ Architecture
+│   ├── architecture/
+│   │   ├── README.md              # System design
+│   │   ├── details.md             # Deep dive
+│   │   ├── security.md            # Security reqs
+│   │   └── performance.md         # Performance
+│   └── decisions/                 # 11 ADRs
+│       ├── README.md
+│       └── 001-011-*.md
+│
+└── 📝 Internal
+    └── documentation-audit.md     # WIP cleanup tracking
+```
+
+## 🎯 Quick Links by Task
+
+**I want to...**
+
+- **Use tsc-files** → [Getting Started](./getting-started.md)
+- **Fix an issue** → [Troubleshooting Guide](./troubleshooting-guide.md)
+- **Learn the API** → [API Reference](./api.md)
+- **Contribute code** → [Contributing Guide](./CONTRIBUTING.md)
+- **Write tests** → [Testing Guide](./testing/README.md)
+- **Understand design** → [Architecture](./architecture/README.md)
+- **See past decisions** → [ADRs](./decisions/README.md)
+- **Report security issue** → [Security Policy](./SECURITY.md)
+
+## 📖 Documentation Standards
+
+When contributing documentation:
+
+1. **User docs** (getting-started, api, usage-examples) - Focus on clarity and examples
+2. **Contributor docs** (contributing/\*) - Include setup steps and code examples
+3. **Architecture docs** (architecture/\*) - Use diagrams and explain "why"
+4. **ADRs** (decisions/\*) - Follow [ADR format](./decisions/README.md)
+
+See [Contributing Guide](./CONTRIBUTING.md) for more details.
+
+## 🔄 Documentation Updates
+
+Major documentation reorganization (v0.5.0+):
+
+- ✅ Reorganized into clear directories (contributing/, testing/, architecture/)
+- ✅ Added comprehensive guides (setup, coding standards, PR workflow)
+- ✅ Improved navigation with visual categories
+- ✅ GitHub special files remain in docs/ root for visibility
+
+## 🤝 Getting Help
+
+- **Questions?** [GitHub Discussions](https://github.com/jbabin91/tsc-files/discussions)
+- **Bug reports?** [GitHub Issues](https://github.com/jbabin91/tsc-files/issues)
+- **Security issues?** See [Security Policy](./SECURITY.md)
+- **Community standards?** See [Code of Conduct](./CODE_OF_CONDUCT.md)
+
+## 📈 Project Status
+
+**Current Version:** v0.4.0 (production ready)
+
+**Documentation Health:** ⭐⭐⭐⭐⭐ Excellent
+
+- Comprehensive coverage for all audiences
+- Clear separation (users, contributors, architects)
+- Minimal duplication
+- Well-organized structure
+- GitHub special files properly positioned

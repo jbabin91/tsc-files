@@ -6,20 +6,22 @@ This document defines the coding standards and best practices for tsc-files deve
 
 ### Type Safety
 
-**Zero Tolerance for `any` Types:**
+**`any` Types Policy:**
+
+Our ESLint config disables the `no-explicit-any` rule, but prefer proper typing when possible:
 
 ```typescript
-// ❌ WRONG: Using any
+// ⚠️ ALLOWED: any when truly needed
 function processData(data: any) {
   return data.value;
 }
 
-// ✅ CORRECT: Proper typing
+// ✅ PREFERRED: Proper typing when structure is known
 function processData(data: { value: string }): string {
   return data.value;
 }
 
-// ✅ CORRECT: Use unknown for truly unknown types
+// ✅ PREFERRED: Use unknown for truly unknown types
 function processData(data: unknown): string {
   if (typeof data === 'object' && data !== null && 'value' in data) {
     return String(data.value);
@@ -35,17 +37,83 @@ function processData(data: unknown): string {
 - Enable noImplicitAny
 - Enable strictFunctionTypes
 
-### Naming Conventions
+### Types vs Interfaces
+
+**Always use `type` over `interface`** (enforced by ESLint):
 
 ```typescript
-// Files: kebab-case
+// ✅ CORRECT: Use type
+type CheckOptions = {
+  project?: string;
+  verbose?: boolean;
+};
+
+type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
+
+// ❌ WRONG: Don't use interface
+interface CheckOptions {
+  project?: string;
+  verbose?: boolean;
+}
+```
+
+### Type Inference vs Explicit Types
+
+**Prefer type inference, then `satisfies`, then explicit types:**
+
+```typescript
+// ✅ BEST: Type inference
+const config = {
+  timeout: 5000,
+  retries: 3,
+};
+
+// ✅ GOOD: satisfies for type safety without widening
+const config = {
+  timeout: 5000,
+  retries: 3,
+} satisfies Config;
+
+// ⚠️ ACCEPTABLE: Explicit type when inference isn't clear
+const config: Config = {
+  timeout: 5000,
+  retries: 3,
+};
+```
+
+### Functions vs Arrow Functions
+
+**Prefer named functions over arrow functions:**
+
+```typescript
+// ✅ PREFERRED: Named function
+function resolveFiles(patterns: string[]): string[] {
+  return patterns.map((pattern) => resolve(pattern));
+}
+
+// ⚠️ ACCEPTABLE: Arrow function for simple callbacks
+const filePaths = patterns.map((pattern) => resolve(pattern));
+
+// ⚠️ ACCEPTABLE: Arrow function when needed for this binding
+class FileResolver {
+  resolve = (pattern: string) => {
+    // Arrow function preserves `this` binding
+    return this.doResolve(pattern);
+  };
+}
+```
+
+### Naming Conventions (Enforced by ESLint)
+
+```typescript
+// Files: kebab-case (enforced by eslint unicorn/filename-case)
 // file-resolver.ts
 // package-manager.ts
 // tsconfig-parser.ts
 
-// Classes/Interfaces: PascalCase
+// Classes/Types: PascalCase
 class FileResolver {}
-interface PackageManager {}
+type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun';
 type CompilerOptions = {};
 
 // Functions/Variables: camelCase
@@ -62,6 +130,59 @@ const SUPPORTED_EXTENSIONS = ['.ts', '.tsx'];
 class Parser {
   private _cache: Map<string, string> = new Map();
 }
+```
+
+## Automated Code Quality
+
+### Follow ESLint & Prettier Configs
+
+We use automated tooling to enforce standards. **Run these before committing:**
+
+```bash
+# Format code (Prettier)
+pnpm format
+
+# Lint code (ESLint with auto-fix)
+pnpm lint:fix
+
+# Lint markdown
+pnpm lint:md:fix
+
+# Type check
+pnpm typecheck
+```
+
+**Key ESLint Rules We Follow:**
+
+- **Import sorting** (`simple-import-sort`) - Automatically organized imports
+- **Type consistency** (`@typescript-eslint/consistent-type-imports`) - Inline type imports
+- **No unused vars** - Prefix unused with `_` (e.g., `_unusedParam`)
+- **Types over interfaces** (`@typescript-eslint/consistent-type-definitions`)
+- **Kebab-case filenames** (`unicorn/filename-case`)
+- **No console.log in production** (`no-console: warn`)
+
+**Key Prettier Rules We Follow:**
+
+- **Single quotes** (`singleQuote: true`)
+- **No semicolons** (default)
+- **2-space indentation** (default)
+
+### Quality Check Workflow
+
+**Before every commit:**
+
+1. Write your code following the guidelines above
+2. Run `pnpm format` (fixes formatting automatically)
+3. Run `pnpm lint:fix` (fixes auto-fixable linting issues)
+4. Run `pnpm lint:md:fix` (fixes markdown issues)
+5. Run `pnpm typecheck` (validates TypeScript)
+6. Run `pnpm test` (ensures tests pass)
+
+**Pro tip:** Let the tools fix issues automatically. Don't manually format code!
+
+```bash
+# Quick validation (runs all checks)
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
 ### Import Organization

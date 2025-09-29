@@ -9,6 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 For commit conventions, see @.claude/commit-conventions.md for emoji usage and scoping rules.
 
+For OpenSpec workflow instructions, see @openspec/AGENTS.md for spec-driven development guidance.
+
 ## 🎯 Project Mission
 
 Build a TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration. Designed for git hooks, lint-staged, and CI/CD workflows.

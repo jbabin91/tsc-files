@@ -76,7 +76,7 @@ Before any commit or PR:
 
 1. `pnpm lint` - Zero warnings/errors
 2. `pnpm typecheck` - Zero TypeScript errors
-3. `pnpm test:coverage` - All tests passing AND coverage thresholds met (>84% overall, >90% core)
+3. `pnpm test:coverage` - All tests passing AND coverage thresholds met (see @vitest.config.ts)
 4. `pnpm build` - Clean build success
 5. `pnpm lint:md` - Markdown compliance
 
@@ -103,7 +103,7 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 - `pnpm lint` ⚠️ **CRITICAL** - ESLint with zero warnings policy
 - `pnpm format` ⚠️ **CRITICAL** - Format code with Prettier
 - `pnpm typecheck` ⚠️ **CRITICAL** - TypeScript type checking
-- `pnpm test:coverage` ⚠️ **CRITICAL** - Tests + coverage thresholds (>84% overall, >90% core)
+- `pnpm test:coverage` ⚠️ **CRITICAL** - Tests + coverage thresholds (see @vitest.config.ts)
 - `pnpm lint:md` ⚠️ **CRITICAL** - Lint markdown files
 
 **Helper Commands:**

@@ -187,10 +187,12 @@ pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
 
 **Coverage Requirements:**
 
-- Overall: >84%
-- Core functions: >90%
-- CLI layer: >80%
-- New code should maintain or improve coverage
+See @vitest.config.ts for detailed coverage thresholds. Key requirements:
+
+- **Global**: 84% lines, 80% branches, 95% functions
+- **Utilities**: 95% lines, 90% branches, 100% functions
+- **Core/CLI**: Module-specific thresholds defined in config
+- **New code**: Should maintain or improve coverage
 
 ### Import Organization
 

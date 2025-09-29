@@ -2,19 +2,36 @@
 
 <!-- AUTO-GENERATED SECTIONS: Some sections maintained by Claude Code -->
 
-Thank you for your interest in contributing to tsc-files! This guide will help you get started with the development process, coding standards, and contribution workflow.
+Thank you for your interest in contributing to tsc-files! This guide provides a quick overview to help you get started. For detailed information, see the [contributing directory](./contributing/README.md).
+
+## 🚀 Quick Start
+
+1. **[Development Setup](./contributing/setup.md)** - Environment configuration and prerequisites
+2. **[Coding Standards](./contributing/coding-standards.md)** - TypeScript guidelines and code style
+3. **[Pull Request Workflow](./contributing/pull-requests.md)** - How to submit changes
+4. **[Testing Guide](./testing/README.md)** - Writing and running tests
+
+## 📚 Detailed Documentation
+
+- **Contributing:**
+  - [Setup Guide](./contributing/setup.md) - Prerequisites, installation, IDE setup
+  - [Coding Standards](./contributing/coding-standards.md) - Type safety, naming, security
+  - [Pull Requests](./contributing/pull-requests.md) - Creating PRs, code review
+  - [Release Process](./contributing/release-process.md) - Versioning and publishing
+- **Testing:**
+  - [Testing Overview](./testing/README.md) - Quick start and documentation index
+  - [Testing Strategy](./testing/strategy.md) - Comprehensive testing approach
+  - [Best Practices](./testing/best-practices.md) - Patterns and guidelines
+- **Architecture:**
+  - [Architecture Overview](./architecture/README.md) - System design
+  - [Architecture Details](./architecture/details.md) - In-depth implementation
+  - [Security](./architecture/security.md) - Security requirements
+  - [Performance](./architecture/performance.md) - Performance targets
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
 - [Development Workflow](#development-workflow)
-- [Coding Standards](#coding-standards)
-- [Testing Guidelines](#testing-guidelines)
-- [Documentation](#documentation)
-- [Pull Request Process](#pull-request-process)
-- [Release Process](#release-process)
 
 ## Getting Started
 

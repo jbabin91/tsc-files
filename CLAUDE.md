@@ -86,33 +86,43 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 
 ## 🛠️ Development Commands
 
-**Source of Truth**: See @package.json for complete list of available commands.
+### 📦 Package Manager
 
-### Key Commands for AI Development
+- Use `pnpm` as the primary package manager (required Node.js >=22.19.0)
+- `pnpm install` - Install dependencies
 
-**Quality Assurance (MUST pass before commits):**
+### 🔄 Development Workflow
 
-- `pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build`
+- `pnpm dev` - Start development with file watching (tsdown --watch)
+- `pnpm test:watch` - Run tests in watch mode (for active development)
 
-**Individual Quality Checks:**
+### ✅ Quality Assurance (Zero-Tolerance)
 
-- `pnpm lint` - ESLint (zero warnings policy)
-- `pnpm typecheck` - TypeScript strict mode
-- `pnpm test:coverage` - Tests + coverage thresholds (see @vitest.config.ts)
-- `pnpm build` - Build with tsdown
+**Critical Commands (MUST pass before commits):**
 
-**Auto-Fix Commands:**
+- `pnpm lint` ⚠️ **CRITICAL** - ESLint with zero warnings policy
+- `pnpm format` ⚠️ **CRITICAL** - Format code with Prettier
+- `pnpm typecheck` ⚠️ **CRITICAL** - TypeScript type checking
+- `pnpm test:coverage` ⚠️ **CRITICAL** - Tests + coverage thresholds (see @vitest.config.ts)
+- `pnpm lint:md` ⚠️ **CRITICAL** - Lint markdown files
+- `pnpm build` ⚠️ **CRITICAL** - Clean build success
 
-- `pnpm format` - Format with Prettier
+**Helper Commands:**
+
 - `pnpm lint:fix` - Auto-fix linting issues
-- `pnpm lint:md:fix` - Fix markdown issues
+- `pnpm lint:md:fix` - Auto-fix markdown linting issues
 
-**Development Workflow:**
+### 🏗️ Build & Validation
 
-- `pnpm dev` - Watch mode for development
-- `pnpm test:watch` - Watch mode for tests
+- `pnpm build` - Build the project with tsdown and format code
+- `pnpm check-exports` - Validate package exports with arethetypeswrong
 
-For complete list of commands (release, troubleshooting, etc.), see @package.json scripts section.
+### 🚀 Release Management
+
+- `pnpm changeset` - Create a changeset for your changes
+- `pnpm commit` - Interactive commit with commitizen
+
+**Note**: For complete list of commands, see @package.json. For release workflow details, see @docs/contributing/release-process.md
 
 ## 📋 Task Management Guidelines
 

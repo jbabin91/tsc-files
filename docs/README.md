@@ -6,10 +6,14 @@ Welcome to the comprehensive documentation for tsc-files. This guide is organize
 
 Start here if you're using tsc-files in your project:
 
-- **[Getting Started](./getting-started.md)** - Installation, basic usage, and first steps
+- **[Quick Start](../README.md)** - Installation, basic usage, and first steps (see main README)
 - **[API Reference](./api.md)** - CLI options and programmatic API
 - **[Usage Examples](./usage-examples.md)** - Real-world usage scenarios
 - **[Troubleshooting Guide](./troubleshooting-guide.md)** - Common issues and solutions
+
+### Advanced Usage
+
+- **[tsgo Compiler](./usage/tsgo-compiler.md)** - 10x faster type checking (experimental)
 
 ## 🔧 For Contributors
 
@@ -55,7 +59,7 @@ Project-specific guidance:
 
 **Getting Started & Usage:**
 
-- Getting Started → API Reference → Usage Examples → Troubleshooting
+- README (Quick Start) → API Reference → Usage Examples → Troubleshooting
 
 **Contributing:**
 
@@ -77,10 +81,11 @@ docs/
 │   └── SECURITY.md                # ✅ Displayed on GitHub
 │
 ├── 🚀 User Guides
-│   ├── getting-started.md
 │   ├── api.md
 │   ├── usage-examples.md
-│   └── troubleshooting-guide.md
+│   ├── troubleshooting-guide.md
+│   └── usage/
+│       └── tsgo-compiler.md         # Advanced: 10x faster type checking
 │
 ├── 🔧 Contributing
 │   └── contributing/
@@ -108,15 +113,14 @@ docs/
 │       ├── README.md
 │       └── 001-011-*.md
 │
-└── 📝 Internal
-    └── documentation-audit.md     # WIP cleanup tracking
 ```
 
 ## 🎯 Quick Links by Task
 
 **I want to...**
 
-- **Use tsc-files** → [Getting Started](./getting-started.md)
+- **Use tsc-files** → [Quick Start (README)](../README.md)
+- **Speed up type checking** → [tsgo Compiler Guide](./usage/tsgo-compiler.md)
 - **Fix an issue** → [Troubleshooting Guide](./troubleshooting-guide.md)
 - **Learn the API** → [API Reference](./api.md)
 - **Contribute code** → [Contributing Guide](./CONTRIBUTING.md)
@@ -129,7 +133,7 @@ docs/
 
 When contributing documentation:
 
-1. **User docs** (getting-started, api, usage-examples) - Focus on clarity and examples
+1. **User docs** (README, api, usage-examples, usage/\*) - Focus on clarity and examples
 2. **Contributor docs** (contributing/\*) - Include setup steps and code examples
 3. **Architecture docs** (architecture/\*) - Use diagrams and explain "why"
 4. **ADRs** (decisions/\*) - Follow [ADR format](./decisions/README.md)

@@ -48,7 +48,7 @@ If your PR includes:
 - New features → Update `README.md` and relevant docs
 - CLI changes → Update `docs/api.md`
 - Breaking changes → Add migration guide
-- Configuration changes → Update `docs/getting-started.md`
+- Configuration changes → Update `README.md` and `docs/api.md`
 
 ## Creating the PR
 

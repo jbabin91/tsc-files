@@ -86,6 +86,17 @@ This ignores your `tsconfig.json` and uses default compiler options, missing imp
 tsc-files src/index.ts src/utils.ts
 ```
 
+## 📋 Quick Reference
+
+| Task           | Command                                                      |
+| -------------- | ------------------------------------------------------------ |
+| Check files    | `tsc-files "src/**/*.ts"`                                    |
+| Custom config  | `tsc-files -p tsconfig.build.json "src/**/*.ts"`             |
+| Verbose output | `tsc-files --verbose "src/**/*.ts"`                          |
+| JSON output    | `tsc-files --json "src/**/*.ts"`                             |
+| Skip lib check | `tsc-files --skip-lib-check "src/**/*.ts"`                   |
+| Git hooks      | `tsc-files $(git diff --cached --name-only \| grep '\.ts$')` |
+
 ## 📦 Installation
 
 ### Global Installation
@@ -371,6 +382,8 @@ TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
 
 No configuration needed - it just works!
 
+> **⚡ Performance Tip:** For 10x faster type checking, see the [tsgo compiler guide](./docs/usage/tsgo-compiler.md) (experimental).
+
 ## 🏗️ Development Status
 
 - **Infrastructure**: ✅ Complete (enterprise-grade CI/CD, testing, security, release automation)
@@ -384,10 +397,12 @@ No configuration needed - it just works!
 
 ## 📚 Documentation
 
-- [Getting Started](./docs/getting-started.md) - Installation and basic usage
 - [API Reference](./docs/api.md) - Complete CLI and programmatic API documentation
-- [Architecture](./docs/architecture.md) - How tsc-files works internally
-- [Contributing](./docs/contributing.md) - Development setup and contribution guidelines
+- [Usage Examples](./docs/usage-examples.md) - Real-world usage scenarios and patterns
+- [tsgo Compiler Guide](./docs/usage/tsgo-compiler.md) - 10x faster type checking (experimental)
+- [Troubleshooting Guide](./docs/troubleshooting-guide.md) - Common issues and solutions
+- [Architecture](./docs/architecture/README.md) - How tsc-files works internally
+- [Contributing](./docs/CONTRIBUTING.md) - Development setup and contribution guidelines
 
 ## 🤝 Contributing
 

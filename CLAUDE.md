@@ -225,9 +225,10 @@ Reusable actions in `.github/actions/`:
 ## Documentation Structure
 
 - `docs/` - Comprehensive documentation following Epic Stack patterns
-- `docs/getting-started.md` - Installation and basic usage
 - `docs/api.md` - CLI and programmatic API reference
-- `docs/architecture.md` - Detailed system design
+- `docs/usage-examples.md` - Real-world usage scenarios and patterns
+- `docs/usage/tsgo-compiler.md` - Advanced: 10x faster type checking guide
+- `docs/architecture/` - Detailed system design and implementation
 - `docs/decisions/` - Architectural Decision Records (ADRs) explaining key technical choices
 
 ## Development Status
@@ -466,9 +467,11 @@ tests/
 └── fixtures/           # Test fixtures and sample projects
 
 docs/
-├── getting-started.md  # Installation and basic usage
 ├── api.md             # CLI and programmatic API reference
-├── architecture.md    # Detailed system design
+├── usage-examples.md  # Real-world usage scenarios
+├── usage/
+│   └── tsgo-compiler.md  # Advanced: 10x faster type checking
+├── architecture/      # Detailed system design
 └── decisions/         # Architectural Decision Records (ADRs)
 
 .github/

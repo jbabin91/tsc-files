@@ -63,8 +63,8 @@ const runCli = async (
         /* empty */
       });
       program.configureOutput({
-        writeOut: mockConsoleLog as unknown as (...args: any[]) => void,
-        writeErr: mockConsoleError as unknown as (...args: any[]) => void,
+        writeOut: mockConsoleLog as unknown as (...args: string[]) => void,
+        writeErr: mockConsoleError as unknown as (...args: string[]) => void,
       });
       program.exitOverride(() => {
         throw new Error('Help displayed');
@@ -92,8 +92,8 @@ const runCli = async (
         /* empty */
       });
       program.configureOutput({
-        writeOut: mockConsoleLog as unknown as (...args: any[]) => void,
-        writeErr: mockConsoleError as unknown as (...args: any[]) => void,
+        writeOut: mockConsoleLog as unknown as (...args: string[]) => void,
+        writeErr: mockConsoleError as unknown as (...args: string[]) => void,
       });
       program.exitOverride(() => {
         throw new Error('Version displayed');

@@ -6,22 +6,22 @@ This document defines the coding standards and best practices for tsc-files deve
 
 ### Type Safety
 
-**`any` Types Policy:**
+**Zero Tolerance for `any` Types:**
 
-Our ESLint config disables the `no-explicit-any` rule, but prefer proper typing when possible:
+The `any` type is **prohibited** (enforced by ESLint `@typescript-eslint/no-explicit-any: error`):
 
 ```typescript
-// ⚠️ ALLOWED: any when truly needed
+// ❌ WRONG: Never use any
 function processData(data: any) {
   return data.value;
 }
 
-// ✅ PREFERRED: Proper typing when structure is known
+// ✅ CORRECT: Proper typing when structure is known
 function processData(data: { value: string }): string {
   return data.value;
 }
 
-// ✅ PREFERRED: Use unknown for truly unknown types
+// ✅ CORRECT: Use unknown for truly unknown types
 function processData(data: unknown): string {
   if (typeof data === 'object' && data !== null && 'value' in data) {
     return String(data.value);

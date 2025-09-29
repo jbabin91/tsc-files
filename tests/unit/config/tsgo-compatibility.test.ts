@@ -116,13 +116,13 @@ describe('tsgo-compatibility', () => {
     });
 
     it('should handle various moduleResolution values with paths', () => {
-      const incompatibleResolutions = ['node', 'classic', 'node10'];
+      const incompatibleResolutions = ['node', 'classic', 'node10'] as const;
 
       for (const moduleResolution of incompatibleResolutions) {
         const config: TypeScriptConfig = {
           compilerOptions: {
             target: 'ES2020',
-            moduleResolution: moduleResolution as any,
+            moduleResolution,
             paths: {
               '@utils/*': ['./src/utils/*'],
             },

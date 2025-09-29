@@ -110,21 +110,23 @@ Use Task tool to launch simultaneous sub-agents for:
 ```markdown
 For Implementation Tasks:
 
-1. Read @docs/implementation-strategy.md
-2. Read @docs/architecture-details.md
-3. Read @docs/security-requirements.md
-4. Load specific component documentation as needed
+1. Read @openspec/specs/ for current capabilities
+2. Read @openspec/changes/ for planned work
+3. Read @docs/architecture/details.md for system design
+4. Read @docs/architecture/security.md for security requirements
+5. Load specific component documentation as needed
 
 For Testing Tasks:
 
-1. Read @docs/testing-strategy.md
-2. Read relevant implementation docs
-3. Load test examples and fixtures
+1. Read @docs/testing/strategy.md for testing approach
+2. Read @docs/testing/best-practices.md for patterns
+3. Read relevant implementation docs
+4. Load test examples and fixtures
 
 For Security Tasks:
 
-1. Read @docs/security-requirements.md
-2. Read @docs/architecture-details.md for attack surface analysis
+1. Read @docs/architecture/security.md for comprehensive requirements
+2. Read @docs/architecture/details.md for attack surface analysis
 3. Load penetration testing scenarios
 ```
 
@@ -179,8 +181,8 @@ Workflow:
 
 1. Use UltraThink for compiler API research
 2. Enter Plan Mode for integration strategy
-3. Read @docs/architecture-details.md for system design
-4. Read @docs/security-requirements.md for validation protocols
+3. Read @docs/architecture/details.md for system design
+4. Read @docs/architecture/security.md for validation protocols
 5. Use TypeScript Integration sub-agent for implementation
 6. Use Security Expert sub-agent for validation
 ```
@@ -190,7 +192,7 @@ Workflow:
 ```markdown
 Workflow:
 
-1. Read @docs/security-requirements.md thoroughly
+1. Read @docs/architecture/security.md thoroughly
 2. Use UltraThink for threat modeling
 3. Use Plan Mode for security architecture design
 4. Use Security Expert sub-agent for implementation
@@ -203,12 +205,13 @@ Workflow:
 ```markdown
 Workflow:
 
-1. Read @docs/testing-strategy.md for framework
-2. Read relevant implementation docs for context
-3. Use Test Engineer sub-agent for comprehensive test development
-4. Use Security Expert sub-agent for security test validation
-5. Use Performance Specialist sub-agent for performance test analysis
-6. Ensure coverage requirements are met
+1. Read @docs/testing/strategy.md for comprehensive framework
+2. Read @docs/testing/best-practices.md for patterns
+3. Read relevant implementation docs for context
+4. Use Test Engineer sub-agent for comprehensive test development
+5. Use Security Expert sub-agent for security test validation
+6. Use Performance Specialist sub-agent for performance test analysis
+7. Ensure coverage requirements are met (>84% overall, >90% core)
 ```
 
 ### **Performance Optimization Tasks**
@@ -217,7 +220,7 @@ Workflow:
 Workflow:
 
 1. Use UltraThink for performance analysis
-2. Read @docs/performance-requirements.md for targets
+2. Read @docs/architecture/performance.md for targets
 3. Use Plan Mode for optimization strategy
 4. Use Performance Specialist sub-agent for implementation
 5. Use benchmarking sub-agent for validation

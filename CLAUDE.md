@@ -17,6 +17,7 @@ These files are automatically loaded into Claude Code's context:
 **Development Conventions:**
 
 - @.claude/commit-conventions.md - Commit message format and gitmoji usage
+- @.claude/claude-code-workflows.md - Claude Code workflow patterns (Plan Mode, sub-agents, context management)
 - @openspec/AGENTS.md - Spec-driven development workflow
 - @openspec/project.md - Project conventions and tech stack
 

@@ -176,14 +176,21 @@ pnpm typecheck
 3. Run `pnpm lint:fix` (fixes auto-fixable linting issues)
 4. Run `pnpm lint:md:fix` (fixes markdown issues)
 5. Run `pnpm typecheck` (validates TypeScript)
-6. Run `pnpm test` (ensures tests pass)
+6. Run `pnpm test:coverage` (ensures tests pass AND meet coverage thresholds)
 
 **Pro tip:** Let the tools fix issues automatically. Don't manually format code!
 
 ```bash
 # Quick validation (runs all checks)
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
 ```
+
+**Coverage Requirements:**
+
+- Overall: >84%
+- Core functions: >90%
+- CLI layer: >80%
+- New code should maintain or improve coverage
 
 ### Import Organization
 

@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import { findTsConfig } from '@/config/discovery';
 import { parseTypeScriptConfig } from '@/config/parser';
 import { createTempConfig } from '@/config/temp-config';
@@ -71,11 +73,12 @@ async function processFileGroup(
   const originalConfig = parseTypeScriptConfig(tsconfigPath);
 
   // Create temporary config
+  const originalConfigDir = path.dirname(tsconfigPath);
   const tempHandle = createTempConfig(
-    tsconfigPath,
     originalConfig,
     resolvedFiles,
     options,
+    originalConfigDir,
   );
 
   if (options.verbose) {
@@ -88,10 +91,11 @@ async function processFileGroup(
 
   try {
     // Execute TypeScript compiler and parse results
+    // Use original config directory as working directory for proper type resolution
     const result = await executeAndParseTypeScript(
       tempHandle.path,
       resolvedFiles,
-      cwd,
+      originalConfigDir,
       options,
       startTime,
     );

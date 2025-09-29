@@ -163,7 +163,26 @@ export function findTypeScriptCompiler(
     }
   }
 
-  // Try tsgo first unless user explicitly wants tsc
+  // Prioritize user's local TypeScript for better type environment compatibility
+  // Check for user's local tsc first (gives access to their node_modules)
+  if (packageManagerInfo.tscPath && existsSync(packageManagerInfo.tscPath)) {
+    const executablePath = packageManagerInfo.tscPath;
+    const quotedPath = quoteWindowsPath(executablePath);
+
+    return {
+      executable: executablePath,
+      args: [],
+      useShell: false,
+      packageManager: packageManagerInfo,
+      isWindows,
+      quotedExecutable: quotedPath,
+      compilerType: 'tsc',
+      version: undefined,
+      fallbackAvailable: true,
+    };
+  }
+
+  // Try tsgo as fallback (faster but isolated environment)
   if (!options?.useTsc) {
     const tsgoInfo = detectTsgo(cwd);
     if (tsgoInfo.available && tsgoInfo.executable) {
@@ -179,23 +198,6 @@ export function findTypeScriptCompiler(
         fallbackAvailable: true, // tsc is available as fallback
       };
     }
-  }
-
-  if (packageManagerInfo.tscPath && existsSync(packageManagerInfo.tscPath)) {
-    const executablePath = packageManagerInfo.tscPath;
-    const quotedPath = quoteWindowsPath(executablePath);
-
-    return {
-      executable: executablePath,
-      args: [],
-      useShell: false,
-      packageManager: packageManagerInfo,
-      isWindows,
-      quotedExecutable: quotedPath === executablePath ? undefined : quotedPath,
-      compilerType: 'tsc',
-      version: undefined, // Version detection can be added later
-      fallbackAvailable: false, // Will be updated when tsgo detection is added
-    };
   }
 
   const localTsc = path.join(cwd, 'node_modules', '.bin', 'tsc');

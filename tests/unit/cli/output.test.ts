@@ -1,16 +1,31 @@
 import type { Ora } from 'ora';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   createOutputContext,
   formatOutput,
   outputError,
+  outputPerformanceInsight,
+  outputTip,
   outputToConsole,
   startProgress,
   updateProgress,
 } from '@/cli/output';
 import type { ValidatedCliOptions } from '@/types/cli';
 import type { CheckResult } from '@/types/core';
+
+// Mock logger utility
+vi.mock('@/utils/logger', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+// Import after mock is set up
+const { logger } = await import('@/utils/logger');
 
 // Mock ora since we can't test actual spinners in unit tests
 vi.mock('ora', () => ({
@@ -395,48 +410,33 @@ describe('CLI Output', () => {
   });
 
   describe('outputToConsole', () => {
-    beforeEach(() => {
-      vi.spyOn(console, 'log').mockImplementation(() => {
-        /* empty */
-      });
-      vi.spyOn(console, 'error').mockImplementation(() => {
-        /* empty */
-      });
-    });
-
     it('should output stdout and stderr', () => {
       outputToConsole('Standard output\n', 'Error output\n');
 
-      expect(console.log).toHaveBeenCalledWith('Standard output');
-      expect(console.error).toHaveBeenCalledWith('Error output');
+      expect(logger.info).toHaveBeenCalledWith('Standard output');
+      expect(logger.error).toHaveBeenCalledWith('Error output');
     });
 
     it('should handle empty outputs', () => {
       outputToConsole('', '');
 
-      expect(console.log).not.toHaveBeenCalled();
-      expect(console.error).not.toHaveBeenCalled();
+      expect(logger.info).not.toHaveBeenCalled();
+      expect(logger.error).not.toHaveBeenCalled();
     });
 
     it('should remove trailing newlines', () => {
       outputToConsole('Output with newline\n\n', 'Error with newline\n');
 
-      expect(console.log).toHaveBeenCalledWith('Output with newline\n');
-      expect(console.error).toHaveBeenCalledWith('Error with newline');
+      expect(logger.info).toHaveBeenCalledWith('Output with newline\n');
+      expect(logger.error).toHaveBeenCalledWith('Error with newline');
     });
   });
 
   describe('outputError', () => {
-    beforeEach(() => {
-      vi.spyOn(console, 'error').mockImplementation(() => {
-        /* empty */
-      });
-    });
-
     it('should output error message', () => {
       outputError('Configuration Error: tsconfig not found');
 
-      expect(console.error).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
         'Configuration Error: tsconfig not found',
       );
     });
@@ -447,17 +447,39 @@ describe('CLI Output', () => {
         'Tip: Use --project flag',
       );
 
-      expect(console.error).toHaveBeenCalledWith(
+      expect(logger.error).toHaveBeenCalledWith(
         'Configuration Error: tsconfig not found',
       );
-      expect(console.error).toHaveBeenCalledWith('\nTip: Use --project flag');
+      expect(logger.error).toHaveBeenCalledWith('\nTip: Use --project flag');
     });
 
     it('should not output tip when not provided', () => {
       outputError('Error occurred');
 
-      expect(console.error).toHaveBeenCalledTimes(1);
-      expect(console.error).toHaveBeenCalledWith('Error occurred');
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.error).toHaveBeenCalledWith('Error occurred');
+    });
+  });
+
+  describe('outputTip', () => {
+    it('should output tip message with emoji', () => {
+      outputTip('Use --verbose for detailed output');
+
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('💡'));
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Use --verbose for detailed output'),
+      );
+    });
+  });
+
+  describe('outputPerformanceInsight', () => {
+    it('should output performance insight with emoji', () => {
+      outputPerformanceInsight('tsgo is 10x faster than tsc');
+
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('⚡'));
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('tsgo is 10x faster than tsc'),
+      );
     });
   });
 });

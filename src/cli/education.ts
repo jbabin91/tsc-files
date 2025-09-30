@@ -70,12 +70,6 @@ export function provideUsageOptimization(fileCount: number): void {
       'Type checking many files? Consider using tsgo for better performance: --use-tsgo',
     );
   }
-
-  if (fileCount === 1) {
-    outputTip(
-      'For git hooks with changed files only, tsc-files integrates perfectly with lint-staged',
-    );
-  }
 }
 
 /**

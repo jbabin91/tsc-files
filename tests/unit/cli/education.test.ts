@@ -200,12 +200,10 @@ describe('CLI Education', () => {
       );
     });
 
-    it('should suggest lint-staged for single file', () => {
+    it('should not provide tips for single file', () => {
       provideUsageOptimization(1);
 
-      expect(outputTip).toHaveBeenCalledWith(
-        'For git hooks with changed files only, tsc-files integrates perfectly with lint-staged',
-      );
+      expect(outputTip).not.toHaveBeenCalled();
     });
 
     it('should not provide tips for moderate file counts', () => {

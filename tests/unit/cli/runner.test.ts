@@ -28,8 +28,6 @@ vi.mock('@/core/checker', () => ({
 vi.mock('@/cli/education', () => ({
   provideCompilerEducation: vi.fn(),
   provideGitHookOptimization: vi.fn(),
-  provideUsageOptimization: vi.fn(),
-  isLikelyFirstTsgoRun: vi.fn(() => false),
 }));
 
 // Mock the TypeScript detector

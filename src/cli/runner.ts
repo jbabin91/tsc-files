@@ -1,8 +1,6 @@
 import {
-  isLikelyFirstTsgoRun,
   provideCompilerEducation,
   provideGitHookOptimization,
-  provideUsageOptimization,
 } from '@/cli/education';
 import {
   categorizeError,
@@ -55,15 +53,6 @@ export async function runTypeCheck(
         useTsc: validatedOptions.useTsc,
         useTsgo: validatedOptions.useTsgo,
       });
-
-      // Provide compiler education (unless in JSON mode or specifically showing compiler info)
-      if (!validatedOptions.json && !validatedOptions.showCompiler) {
-        const isFirstRun = isLikelyFirstTsgoRun(workingDir);
-        provideCompilerEducation(tsInfo, workingDir, isFirstRun);
-
-        // Provide usage optimization tips based on file count
-        provideUsageOptimization(files.length);
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       logger.error(`Compiler detection failed: ${message}`);

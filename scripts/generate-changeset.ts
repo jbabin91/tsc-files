@@ -2,8 +2,7 @@
 /* eslint-disable no-console */
 
 import { execSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 // TypeScript types for type safety
@@ -53,6 +52,76 @@ const defaultCommitTypes: CommitTypeConfig[] = [
   { type: 'build', section: 'Build System', bump: null },
   { type: 'ci', section: 'Continuous Integration', bump: null },
 ];
+
+// Adjectives and nouns for generating human-friendly changeset names
+const adjectives = [
+  'brave',
+  'calm',
+  'clever',
+  'cool',
+  'eager',
+  'fancy',
+  'gentle',
+  'happy',
+  'jolly',
+  'kind',
+  'lively',
+  'nice',
+  'proud',
+  'quiet',
+  'smart',
+  'swift',
+  'warm',
+  'wise',
+  'young',
+  'zealous',
+];
+
+const nouns = [
+  'bear',
+  'cat',
+  'deer',
+  'eagle',
+  'falcon',
+  'fox',
+  'hawk',
+  'lion',
+  'owl',
+  'panda',
+  'rabbit',
+  'tiger',
+  'wolf',
+  'zebra',
+  'dolphin',
+  'elephant',
+  'giraffe',
+  'koala',
+  'leopard',
+  'penguin',
+];
+
+// Generate unique changeset filename
+function generateChangesetFilename(basePath: string): string {
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  while (attempts < maxAttempts) {
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const filename = `${adjective}-${noun}.md`;
+    const fullPath = path.join(basePath, filename);
+
+    // Check if file already exists
+    if (!existsSync(fullPath)) {
+      return filename;
+    }
+
+    attempts++;
+  }
+
+  // Fallback to timestamp if all random combinations fail (extremely unlikely)
+  return `changeset-${Date.now()}.md`;
+}
 
 // Advanced breaking change detection from changeset-conventional-commits
 function isBreakingChange(commit: string): boolean {
@@ -314,12 +383,14 @@ function main(): void {
 
   // Generate changeset with ALL commits (including non-version-bumping ones)
   const { content } = generateChangesetContent(parsedCommits, versionBump);
-  const changesetId = randomUUID().slice(0, 8);
-  const filename = `.changeset/${changesetId}-auto-generated.md`;
 
   // Ensure .changeset directory exists
-  const changesetDir = path.dirname(filename);
+  const changesetDir = '.changeset';
   mkdirSync(changesetDir, { recursive: true });
+
+  // Generate unique human-friendly filename
+  const changesetFilename = generateChangesetFilename(changesetDir);
+  const filename = path.join(changesetDir, changesetFilename);
 
   try {
     writeFileSync(filename, content);

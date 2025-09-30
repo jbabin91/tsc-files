@@ -4,6 +4,7 @@
 
 ### 🐛 Bug Fixes
 
+- **changeset**: :bug: include all conventional commits in changelog while only bumping for feat/fix/perf
 - **changeset**: :bug: only bump version for feat/fix/perf, not refactor/revert
 - **parser**: :bug: add JSONC support for tsconfig.json with comments and trailing commas
 - **lint**: :bug: enforce zero-tolerance policy for any types

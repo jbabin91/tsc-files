@@ -264,7 +264,7 @@ function main(): void {
     associateCommitsToConventionalCommitMessages(commits);
   console.log(`🔗 Associated commits into ${associatedCommits.length} groups`);
 
-  // Parse only the conventional commit messages and filter for version-bumping
+  // Parse ALL conventional commit messages (including non-version-bumping)
   const parsedCommits = associatedCommits
     .map((group) => {
       const parsedCommit = parseCommit({
@@ -286,7 +286,7 @@ function main(): void {
         );
         return false;
       }
-      return commit.upgradeType !== null; // Only version-bumping commits
+      return true; // Include all conventional commits
     });
 
   console.log(`✅ Parsed ${parsedCommits.length} conventional commits`);
@@ -296,14 +296,23 @@ function main(): void {
     return;
   }
 
-  // Determine version bump
-  const versionBump = getVersionBump(parsedCommits);
+  // Determine version bump from only version-bumping commits
+  const versionBumpingCommits = parsedCommits.filter(
+    (c) => c.upgradeType !== null,
+  );
+  console.log(
+    `📊 ${versionBumpingCommits.length} version-bumping commits (feat/fix/perf/breaking)`,
+  );
+
+  const versionBump = getVersionBump(versionBumpingCommits);
   if (!versionBump) {
-    console.log('ℹ️  No version-bumping commits found - no changeset needed');
+    console.log(
+      'ℹ️  No version-bumping commits found - no changeset needed (only docs/chore/test/etc.)',
+    );
     return;
   }
 
-  // Generate changeset with unique identifier
+  // Generate changeset with ALL commits (including non-version-bumping ones)
   const { content } = generateChangesetContent(parsedCommits, versionBump);
   const changesetId = randomUUID().slice(0, 8);
   const filename = `.changeset/${changesetId}-auto-generated.md`;

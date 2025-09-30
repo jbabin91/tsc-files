@@ -6,6 +6,7 @@ import {
   executeTypeScriptCompiler,
 } from '@/execution/executor';
 import type { CheckOptions } from '@/types/core';
+import { logger } from '@/utils/logger';
 
 // Helper to create properly typed mock execa results for testing
 const createMockExecaResult = (
@@ -135,7 +136,7 @@ describe('execution/executor', () => {
     it('should log package manager when verbose is enabled', async () => {
       const { execa } = await import('execa');
       const mockedExeca = vi.mocked(execa);
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {
+      const loggerSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
         /* no-op for testing */
       });
 
@@ -151,8 +152,8 @@ describe('execution/executor', () => {
         verbose: true,
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith('Using npm package manager');
-      consoleSpy.mockRestore();
+      expect(loggerSpy).toHaveBeenCalledWith('Using npm package manager');
+      loggerSpy.mockRestore();
     });
 
     it('should handle execution errors with missing properties', async () => {

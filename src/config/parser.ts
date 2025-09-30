@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
+import stripJsonComments from 'strip-json-comments';
+
 /**
  * TypeScript compiler options interface
  */
@@ -24,7 +26,7 @@ export type TypeScriptConfig = {
 };
 
 /**
- * Parse TypeScript configuration file
+ * Parse TypeScript configuration file (supports JSONC format with comments and trailing commas)
  * @param configPath - Path to tsconfig.json file
  * @returns Parsed TypeScript configuration
  * @throws Error if file cannot be read or parsed
@@ -36,7 +38,11 @@ export function parseTypeScriptConfig(configPath: string): TypeScriptConfig {
 
   try {
     const configContent = readFileSync(configPath, 'utf8');
-    const config = JSON.parse(configContent) as TypeScriptConfig;
+    // Strip comments and trailing commas to support JSONC format (JSON with Comments)
+    const strippedContent = stripJsonComments(configContent, {
+      trailingCommas: true,
+    });
+    const config = JSON.parse(strippedContent) as TypeScriptConfig;
     return config;
   } catch (error) {
     throw new Error(

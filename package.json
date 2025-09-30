@@ -1,6 +1,6 @@
 {
   "name": "@jbabin91/tsc-files",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Run TypeScript compiler on specific files without ignoring tsconfig.json",
   "keywords": [
     "typescript",

@@ -37,17 +37,18 @@ type CommitTypeConfig = {
   bump: 'major' | 'minor' | 'patch' | null;
 };
 
-// Comprehensive conventional commit types from changeset-conventional-commits
+// Comprehensive conventional commit types following SemVer best practices
+// Only feat (minor), fix (patch), and perf (patch) trigger version bumps
 const defaultCommitTypes: CommitTypeConfig[] = [
   { type: 'feat', section: 'Features', bump: 'minor' },
   { type: 'feature', section: 'Features', bump: 'minor' },
   { type: 'fix', section: 'Bug Fixes', bump: 'patch' },
   { type: 'perf', section: 'Performance Improvements', bump: 'patch' },
-  { type: 'revert', section: 'Reverts', bump: 'patch' },
+  { type: 'revert', section: 'Reverts', bump: null }, // Changed: reverts don't auto-bump
   { type: 'docs', section: 'Documentation', bump: null },
   { type: 'style', section: 'Styles', bump: null },
   { type: 'chore', section: 'Miscellaneous Chores', bump: null },
-  { type: 'refactor', section: 'Code Refactoring', bump: 'patch' },
+  { type: 'refactor', section: 'Code Refactoring', bump: null }, // Changed: refactors don't auto-bump
   { type: 'test', section: 'Tests', bump: null },
   { type: 'build', section: 'Build System', bump: null },
   { type: 'ci', section: 'Continuous Integration', bump: null },
@@ -185,16 +186,15 @@ function parseCommit({ sha, message }: Commit): ParsedCommit | null {
 }
 
 // Determine overall version bump from parsed commits
+// Uses upgradeType from config rather than hardcoded logic
 function getVersionBump(
   commits: ParsedCommit[],
 ): 'major' | 'minor' | 'patch' | null {
   const hasBreaking = commits.some((c) => c.isBreakingChange);
-  const hasFeat = commits.some((c) => c.type === 'feat');
-  const hasFix = commits.some(
-    (c) => c.type === 'fix' || c.type === 'perf' || c.type === 'refactor',
-  );
+  const hasMinor = commits.some((c) => c.upgradeType === 'minor');
+  const hasPatch = commits.some((c) => c.upgradeType === 'patch');
 
-  return hasBreaking ? 'major' : hasFeat ? 'minor' : hasFix ? 'patch' : null;
+  return hasBreaking ? 'major' : hasMinor ? 'minor' : hasPatch ? 'patch' : null;
 }
 
 // Generate changeset content with enhanced formatting

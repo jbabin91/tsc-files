@@ -61,11 +61,46 @@ Build a TypeScript CLI tool that enables running TypeScript compiler checks on s
 
 ### Non-Negotiable Rules
 
-- **NEVER commit changes without explicit user permission** - Only stage files with `git add` if appropriate, then WAIT for user to say "commit these changes" or similar before running `git commit`
+#### Git Operations Require Explicit Permission
+
+**Three separate gates - each requires explicit approval:**
+
+1. **Fix & Test** → You can do this autonomously
+2. **Stage** (`git add`) → You can do this autonomously
+3. **Commit** (`git commit`) → ⛔ **STOP** - Requires explicit words: "commit this", "commit these changes", "go ahead and commit"
+4. **Push** (`git push`) → ⛔ **STOP** - Requires explicit words: "push this", "push it", "go ahead and push"
+
+**"Prepare" means STOP at stage:**
+
+- ✅ Fix the code
+- ✅ Run tests
+- ✅ Stage with `git add`
+- ⛔ **STOP HERE** - Report what's ready and WAIT
+
+**Common instruction patterns and what they mean:**
+
+- "Prepare all required actions" → Fix, test, stage, STOP
+- "Get this ready" → Fix, test, stage, STOP
+- "Fix this" → Fix, test, stage, STOP
+- "Commit this" → Now you can commit
+- "Commit and push" → Now you can commit AND push
+
+**Invalid assumptions to avoid:**
+
+- ❌ "The user showed me test output so they want me to commit"
+- ❌ "I fixed the bug so I should commit it"
+- ❌ "The tests pass so I should push"
+- ❌ "This seems ready so I'll just go ahead"
+
+#### Other Protected Operations
+
 - **NEVER create changesets without explicit user permission** - Do not run `pnpm changeset` unless the user explicitly asks for it
-- NEVER modify `pnpm-lock.yaml` without explicit permission
+- **NEVER modify `pnpm-lock.yaml`** without explicit permission
+- **NEVER publish or release** without proper changeset workflow
+
+#### Always Required
+
 - ALWAYS run quality hooks after file changes (formatting, linting, type checking)
-- NEVER publish or release without proper changeset workflow
 - ALWAYS maintain dual package (ESM/CJS) compatibility
 - USE small, focused files organized by logical boundaries
 - ALWAYS use Plan Mode (Shift+Tab twice) for architectural decisions and TypeScript integration research

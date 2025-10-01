@@ -382,7 +382,9 @@ describe('createTempConfig', () => {
       // Check structure
       expect(tempConfigContent.files).toEqual(testFiles);
       expect(tempConfigContent.include).toEqual([]);
-      expect(tempConfigContent.exclude).toEqual([]);
+      // Exclude should always contain node_modules and dist patterns
+      expect(tempConfigContent.exclude).toContain('**/node_modules/**');
+      expect(tempConfigContent.exclude).toContain('**/dist/**');
       expect(tempConfigContent.extends).toBeUndefined();
     });
   });

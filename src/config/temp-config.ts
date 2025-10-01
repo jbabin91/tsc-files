@@ -105,6 +105,18 @@ export function createTempConfig(
   // Extract base config without dependency-related fields
   const { extends: _, compilerOptions: __, ...baseConfig } = originalConfig;
 
+  // Preserve user's exclude patterns, but ensure node_modules is always excluded
+  const userExclude = originalConfig.exclude ?? [];
+  const excludePatterns = [
+    ...new Set([
+      ...userExclude,
+      '**/node_modules/**',
+      'node_modules/**',
+      '**/dist/**',
+      'dist/**',
+    ]),
+  ];
+
   const tempConfig = {
     // Copy base config structure but exclude dependency-related fields
     ...baseConfig,
@@ -112,15 +124,14 @@ export function createTempConfig(
     extends: undefined,
     files,
     include: [],
-    exclude: [],
+    exclude: excludePatterns,
     compilerOptions: {
       ...adjustedCompilerOptions,
       // Apply user overrides
       noEmit: options.noEmit !== false,
-      skipLibCheck:
-        options.skipLibCheck ??
-        originalConfig.compilerOptions?.skipLibCheck ??
-        true,
+      // Default skipLibCheck to true to avoid checking node_modules declaration files
+      // User can explicitly override with --skip-lib-check=false if needed
+      skipLibCheck: options.skipLibCheck ?? true,
     },
   };
 

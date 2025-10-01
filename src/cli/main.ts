@@ -14,7 +14,8 @@ export function createCli(): {
       options,
       process.cwd(),
     );
-    process.exit(exitCode); // eslint-disable-line unicorn/no-process-exit
+    // Use exitCode assignment to allow event loop to drain (spinner cleanup)
+    process.exitCode = exitCode;
   });
 
   // Override exitOverride for testing
@@ -26,7 +27,8 @@ export function createCli(): {
     if (result.stderr) {
       logger.error(result.stderr.replace(/\n$/, ''));
     }
-    process.exit(result.exitCode); // eslint-disable-line unicorn/no-process-exit
+    // Use exitCode assignment to allow event loop to drain
+    process.exitCode = result.exitCode;
   });
 
   return {
@@ -52,7 +54,7 @@ export function createCli(): {
  * Main CLI entry point with process lifecycle management
  */
 export async function main(args?: string[]): Promise<void> {
-  // Handle unhandled rejections
+  // Handle unhandled rejections - exit immediately for critical errors
   process.on('unhandledRejection', (error) => {
     logger.error(`Unhandled rejection: ${error}`);
     process.exit(99);
@@ -60,5 +62,6 @@ export async function main(args?: string[]): Promise<void> {
 
   const cli = createCli();
   const exitCode = await cli.parseAsync(args);
-  process.exit(exitCode); // eslint-disable-line unicorn/no-process-exit
+  // Use exitCode assignment to allow event loop to drain (spinner cleanup)
+  process.exitCode = exitCode;
 }

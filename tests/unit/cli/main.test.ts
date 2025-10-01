@@ -177,9 +177,9 @@ describe('CLI Main', () => {
     });
 
     it('should handle main function execution flow', async () => {
-      // Test that main function calls process.exit with correct code
+      // Test that main function sets process.exitCode correctly
       // The actual CLI logic is tested in other tests, we just need to verify
-      // the main function flow (process.on setup and process.exit call)
+      // the main function flow (process.on setup and process.exitCode assignment)
 
       try {
         await main(['node', 'tsc-files', '--version']);
@@ -189,8 +189,8 @@ describe('CLI Main', () => {
 
       // Verify process.on was called (main function was executed)
       expect(mockProcessOn).toHaveBeenCalled();
-      // Verify process.exit was called at some point
-      expect(mockExit).toHaveBeenCalled();
+      // Verify process.exitCode was set (graceful exit without forcing immediate termination)
+      expect(process.exitCode).toBeDefined();
     });
 
     it('should handle main function with no arguments', async () => {

@@ -21,6 +21,8 @@ export type OutputContext = {
 export function createOutputContext(
   options: ValidatedCliOptions,
 ): OutputContext {
+  // Disable spinners in CI or when output is piped
+  // With graceful process.exitCode exit, spinners clean up properly even in git hooks
   const showProgress = !options.json && process.stdout.isTTY && !process.env.CI;
 
   return {
@@ -96,16 +98,16 @@ export function formatOutput(
       }
     }
 
+    // Format success message to stdout (when no spinner)
+    if (result.success && !context.spinner) {
+      stdout += kleur.green('✓ Type check passed') + '\n';
+    }
+
     // Format verbose info to stdout
     if (context.verbose && !context.spinner) {
       const duration = kleur.dim(`${result.duration}ms`);
       const fileCount = kleur.bold(result.checkedFiles.length.toString());
-      stdout += `\nChecked ${fileCount} files in ${duration}\n`;
-    }
-
-    // Format success message to stdout
-    if (result.success && !context.spinner) {
-      stdout += kleur.green('✓ Type check passed') + '\n';
+      stdout += `Checked ${fileCount} files in ${duration}\n`;
     }
   }
 

@@ -3,20 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCli, main } from '@/cli/main';
 import { logger } from '@/utils/logger';
 
-// Mock process.exit to prevent actual exits in tests
-const mockExit = vi.fn();
-const mockProcessOn = vi.fn();
+// Mock process.cwd for tests
 vi.stubGlobal('process', {
   ...process,
-  exit: mockExit,
   cwd: vi.fn(() => '/test/cwd'),
-  on: mockProcessOn,
 });
 
 describe('CLI Main', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockExit.mockClear();
   });
 
   afterEach(() => {
@@ -138,76 +133,40 @@ describe('CLI Main', () => {
   });
 
   describe('main', () => {
-    it('should set up unhandled rejection handler and handle errors', async () => {
+    it('should return exit code from CLI execution', async () => {
       const loggerErrorSpy = vi
         .spyOn(logger, 'error')
         .mockImplementation(() => {
           /* empty */
         });
 
-      // Test the unhandled rejection handler by checking process.on was called
-      // This is enough to cover the main function setup without complex mocking
-      try {
-        // Just call main with help to trigger the process.on setup and quick exit
-        await main(['node', 'tsc-files', '--help']);
-      } catch {
-        // Ignore errors from --help exit
-      }
+      const exitCode = await main(['node', 'tsc-files', '--help']);
 
-      // Verify process.on was called to set up unhandled rejection handler
-      expect(mockProcessOn).toHaveBeenCalledWith(
-        'unhandledRejection',
-        expect.any(Function),
-      );
-
-      // Test the unhandled rejection handler directly
-      const rejectionHandler = mockProcessOn.mock.calls.find(
-        (call) => call[0] === 'unhandledRejection',
-      )?.[1] as (error: Error) => void;
-
-      if (rejectionHandler) {
-        rejectionHandler(new Error('Test error'));
-        expect(loggerErrorSpy).toHaveBeenCalledWith(
-          'Unhandled rejection: Error: Test error',
-        );
-        expect(mockExit).toHaveBeenCalledWith(99);
-      }
+      // main() should return an exit code (99 for commander errors)
+      expect(exitCode).toBe(99);
 
       loggerErrorSpy.mockRestore();
     });
 
-    it('should handle main function execution flow', async () => {
-      // Test that main function sets process.exitCode correctly
-      // The actual CLI logic is tested in other tests, we just need to verify
-      // the main function flow (process.on setup and process.exitCode assignment)
+    it('should return exit code for version flag', async () => {
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
 
-      try {
-        await main(['node', 'tsc-files', '--version']);
-      } catch {
-        // Ignore errors from --version exit
-      }
+      const exitCode = await main(['node', 'tsc-files', '--version']);
 
-      // Verify process.on was called (main function was executed)
-      expect(mockProcessOn).toHaveBeenCalled();
-      // Verify process.exitCode was set (graceful exit without forcing immediate termination)
-      expect(process.exitCode).toBeDefined();
+      expect(exitCode).toBe(99);
+
+      loggerErrorSpy.mockRestore();
     });
 
-    it('should handle main function with no arguments', async () => {
-      mockExit.mockClear();
-      mockProcessOn.mockClear();
+    it('should return exit code when no arguments provided', async () => {
+      const exitCode = await main();
 
-      try {
-        await main();
-      } catch {
-        // Ignore commander errors
-      }
-
-      // Verify the main function flow was executed
-      expect(mockProcessOn).toHaveBeenCalledWith(
-        'unhandledRejection',
-        expect.any(Function),
-      );
+      // Should return error code for missing arguments
+      expect(exitCode).toBe(99);
     });
   });
 });

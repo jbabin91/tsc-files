@@ -51,23 +51,9 @@ export function createCli(): {
 }
 
 /**
- * Main CLI entry point with process lifecycle management
+ * Main CLI entry point - returns exit code for testability
  */
-export async function main(args?: string[]): Promise<void> {
-  // Handle unhandled rejections - exit immediately for critical errors
-  process.on('unhandledRejection', (error) => {
-    logger.error(`Unhandled rejection: ${error}`);
-    process.exit(99);
-  });
-
+export async function main(args?: string[]): Promise<number> {
   const cli = createCli();
-  await cli.parseAsync(args);
-
-  // Exit code has already been set by the action handler or error handler
-  // Give spinners/async operations minimal time to clean up, then exit
-  // This ensures the process exits with the correct code in CI/test environments
-  // while still allowing ora spinners to finish their cleanup
-  setTimeout(() => {
-    process.exit(process.exitCode);
-  }, 10);
+  return await cli.parseAsync(args);
 }

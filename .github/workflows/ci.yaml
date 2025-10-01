@@ -28,6 +28,7 @@ jobs:
         uses: ./.github/actions/build-package
 
   unit-tests:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -42,10 +43,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   integration:
-    if: github.event_name != 'merge_group'
+    if: github.event_name != 'merge_group' && github.event.pull_request.draft == false
     runs-on: ${{ matrix.os }}
     needs: [static-analysis, unit-tests]
-    timeout-minutes: ${{ matrix.timeout }} # Platform-specific timeout for performance validation
+    timeout-minutes: ${{ matrix.timeout }} # Execution time only (queue time not included)
     strategy:
       fail-fast: false # Test all platforms even if one fails
       matrix:

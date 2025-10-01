@@ -81,11 +81,11 @@ describe('CLI Main', () => {
     it('should handle configuration error paths', async () => {
       const cli = createCli();
 
-      // Mock a scenario where type checking succeeds (exit code 0)
+      // Mock a scenario where no tsconfig is found (configuration error)
       const exitCode = await cli.parseAsync(['node', 'tsc-files', 'test.ts']);
 
-      // Should get exit code from configuration error (no tsconfig found)
-      expect(exitCode).toBe(0);
+      // Should get exit code 2 from configuration error (no tsconfig found)
+      expect(exitCode).toBe(2);
     });
 
     it('should handle error with stderr output in parseAsync', async () => {

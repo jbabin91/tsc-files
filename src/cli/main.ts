@@ -32,10 +32,12 @@ export function createCli(): {
   });
 
   return {
-    parseAsync: async (args?: string[]) => {
+    parseAsync: async (args?: string[]): Promise<number> => {
       try {
         await program.parseAsync(args);
-        return 0; // Should not reach here in normal CLI usage
+        // Return the exit code that was set by the action handler
+        const exitCode = process.exitCode ?? 0;
+        return exitCode as number;
       } catch (error) {
         const result = handleCommanderError(error as Error);
         if (result.stdout) {

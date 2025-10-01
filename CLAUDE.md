@@ -23,27 +23,27 @@ These files are automatically loaded into Claude Code's context:
 
 ## 📚 Documentation Map
 
-Import these files with `@` syntax when you need specific guidance:
+Read these files on-demand when you need specific guidance:
 
 **For Contributors:**
 
-- @docs/CONTRIBUTING.md - Quick start for contributors
-- @docs/contributing/setup.md - Development environment setup
-- @docs/contributing/coding-standards.md - TypeScript guidelines and code style
-- @docs/contributing/pull-requests.md - PR workflow and code review
-- @docs/testing/README.md - Testing overview and quick start
-- @docs/architecture/README.md - System design and components
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) - Quick start for contributors
+- [docs/contributing/setup.md](docs/contributing/setup.md) - Development environment setup
+- [docs/contributing/coding-standards.md](docs/contributing/coding-standards.md) - TypeScript guidelines and code style
+- [docs/contributing/pull-requests.md](docs/contributing/pull-requests.md) - PR workflow and code review
+- [docs/testing/README.md](docs/testing/README.md) - Testing overview and quick start
+- [docs/architecture/README.md](docs/architecture/README.md) - System design and components
 
 **For Troubleshooting:**
 
-- @docs/troubleshooting-guide.md - Common issues and solutions
-- @docs/api.md - CLI options and programmatic API reference
+- [docs/troubleshooting-guide.md](docs/troubleshooting-guide.md) - Common issues and solutions
+- [docs/api.md](docs/api.md) - CLI options and programmatic API reference
 
 **For Deep Dives:**
 
-- @docs/architecture/details.md - In-depth implementation details
-- @docs/architecture/security.md - Comprehensive security requirements
-- @docs/testing/strategy.md - Complete testing approach
+- [docs/architecture/details.md](docs/architecture/details.md) - In-depth implementation details
+- [docs/architecture/security.md](docs/architecture/security.md) - Comprehensive security requirements
+- [docs/testing/strategy.md](docs/testing/strategy.md) - Complete testing approach
 
 ## 🎯 Project Mission
 
@@ -78,7 +78,7 @@ Before any commit or PR:
 
 1. `pnpm lint` - Zero warnings/errors
 2. `pnpm typecheck` - Zero TypeScript errors
-3. `pnpm test:coverage` - All tests passing AND coverage thresholds met (see @vitest.config.ts)
+3. `pnpm test:coverage` - All tests passing AND coverage thresholds met (see [vitest.config.ts](vitest.config.ts))
 4. `pnpm build` - Clean build success
 5. `pnpm lint:md` - Markdown compliance
 
@@ -105,7 +105,7 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 - `pnpm lint` ⚠️ **CRITICAL** - ESLint with zero warnings policy
 - `pnpm format` ⚠️ **CRITICAL** - Format code with Prettier
 - `pnpm typecheck` ⚠️ **CRITICAL** - TypeScript type checking
-- `pnpm test:coverage` ⚠️ **CRITICAL** - Tests + coverage thresholds (see @vitest.config.ts)
+- `pnpm test:coverage` ⚠️ **CRITICAL** - Tests + coverage thresholds (see [vitest.config.ts](vitest.config.ts))
 - `pnpm lint:md` ⚠️ **CRITICAL** - Lint markdown files
 - `pnpm build` ⚠️ **CRITICAL** - Clean build success
 
@@ -125,7 +125,7 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 - `pnpm changeset:auto` - Generate changesets from conventional commits
 - `pnpm commit` - Interactive commit with commitizen
 
-**Note**: For complete release workflow, see @docs/contributing/release-process.md
+**Note**: For complete release workflow, see [docs/contributing/release-process.md](docs/contributing/release-process.md)
 
 ### 🔍 Troubleshooting & Debugging
 
@@ -135,7 +135,7 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 - `npx tsc --showConfig` - Debug TypeScript configuration
 - `git status` - Check working directory state
 
-**Note**: For complete list of commands, see @package.json
+**Note**: For complete list of commands, see `package.json`
 
 ## 📋 Task Management Guidelines
 

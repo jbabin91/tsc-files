@@ -62,6 +62,7 @@ Build a TypeScript CLI tool that enables running TypeScript compiler checks on s
 ### Non-Negotiable Rules
 
 - **NEVER commit changes without explicit user permission** - Only stage files with `git add` if appropriate, then WAIT for user to say "commit these changes" or similar before running `git commit`
+- **NEVER create changesets without explicit user permission** - Do not run `pnpm changeset` unless the user explicitly asks for it
 - NEVER modify `pnpm-lock.yaml` without explicit permission
 - ALWAYS run quality hooks after file changes (formatting, linting, type checking)
 - NEVER publish or release without proper changeset workflow

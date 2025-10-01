@@ -1,0 +1,42 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+# Aligned with vitest.config.ts coverage thresholds
+
+coverage:
+  status:
+    project:
+      default:
+        # Automatically track current project coverage (no manual updates needed)
+        target: auto
+        # Allow coverage to decrease by up to 1% without failing
+        threshold: 1%
+        # Post status on all commits (not just PRs)
+        only_pulls: false
+
+    patch:
+      default:
+        # Patch coverage target for new/changed code
+        # Set to vitest's minimum branch coverage (80%) to align with project standards
+        target: 80%
+        # Allow patch coverage to be up to 5% below target without failing (75% minimum)
+        # Lenient threshold since patch coverage is more variable than project coverage
+        threshold: 5%
+        # Post status on all commits (not just PRs)
+        only_pulls: false
+
+  precision: 2
+  round: down
+
+comment:
+  # Condensed PR comment layout for cleaner display
+  layout: 'condensed_header, condensed_files, condensed_footer'
+  # Hide verbose "Additional details" section
+  hide_comment_details: true
+  # Show coverage on changed files
+  behavior: default
+  require_changes: false
+
+github_checks:
+  # Disable deprecated GitHub check run annotations
+  # Codecov recommends using the browser extension instead
+  annotations: false

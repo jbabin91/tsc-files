@@ -61,7 +61,13 @@ export async function main(args?: string[]): Promise<void> {
   });
 
   const cli = createCli();
-  const exitCode = await cli.parseAsync(args);
-  // Use exitCode assignment to allow event loop to drain (spinner cleanup)
-  process.exitCode = exitCode;
+  await cli.parseAsync(args);
+
+  // Exit code has already been set by the action handler or error handler
+  // Give spinners/async operations minimal time to clean up, then exit
+  // This ensures the process exits with the correct code in CI/test environments
+  // while still allowing ora spinners to finish their cleanup
+  setTimeout(() => {
+    process.exit(process.exitCode);
+  }, 10);
 }

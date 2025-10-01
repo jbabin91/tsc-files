@@ -41,6 +41,7 @@ export default defineConfig(
         },
       ],
       'unicorn/no-null': 'off',
+      'unicorn/no-process-exit': 'off',
       'unicorn/prefer-class-fields': 'error',
       'unicorn/prefer-top-level-await': 'off',
       'unicorn/prevent-abbreviations': 'off',

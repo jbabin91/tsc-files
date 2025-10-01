@@ -15,5 +15,12 @@
   "platformAutomerge": true,
   "platformCommit": "enabled",
   "commitBody": "",
-  "prConcurrentLimit": 5
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Widen peerDependencies ranges instead of replacing them",
+      "matchDepTypes": ["peerDependencies"],
+      "rangeStrategy": "widen"
+    }
+  ]
 }

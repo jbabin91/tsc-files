@@ -1,5 +1,29 @@
 # @jbabin91/tsc-files
 
+## 0.4.4
+
+### Patch Changes
+
+- [`3057f70`](https://github.com/jbabin91/tsc-files/commit/3057f707898c20c404c995d4e7bb6fd61c275008) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🔧 Miscellaneous Chores
+  - **repo**: :hammer: bump dependencies
+  - **ci**: :construction_worker: configure codecov with aligned thresholds
+
+  ### 📝 Documentation
+
+  - **claude**: :memo: add explicit git operation guard rails
+
+  ### 🐛 Bug Fixes
+
+  - **cli**: :bug: return actual exit code from parseAsync
+
+  ### ♻️ Code Refactoring
+
+  - **cli**: :recycle: make main() testable by returning exit code
+
+  ### 👷 Continuous Integration
+
+  - :ferris_wheel: update CI conditions to skip drafts and clarify timeout
+
 ## 0.4.3
 
 ### Patch Changes

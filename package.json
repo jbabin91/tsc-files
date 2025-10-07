@@ -94,7 +94,7 @@
     "strip-json-comments": "^5.0.3",
     "tmp": "^0.2.5",
     "tsconfig-paths": "^4.2.0",
-    "zod": "^4.1.11"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
@@ -105,7 +105,7 @@
     "@eslint/js": "^9.37.0",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.7.0",
-    "@typescript/native-preview": "7.0.0-dev.20251006.1",
+    "@typescript/native-preview": "7.0.0-dev.20251007.1",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "3.2.4",
     "commitizen": "^4.3.1",
@@ -124,7 +124,7 @@
     "publint": "^0.3.14",
     "tsdown": "^0.15.6",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.45.0",
+    "typescript-eslint": "^8.46.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
   },

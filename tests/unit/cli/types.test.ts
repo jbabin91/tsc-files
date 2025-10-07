@@ -40,7 +40,7 @@ describe('CLI Types', () => {
 
       expect(result).toEqual({
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         json: false,
@@ -83,7 +83,7 @@ describe('CLI Types', () => {
       expect(result).toEqual({
         project: 'custom.json',
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: true,
         cache: true,
         json: false,
@@ -99,7 +99,7 @@ describe('CLI Types', () => {
     it('should handle null/undefined input', () => {
       expect(validateCliOptions(null)).toEqual({
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         json: false,
@@ -113,7 +113,7 @@ describe('CLI Types', () => {
 
       expect(validateCliOptions({})).toEqual({
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         json: false,
@@ -129,7 +129,7 @@ describe('CLI Types', () => {
     it('should handle non-object input', () => {
       expect(validateCliOptions('string')).toEqual({
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         json: false,
@@ -143,7 +143,7 @@ describe('CLI Types', () => {
 
       expect(validateCliOptions(123)).toEqual({
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         json: false,

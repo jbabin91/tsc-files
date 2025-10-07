@@ -61,7 +61,7 @@ export type ErrorCategory =
 export const CliOptionsSchema = z.object({
   project: z.string().optional(),
   noEmit: z.boolean().default(true),
-  skipLibCheck: z.boolean().default(false),
+  skipLibCheck: z.boolean().default(true),
   verbose: z.boolean().default(false),
   cache: z.boolean().default(true),
   json: z.boolean().default(false),

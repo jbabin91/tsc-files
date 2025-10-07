@@ -110,7 +110,7 @@ describe('CLI Runner', () => {
       expect(mockCheckFiles).toHaveBeenCalledWith(['test.ts'], {
         project: undefined,
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         useTsc: false,
@@ -229,7 +229,7 @@ describe('CLI Runner', () => {
       expect(mockCheckFiles).toHaveBeenCalledWith(['test1.ts', 'test2.ts'], {
         project: 'custom.json',
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: true,
         cache: true,
         useTsc: false,
@@ -302,7 +302,7 @@ describe('CLI Runner', () => {
       expect(mockCheckFiles).toHaveBeenCalledWith(['test.ts'], {
         project: undefined,
         noEmit: true,
-        skipLibCheck: false,
+        skipLibCheck: true,
         verbose: false,
         cache: true,
         useTsc: false,

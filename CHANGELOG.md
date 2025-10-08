@@ -1,5 +1,24 @@
 # @jbabin91/tsc-files
 
+## 0.4.5
+
+### Patch Changes
+
+- [`936d238`](https://github.com/jbabin91/tsc-files/commit/936d238003156e254802bf9af3744c049d5843c0) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 📝 Documentation
+  - **tests**: add ecosystem integration tests design and proposal
+
+  ### 🐛 Bug Fixes
+
+  - **config**: :bug: improve tsgo compatibility and type resolution
+  - **cli**: update skipLibCheck default value to true
+
+  ### 🔧 Miscellaneous Chores
+
+  - **repo**: :hammer: bump dependencies
+  - **docs**: :memo: rename CLAUDE.md to AGENTS.md with symlink
+  - **repo**: :hammer: bump dependencies
+  - **repo**: :hammer: bump dependencies
+
 ## 0.4.4
 
 ### Patch Changes

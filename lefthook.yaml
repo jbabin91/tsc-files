@@ -5,19 +5,20 @@ output:
 pre-commit:
   parallel: true
   commands:
-    typecheck:
-      glob: '*.{ts,tsx}'
-      run: pnpm typecheck
-    lint:
-      glob: '*.{ts,tsx,js,jsx,cjs,mjs}'
-      run: pnpm eslint {staged_files} --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/.eslintcache
-      stage_fixed: true # Auto-stage ESLint fixes!
-    lint-md:
-      glob: '*.{md,mdx}'
-      run: pnpm markdownlint-cli2 {staged_files}
     format:
+      glob: '*.{ts,js,cjs,mjs,json,yaml,yml,md,mdx}'
       run: pnpm prettier -uw {staged_files}
       stage_fixed: true
+    lint:
+      glob: '*.{ts,js,cjs,mjs}'
+      run: pnpm eslint {staged_files} --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/.eslintcache
+      stage_fixed: true
+    typecheck:
+      glob: '*.ts'
+      run: pnpm tsc-files {staged_files}
+    lint-md:
+      glob: '*.{md,mdx}'
+      run: pnpm markdownlint-cli2 --no-globs {staged_files}
     audit:
       run: pnpm audit --audit-level moderate
 

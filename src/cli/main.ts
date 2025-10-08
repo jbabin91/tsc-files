@@ -14,7 +14,7 @@ export function createCli(): {
       options,
       process.cwd(),
     );
-    // Use exitCode assignment to allow event loop to drain (spinner cleanup)
+    // Return exit code for immediate process.exit() in cli.ts
     process.exitCode = exitCode;
   });
 

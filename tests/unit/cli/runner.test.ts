@@ -48,7 +48,6 @@ vi.mock('@/cli/output', () => ({
   createOutputContext: vi.fn(() => ({
     json: false,
     verbose: false,
-    showProgress: false,
   })),
   startProgress: vi.fn((ctx: unknown) => ctx),
   updateProgress: vi.fn(),
@@ -210,7 +209,6 @@ describe('CLI Runner', () => {
       mockCreateOutputContext.mockReturnValue({
         json: true,
         verbose: true,
-        showProgress: false,
       });
       mockFormatOutput.mockReturnValue({
         stdout: JSON.stringify(mockResult, null, 2),

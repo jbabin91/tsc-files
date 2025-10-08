@@ -17,24 +17,7 @@ const execFileAsync = promisify(execFile);
 // Build the CLI path relative to the current working directory
 const CLI_PATH = path.resolve(process.cwd(), 'dist/cli.js');
 
-// Global test utilities
-declare global {
-  var createTempDir: () => string;
-  var cleanupTempDir: (tempDir: string) => void;
-  var createTestProject: (
-    tempDir: string,
-    customTsconfig?: object,
-  ) => {
-    tsconfig: object;
-    srcDir: string;
-  };
-  var runCli: (
-    args: string[],
-    cwd: string,
-  ) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
-  var writeTestFile: (dir: string, filename: string, content: string) => string;
-  var writeTestFiles: (dir: string, files: Record<string, string>) => string[];
-}
+// Global test utilities are declared in tests/globals.d.ts
 
 // ================================
 // TEST UTILITIES
@@ -264,25 +247,7 @@ export const unstubAllEnvs = () => {
 // ================================
 // LEGACY GLOBAL UTILITIES FOR COMPATIBILITY
 // ================================
-
-// Global test utilities for backward compatibility
-declare global {
-  var createTempDir: () => string;
-  var cleanupTempDir: (tempDir: string) => void;
-  var createTestProject: (
-    tempDir: string,
-    customTsconfig?: object,
-  ) => {
-    tsconfig: object;
-    srcDir: string;
-  };
-  var runCli: (
-    args: string[],
-    cwd: string,
-  ) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
-  var writeTestFile: (dir: string, filename: string, content: string) => string;
-  var writeTestFiles: (dir: string, files: Record<string, string>) => string[];
-}
+// Global test utilities are declared in tests/globals.d.ts
 
 // Temp directory utilities - using secure tmp library
 globalThis.createTempDir = () => {
@@ -553,6 +518,7 @@ globalThis.writeTestFile = (
   content: string,
 ): string => {
   const filePath = path.join(dir, filename);
+  mkdirSync(path.dirname(filePath), { recursive: true });
   writeFileSync(filePath, content);
   return filePath;
 };

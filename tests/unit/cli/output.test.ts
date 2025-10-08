@@ -1,4 +1,3 @@
-import type { Ora } from 'ora';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -27,29 +26,13 @@ vi.mock('@/utils/logger', () => ({
 // Import after mock is set up
 const { logger } = await import('@/utils/logger');
 
-// Mock ora since we can't test actual spinners in unit tests
-vi.mock('ora', () => ({
-  default: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-    fail: vi.fn().mockReturnThis(),
-  })),
-}));
-
 describe('CLI Output', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset environment
-    delete process.env.CI;
-    // Mock isTTY property
-    Object.defineProperty(process.stdout, 'isTTY', {
-      get: vi.fn(() => true),
-      configurable: true,
-    });
   });
 
   describe('createOutputContext', () => {
-    it('should create context with progress enabled for TTY', () => {
+    it('should create context with json and verbose flags', () => {
       const options: ValidatedCliOptions = {
         json: false,
         verbose: true,
@@ -69,11 +52,10 @@ describe('CLI Output', () => {
       expect(context).toEqual({
         json: false,
         verbose: true,
-        showProgress: true, // TTY enabled, not CI, not JSON
       });
     });
 
-    it('should disable progress for JSON output', () => {
+    it('should create context for JSON output', () => {
       const options: ValidatedCliOptions = {
         json: true,
         verbose: false,
@@ -90,38 +72,16 @@ describe('CLI Output', () => {
 
       const context = createOutputContext(options);
 
-      expect(context.showProgress).toBe(false);
-    });
-
-    it('should disable progress in CI environment', () => {
-      process.env.CI = 'true';
-      const options: ValidatedCliOptions = {
-        json: false,
+      expect(context).toEqual({
+        json: true,
         verbose: false,
-        noEmit: true,
-        skipLibCheck: false,
-        cache: true,
-        useTsc: false,
-        useTsgo: false,
-        showCompiler: false,
-        benchmark: false,
-        fallback: true,
-        tips: false,
-      };
-
-      const context = createOutputContext(options);
-
-      expect(context.showProgress).toBe(false);
-    });
-
-    it('should disable progress for non-TTY', () => {
-      Object.defineProperty(process.stdout, 'isTTY', {
-        get: vi.fn(() => false),
-        configurable: true,
       });
+    });
+
+    it('should handle verbose flag correctly', () => {
       const options: ValidatedCliOptions = {
         json: false,
-        verbose: false,
+        verbose: true,
         noEmit: true,
         skipLibCheck: false,
         cache: true,
@@ -135,60 +95,39 @@ describe('CLI Output', () => {
 
       const context = createOutputContext(options);
 
-      expect(context.showProgress).toBe(false);
+      expect(context.verbose).toBe(true);
     });
   });
 
   describe('startProgress', () => {
-    it('should start spinner when progress is enabled', () => {
+    it('should return context unchanged (no-op)', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: true,
       };
 
       const updatedContext = startProgress(context, 5);
 
-      expect(updatedContext.spinner).toBeDefined();
+      expect(updatedContext).toBe(context);
     });
 
-    it('should not start spinner when progress is disabled', () => {
+    it('should handle any file count', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: false,
-      };
-
-      const updatedContext = startProgress(context, 5);
-
-      expect(updatedContext.spinner).toBeUndefined();
-    });
-
-    it('should handle singular file count', () => {
-      const context = {
-        json: false,
-        verbose: false,
-        showProgress: true,
       };
 
       const updatedContext = startProgress(context, 1);
 
-      expect(updatedContext.spinner).toBeDefined();
+      expect(updatedContext).toBe(context);
     });
   });
 
   describe('updateProgress', () => {
-    it('should update spinner on success', () => {
-      const mockSpinner = {
-        succeed: vi.fn(),
-        fail: vi.fn(),
-      };
-
+    it('should do nothing on success (no-op)', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: true,
-        spinner: mockSpinner as unknown as Ora,
       };
 
       const result: CheckResult = {
@@ -201,24 +140,14 @@ describe('CLI Output', () => {
         checkedFiles: ['test.ts'],
       };
 
-      updateProgress(context, result);
-
-      expect(mockSpinner.succeed).toHaveBeenCalledWith(
-        expect.stringContaining('Type check completed'),
-      );
+      // Should not throw - no-op function
+      expect(() => updateProgress(context, result)).not.toThrow();
     });
 
-    it('should update spinner on failure', () => {
-      const mockSpinner = {
-        succeed: vi.fn(),
-        fail: vi.fn(),
-      };
-
+    it('should do nothing on failure (no-op)', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: true,
-        spinner: mockSpinner as unknown as Ora,
       };
 
       const result: CheckResult = {
@@ -248,18 +177,14 @@ describe('CLI Output', () => {
         checkedFiles: ['test.ts'],
       };
 
-      updateProgress(context, result);
-
-      expect(mockSpinner.fail).toHaveBeenCalledWith(
-        expect.stringContaining('Found 2 type errors'),
-      );
+      // Should not throw - no-op function
+      expect(() => updateProgress(context, result)).not.toThrow();
     });
 
     it('should do nothing without spinner', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: false,
       };
 
       const result: CheckResult = {
@@ -282,7 +207,6 @@ describe('CLI Output', () => {
       const context = {
         json: true,
         verbose: false,
-        showProgress: false,
       };
 
       const result: CheckResult = {
@@ -305,7 +229,6 @@ describe('CLI Output', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: false,
       };
 
       const result: CheckResult = {
@@ -340,7 +263,6 @@ describe('CLI Output', () => {
       const context = {
         json: false,
         verbose: true,
-        showProgress: false,
       };
 
       const result: CheckResult = {
@@ -360,36 +282,10 @@ describe('CLI Output', () => {
       expect(stderr).toBe('');
     });
 
-    it('should not include verbose info when spinner is present', () => {
-      const context = {
-        json: false,
-        verbose: true,
-        showProgress: true,
-        spinner: {} as unknown as Ora,
-      };
-
-      const result: CheckResult = {
-        success: true,
-        errorCount: 0,
-        warningCount: 0,
-        errors: [],
-        warnings: [],
-        duration: 250,
-        checkedFiles: ['src/test1.ts'],
-      };
-
-      const { stdout, stderr } = formatOutput(context, result);
-
-      expect(stdout).not.toContain('Checked');
-      expect(stdout).toBe('');
-      expect(stderr).toBe('');
-    });
-
-    it('should show success message without spinner', () => {
+    it('should show success message', () => {
       const context = {
         json: false,
         verbose: false,
-        showProgress: false,
       };
 
       const result: CheckResult = {

@@ -8,15 +8,10 @@ process.on('unhandledRejection', (error) => {
   process.exit(99);
 });
 
-// Run CLI and handle process exit
+// Run CLI with immediate exit after completion
 main()
   .then((exitCode) => {
-    // Give spinners/async operations minimal time to clean up, then exit
-    // This ensures the process exits with the correct code in CI/test environments
-    // while still allowing ora spinners to finish their cleanup
-    setTimeout(() => {
-      process.exit(exitCode);
-    }, 10);
+    process.exit(exitCode);
   })
   .catch((error) => {
     logger.error(`Fatal error: ${error}`);

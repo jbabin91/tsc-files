@@ -1,5 +1,4 @@
 import kleur from 'kleur';
-import ora from 'ora';
 
 import type { ValidatedCliOptions } from '@/types/cli';
 import type { CheckResult } from '@/types/core';
@@ -9,10 +8,8 @@ import { logger } from '@/utils/logger';
  * Output context for managing progress and formatting
  */
 export type OutputContext = {
-  spinner?: ReturnType<typeof ora>;
   json: boolean;
   verbose: boolean;
-  showProgress: boolean;
 };
 
 /**
@@ -21,56 +18,30 @@ export type OutputContext = {
 export function createOutputContext(
   options: ValidatedCliOptions,
 ): OutputContext {
-  // Disable spinners in CI or when output is piped
-  // With graceful process.exitCode exit, spinners clean up properly even in git hooks
-  const showProgress = !options.json && process.stdout.isTTY && !process.env.CI;
-
   return {
     json: options.json,
     verbose: options.verbose,
-    showProgress,
   };
 }
 
 /**
- * Start progress indicator
+ * Start progress indicator (no-op, spinners removed)
  */
 export function startProgress(
   context: OutputContext,
-  fileCount: number,
+  _fileCount: number,
 ): OutputContext {
-  if (!context.showProgress) {
-    return context;
-  }
-
-  const fileText = fileCount === 1 ? 'file' : 'files';
-  const spinner = ora(
-    kleur.cyan(
-      `Type checking ${kleur.bold(fileCount.toString())} ${fileText}...`,
-    ),
-  ).start();
-
-  return { ...context, spinner };
+  return context;
 }
 
 /**
- * Update progress indicator based on result
+ * Update progress indicator based on result (no-op, spinners removed)
  */
 export function updateProgress(
-  context: OutputContext,
-  result: CheckResult,
+  _context: OutputContext,
+  _result: CheckResult,
 ): void {
-  if (!context.spinner) {
-    return;
-  }
-
-  if (result.success) {
-    context.spinner.succeed(kleur.green('✓ Type check completed'));
-  } else {
-    context.spinner.fail(
-      kleur.red(`✗ Found ${result.errors.length} type errors`),
-    );
-  }
+  // No spinner to update
 }
 
 /**
@@ -98,13 +69,13 @@ export function formatOutput(
       }
     }
 
-    // Format success message to stdout (when no spinner)
-    if (result.success && !context.spinner) {
+    // Format success message to stdout
+    if (result.success) {
       stdout += kleur.green('✓ Type check passed') + '\n';
     }
 
     // Format verbose info to stdout
-    if (context.verbose && !context.spinner) {
+    if (context.verbose) {
       const duration = kleur.dim(`${result.duration}ms`);
       const fileCount = kleur.bold(result.checkedFiles.length.toString());
       stdout += `Checked ${fileCount} files in ${duration}\n`;

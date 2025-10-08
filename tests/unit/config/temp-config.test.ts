@@ -37,7 +37,7 @@ describe('createTempConfig', () => {
   });
 
   describe('TypeRoots functionality', () => {
-    it('should add typeRoots when not present in original config', () => {
+    it('should NOT add typeRoots by default (for tsgo compatibility)', () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -58,8 +58,35 @@ describe('createTempConfig', () => {
         readFileSync(tempHandle.path, 'utf8'),
       ) as TempConfigContent;
 
+      // typeRoots should NOT be added by default (allows both tsc and tsgo to work)
+      expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
+    });
+
+    it('should add typeRoots only when explicitly using tsc', () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          strict: true,
+          types: ['node'],
+        },
+      };
+
+      const optionsWithTsc = { ...defaultOptions, useTsc: true };
+      tempHandle = createTempConfig(
+        originalConfig,
+        testFiles,
+        optionsWithTsc,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // When using tsc explicitly, typeRoots should be added
       expect(tempConfigContent.compilerOptions.typeRoots).toEqual([
         '/test/project/node_modules/@types',
+        '/test/project/node_modules',
       ]);
     });
 
@@ -381,7 +408,8 @@ describe('createTempConfig', () => {
 
       // Check structure
       expect(tempConfigContent.files).toEqual(testFiles);
-      expect(tempConfigContent.include).toEqual([]);
+      // Include should contain *.d.ts for ambient declarations (test globals, custom types, etc.)
+      expect(tempConfigContent.include).toEqual(['**/*.d.ts']);
       // Exclude should always contain node_modules and dist patterns
       expect(tempConfigContent.exclude).toContain('**/node_modules/**');
       expect(tempConfigContent.exclude).toContain('**/dist/**');
@@ -431,10 +459,8 @@ describe('createTempConfig', () => {
         readFileSync(tempHandle.path, 'utf8'),
       ) as TempConfigContent;
 
-      // Should add typeRoots but no paths processing
-      expect(tempConfigContent.compilerOptions.typeRoots).toEqual([
-        '/test/project/node_modules/@types',
-      ]);
+      // Should NOT add typeRoots by default (for tsgo compatibility)
+      expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
       expect(tempConfigContent.compilerOptions.paths).toBeUndefined();
     });
   });

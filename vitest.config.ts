@@ -88,7 +88,7 @@ export default defineConfig({
       optimizer: {
         ssr: {
           enabled: true,
-          include: ['tmp', 'commander', 'execa', 'fast-glob', 'ora', 'kleur'],
+          include: ['tmp', 'commander', 'execa', 'fast-glob', 'kleur'],
         },
       },
     },

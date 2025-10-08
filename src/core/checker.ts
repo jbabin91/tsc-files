@@ -22,7 +22,10 @@ function groupRawFilesByTsConfig(
 
   for (const file of files) {
     try {
-      const tsconfigPath = findTsConfig(cwd, options.project);
+      // For absolute file paths, start searching from the file's directory
+      // This ensures we find the correct tsconfig for files in different projects
+      const searchDir = path.isAbsolute(file) ? path.dirname(file) : cwd;
+      const tsconfigPath = findTsConfig(searchDir, options.project);
 
       if (!groups.has(tsconfigPath)) {
         groups.set(tsconfigPath, []);
@@ -97,14 +100,23 @@ async function processFileGroup(
 
   // Create temporary config
   const originalConfigDir = path.dirname(tsconfigPath);
+
+  // Set default cacheDir to project directory for better type resolution compatibility
+  // This allows both tsc and tsgo to use default TypeScript type resolution
+  // tsgo specifically does NOT support custom typeRoots, so temp configs must be in project dir
+  const effectiveOptions = {
+    ...options,
+    cacheDir: options.cacheDir ?? originalConfigDir,
+  };
+
   const tempHandle = createTempConfig(
     originalConfig,
     resolvedFiles,
-    options,
+    effectiveOptions,
     originalConfigDir,
   );
 
-  if (options.verbose) {
+  if (effectiveOptions.verbose) {
     logger.info(
       `Processing group with ${resolvedFiles.length} files using ${tsconfigPath}`,
     );
@@ -119,7 +131,7 @@ async function processFileGroup(
       tempHandle.path,
       resolvedFiles,
       originalConfigDir,
-      options,
+      effectiveOptions,
       startTime,
       {
         useTsgo: tsgoDecision.useTsgo,
@@ -129,7 +141,7 @@ async function processFileGroup(
 
     return result;
   } catch (error) {
-    if (options.throwOnError) {
+    if (effectiveOptions.throwOnError) {
       throw error;
     }
 
@@ -161,11 +173,11 @@ async function processFileGroup(
   } finally {
     try {
       tempHandle.cleanup();
-      if (options.verbose) {
+      if (effectiveOptions.verbose) {
         logger.info(`Cleaned up temp config: ${tempHandle.path}`);
       }
     } catch (cleanupError) {
-      if (options.verbose) {
+      if (effectiveOptions.verbose) {
         logger.warn(`Failed to cleanup temp config: ${cleanupError}`);
       }
     }

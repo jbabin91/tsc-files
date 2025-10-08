@@ -204,6 +204,231 @@ runs:
         extended_end=$(date +%s)
         echo "✅ Extended tests completed in $((extended_end - extended_start))s"
 
+    - name: Path Aliases and BaseUrl Tests
+      if: inputs.test_scenario == 'full'
+      shell: bash
+      run: |
+        echo "🧪 Testing path aliases with baseUrl..."
+        paths_start=$(date +%s)
+
+        # Use the same isolated test directory
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          TEST_DIR="$RUNNER_TEMP/tsc-files-integration-$$"
+        else
+          TEST_DIR="/tmp/tsc-files-integration-$$"
+        fi
+
+        if [ ! -d "$TEST_DIR" ]; then
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+
+          TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
+          echo "📦 Installing $TARBALL for path alias tests..."
+          npm init -y > /dev/null 2>&1
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent --progress=false --loglevel=error 2>/dev/null || exit 1
+          else
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || exit 1
+          fi
+        else
+          cd "$TEST_DIR"
+        fi
+
+        # Create directory structure for path aliases
+        mkdir -p src/components lib/utils
+
+        # Create tsconfig with path aliases and baseUrl
+        cat > tsconfig.paths.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true,
+            "baseUrl": ".",
+            "paths": {
+              "@/components/*": ["src/components/*"],
+              "@/utils/*": ["lib/utils/*"]
+            }
+          }
+        }
+        EOF
+
+        # Create test files using path aliases
+        echo 'export interface Props { title: string; }' > src/components/types.ts
+        echo 'export const formatText = (text: string) => text.toUpperCase();' > lib/utils/format.ts
+        echo 'import { Props } from "@/components/types"; import { formatText } from "@/utils/format"; export const component = (props: Props) => formatText(props.title);' > src/app.ts
+
+        # Test path alias resolution with tsc (default)
+        echo "  🔍 Testing path aliases with tsc..."
+        if npx tsc-files --project tsconfig.paths.json src/app.ts > /dev/null 2>&1; then
+          echo "  ✅ Path aliases with baseUrl test passed"
+        else
+          echo "  ❌ Path aliases with baseUrl test failed"
+          exit 1
+        fi
+
+        paths_end=$(date +%s)
+        echo "✅ Path aliases tests completed in $((paths_end - paths_start))s"
+
+    - name: Generated Files Discovery Tests
+      if: inputs.test_scenario == 'full'
+      shell: bash
+      run: |
+        echo "🧪 Testing generated files discovery..."
+        gen_start=$(date +%s)
+
+        # Use the same isolated test directory
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          TEST_DIR="$RUNNER_TEMP/tsc-files-integration-$$"
+        else
+          TEST_DIR="/tmp/tsc-files-integration-$$"
+        fi
+
+        if [ ! -d "$TEST_DIR" ]; then
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+
+          TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
+          echo "📦 Installing $TARBALL for generated files tests..."
+          npm init -y > /dev/null 2>&1
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent --progress=false --loglevel=error 2>/dev/null || exit 1
+          else
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || exit 1
+          fi
+
+          # Create minimal tsconfig
+          cat > tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true
+          }
+        }
+        EOF
+        else
+          cd "$TEST_DIR"
+        fi
+
+        # Create generated files (simulating TanStack Router, etc.)
+        mkdir -p src/routes
+
+        # Create a generated route tree file
+        cat > src/routeTree.gen.ts << 'EOF'
+        export interface Route {
+          path: string;
+          component: any;
+        }
+        export const routes: Route[] = [
+          { path: '/_public/demo', component: null }
+        ];
+        EOF
+
+        # Create other generated files
+        echo 'export interface GeneratedTypes { id: number; }' > src/types.gen.ts
+        echo 'export const apiSchema = { version: "1.0" };' > src/api.generated.ts
+
+        # Create a file that uses the generated types
+        echo 'import { Route } from "./routeTree.gen"; import { GeneratedTypes } from "./types.gen"; export const useRoute = (route: Route, data: GeneratedTypes) => ({ route, data });' > src/app.ts
+
+        # Test that generated files are discovered for type resolution
+        echo "  🔍 Testing generated files are included for type resolution..."
+        if npx tsc-files src/app.ts > /dev/null 2>&1; then
+          echo "  ✅ Generated files discovery test passed"
+        else
+          echo "  ❌ Generated files discovery test failed"
+          npx tsc-files src/app.ts
+          exit 1
+        fi
+
+        gen_end=$(date +%s)
+        echo "✅ Generated files tests completed in $((gen_end - gen_start))s"
+
+    - name: Compiler Selection Tests
+      if: inputs.test_scenario == 'full'
+      shell: bash
+      run: |
+        echo "🧪 Testing compiler selection (tsc/tsgo)..."
+        compiler_start=$(date +%s)
+
+        # Use the same isolated test directory
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
+          TEST_DIR="$RUNNER_TEMP/tsc-files-integration-$$"
+        else
+          TEST_DIR="/tmp/tsc-files-integration-$$"
+        fi
+
+        if [ ! -d "$TEST_DIR" ]; then
+          mkdir -p "$TEST_DIR"
+          cd "$TEST_DIR"
+
+          TARBALL="$(ls "$GITHUB_WORKSPACE"/jbabin91-tsc-files-*.tgz | head -n1)"
+          echo "📦 Installing $TARBALL for compiler tests..."
+          npm init -y > /dev/null 2>&1
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent --progress=false --loglevel=error 2>/dev/null || exit 1
+          else
+            npm install "$TARBALL" typescript --no-audit --no-fund --prefer-offline --silent 2>/dev/null || exit 1
+          fi
+
+          cat > tsconfig.json << 'EOF'
+        {
+          "compilerOptions": {
+            "target": "ES2020",
+            "module": "CommonJS",
+            "strict": true,
+            "esModuleInterop": true,
+            "skipLibCheck": true
+          }
+        }
+        EOF
+        else
+          cd "$TEST_DIR"
+        fi
+
+        # Create a simple test file
+        echo 'const test: string = "compiler-test";' > compiler-test.ts
+
+        # Test --use-tsc flag (should always work)
+        echo "  🔍 Testing --use-tsc flag..."
+        if npx tsc-files --use-tsc compiler-test.ts > /dev/null 2>&1; then
+          echo "  ✅ --use-tsc flag test passed"
+        else
+          echo "  ❌ --use-tsc flag test failed"
+          exit 1
+        fi
+
+        # Test --show-compiler flag
+        echo "  🔍 Testing --show-compiler flag..."
+        COMPILER_OUTPUT=$(npx tsc-files --show-compiler compiler-test.ts 2>&1 || true)
+        if echo "$COMPILER_OUTPUT" | grep -qE "(tsc|tsgo)"; then
+          echo "  ✅ --show-compiler flag test passed"
+        else
+          echo "  ⚠️ --show-compiler flag test inconclusive"
+        fi
+
+        # Test --use-tsgo flag (might not be available)
+        echo "  🔍 Testing --use-tsgo flag availability..."
+        TSGO_OUTPUT=$(npx tsc-files --use-tsgo compiler-test.ts 2>&1 || true)
+        if echo "$TSGO_OUTPUT" | grep -q "not available"; then
+          echo "  ℹ️ tsgo not available on this platform (expected)"
+        elif npx tsc-files --use-tsgo compiler-test.ts > /dev/null 2>&1; then
+          echo "  ✅ tsgo is available and working"
+        else
+          echo "  ⚠️ tsgo test inconclusive"
+        fi
+
+        compiler_end=$(date +%s)
+        echo "✅ Compiler selection tests completed in $((compiler_end - compiler_start))s"
+
     - name: Package Manager CLI Tests
       if: inputs.test_scenario == 'basic'
       shell: bash

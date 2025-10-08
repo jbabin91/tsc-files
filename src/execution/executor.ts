@@ -38,10 +38,8 @@ function extractExecutionDetails(execError: ExecaError): {
 } {
   const stdout = typeof execError.stdout === 'string' ? execError.stdout : '';
   const stderr = typeof execError.stderr === 'string' ? execError.stderr : '';
-  const allOutput =
-    typeof execError.all === 'string'
-      ? execError.all
-      : `${stdout}\n${stderr}`.trim();
+  // Combine stdout and stderr for error parsing
+  const allOutput = `${stdout}\n${stderr}`.trim();
 
   return {
     stdout,
@@ -81,14 +79,15 @@ export async function executeTypeScriptCompiler(
       timeout: 30_000,
       cleanup: true,
       shell: tsInfo.useShell,
-      all: true, // Capture combined stdout/stderr
+      stdin: 'ignore', // Prevent hanging in git hooks by not inheriting stdin
+      stdout: 'pipe', // Explicitly pipe instead of inheriting
+      stderr: 'pipe', // Explicitly pipe instead of inheriting
+      buffer: true, // Buffer output to prevent hanging on large outputs
       maxBuffer: 50 * 1024 * 1024, // 50MB buffer for large TypeScript outputs
     });
 
-    const allOutput =
-      typeof result.all === 'string'
-        ? result.all
-        : `${result.stdout}\n${result.stderr}`.trim();
+    // Combine stdout and stderr for error parsing
+    const allOutput = `${result.stdout}\n${result.stderr}`.trim();
 
     return {
       success: true,

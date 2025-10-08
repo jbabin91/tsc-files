@@ -303,14 +303,13 @@ describe('execution/executor', () => {
       expect(result.errorMessage).toBe('generic message');
     });
 
-    it('should handle ExecaError with all property', async () => {
+    it('should combine stdout and stderr for allOutput', async () => {
       const { execa } = await import('execa');
       const mockedExeca = vi.mocked(execa);
 
       mockedExeca.mockRejectedValueOnce({
         stdout: 'stdout content',
         stderr: 'stderr content',
-        all: 'combined all content',
         exitCode: 1,
         message: 'Command failed',
       });
@@ -325,23 +324,22 @@ describe('execution/executor', () => {
         success: false,
         stdout: 'stdout content',
         stderr: 'stderr content',
-        allOutput: 'combined all content',
+        allOutput: 'stdout content\nstderr content',
         exitCode: 1,
         errorMessage: 'Command failed',
       });
     });
 
-    it('should use result.all when available on success', async () => {
+    it('should combine stdout and stderr on success', async () => {
       const { execa } = await import('execa');
       const mockedExeca = vi.mocked(execa);
 
-      // Mock result with explicit 'all' property
+      // Mock result
       mockedExeca.mockResolvedValueOnce(
         createMockExecaResult({
           stdout: 'stdout content',
           stderr: 'stderr content',
           exitCode: 0,
-          all: 'explicit all content',
         }),
       );
 
@@ -355,7 +353,7 @@ describe('execution/executor', () => {
         success: true,
         stdout: 'stdout content',
         stderr: 'stderr content',
-        allOutput: 'explicit all content',
+        allOutput: 'stdout content\nstderr content',
         exitCode: 0,
       });
     });

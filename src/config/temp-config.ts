@@ -21,15 +21,22 @@ export type TempConfigHandle = {
 
 /**
  * Generate secure temp config path using tmp library
- * @param cacheDir - Optional cache directory path
+ * @param cacheDir - Optional cache directory path (must be absolute or undefined)
  * @returns Temporary config file handle
  */
 export function createTempConfigPath(cacheDir?: string): TempConfigHandle {
+  // When cacheDir is an absolute path, tmp library requires it to be relative to OS temp dir
+  // So we only use tmp.fileSync when cacheDir is undefined or already in a temp location
+  // For project directories, we use tmp's default behavior (no dir option)
+  const isAbsolutePath = cacheDir && path.isAbsolute(cacheDir);
+  const shouldUseDefaultTmpDir = !cacheDir || isAbsolutePath;
+
   const tmpFile = tmp.fileSync({
     prefix: 'tsconfig.',
     postfix: '.json',
     mode: 0o600,
-    dir: cacheDir,
+    dir: shouldUseDefaultTmpDir ? undefined : cacheDir,
+    tmpdir: isAbsolutePath ? cacheDir : undefined,
     discardDescriptor: false,
     keep: false,
   });
@@ -63,10 +70,31 @@ export function createTempConfig(
   // Convert relative paths to absolute paths to fix path alias resolution
   let adjustedCompilerOptions = { ...sanitizedCompilerOptions };
 
-  // Ensure TypeScript can find type definitions from user's node_modules
-  adjustedCompilerOptions.typeRoots ??= [
-    path.resolve(originalConfigDir, 'node_modules/@types'),
-  ];
+  // TypeScript type resolution strategy:
+  // - tsgo does NOT support custom typeRoots (relies on default resolution)
+  // - tsc works better with temp configs in project dir (not /tmp) for default resolution
+  // - Solution: Create temp configs in project dir using options.cache Dir
+  // - This allows both compilers to use default type resolution successfully
+  //
+  // We only add explicit typeRoots if:
+  // 1. User explicitly set useTsc (forcing tsc usage), AND
+  // 2. User hasn't already defined typeRoots, AND
+  // 3. Temp config is in a different directory (cache not in project)
+  const isCacheInProjectDir = options.cacheDir === originalConfigDir;
+  const shouldAddTypeRoots =
+    options.useTsc &&
+    !sanitizedCompilerOptions.typeRoots &&
+    !isCacheInProjectDir;
+
+  if (shouldAddTypeRoots) {
+    // When using tsc with temp config in /tmp, add explicit typeRoots
+    // to find both @types/* packages and package-provided types (like vitest/globals)
+    adjustedCompilerOptions.typeRoots = [
+      path.resolve(originalConfigDir, 'node_modules/@types'),
+      path.resolve(originalConfigDir, 'node_modules'),
+    ];
+  }
+  // Otherwise: rely on default TypeScript type resolution (works for both tsc and tsgo)
 
   if (sanitizedCompilerOptions.paths) {
     const absolutePaths: Record<string, string[]> = {};
@@ -117,13 +145,31 @@ export function createTempConfig(
     ]),
   ];
 
+  // Convert original include patterns to .d.ts-only patterns
+  // This ensures ambient declarations are available without checking all .ts files
+  const originalInclude = originalConfig.include ?? [];
+  const dtsIncludePatterns = originalInclude
+    .map((pattern) => {
+      if (typeof pattern === 'string') {
+        // Replace .ts/.tsx extensions with .d.ts
+        return pattern
+          .replace(/\.tsx?$/, '.d.ts')
+          .replace(/\*\.ts$/, '*.d.ts')
+          .replace(/\*\.tsx$/, '*.d.ts');
+      }
+      return pattern;
+    })
+    .filter((pattern) => pattern.includes('.d.ts'));
+
   const tempConfig = {
     // Copy base config structure but exclude dependency-related fields
     ...baseConfig,
     // Override with isolated settings
     extends: undefined,
     files,
-    include: [],
+    // Include only .d.ts files matching original include patterns
+    // This ensures ambient type declarations are available without checking all files
+    include: dtsIncludePatterns.length > 0 ? dtsIncludePatterns : ['**/*.d.ts'],
     exclude: excludePatterns,
     compilerOptions: {
       ...adjustedCompilerOptions,

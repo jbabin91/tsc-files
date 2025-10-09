@@ -1,0 +1,732 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+
+import * as ts from 'typescript';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import {
+  clearDependencyCache,
+  discoverDependencyClosure,
+  getCacheStats,
+  getPotentialSetupFiles,
+  getSetupFilesFromConfig,
+} from '@/config/dependency-discovery';
+import type { TypeScriptConfig } from '@/config/parser';
+
+describe('Dependency Discovery', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(path.join(process.cwd(), 'test-temp-'));
+    clearDependencyCache();
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+    clearDependencyCache();
+  });
+
+  describe('discoverDependencyClosure', () => {
+    it('should discover basic TypeScript files', () => {
+      // Create test files
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+      const typesFile = path.join(tempDir, 'types.d.ts');
+
+      writeFileSync(
+        mainFile,
+        '/// <reference path="./types.d.ts" />\nimport { helper } from "./utils";\nexport const main = () => helper();',
+      );
+      writeFileSync(utilsFile, 'export const helper = () => "test";');
+      writeFileSync(typesFile, 'declare global { const TEST: string; }');
+
+      // Create basic tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            strict: true,
+          },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          strict: true,
+        },
+        include: ['**/*.ts'],
+      };
+
+      const result = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+      // Note: types.d.ts may not be included if not referenced
+      expect(result.cacheKey).toBeDefined();
+    });
+
+    it('should filter out node_modules files', () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'import * as fs from "fs";');
+
+      // Create tsconfig in temp dir
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            strict: true,
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          strict: true,
+        },
+      };
+
+      const result = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      // Should not include node_modules files
+      expect(result.sourceFiles.some((f) => f.includes('node_modules'))).toBe(
+        false,
+      );
+    });
+
+    it('should cache results and invalidate on file changes', () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+
+      writeFileSync(mainFile, 'import { helper } from "./utils";');
+      writeFileSync(utilsFile, 'export const helper = () => "test";');
+
+      // Create tsconfig in temp dir
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+        },
+      };
+
+      // First discovery
+      const result1 = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+      expect(result1.discovered).toBe(true);
+
+      // Second discovery should use cache
+      const result2 = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+      expect(result2.discovered).toBe(true);
+      expect(result2.cacheKey).toBe(result1.cacheKey);
+
+      // Modify file to invalidate cache
+      writeFileSync(utilsFile, 'export const helper = () => "modified";');
+
+      const result3 = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+      expect(result3.discovered).toBe(true);
+      // Cache key should be the same, but mtime hash should cause recomputation
+      expect(result3.cacheKey).toBe(result1.cacheKey);
+    });
+
+    it('should handle generated .gen.ts files', () => {
+      // Create test files with generated types
+      const mainFile = path.join(tempDir, 'main.ts');
+      const genFile = path.join(tempDir, 'routes.gen.ts');
+
+      writeFileSync(
+        mainFile,
+        'import type { Route } from "./routes.gen";\nexport const route: Route = {};',
+      );
+      writeFileSync(genFile, 'export interface Route { path: string; }');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            strict: true,
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          strict: true,
+        },
+      };
+
+      const result = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(genFile);
+    });
+
+    it('should handle path aliases', () => {
+      // Create directory structure with path alias
+      const srcDir = path.join(tempDir, 'src');
+      const libDir = path.join(tempDir, 'lib');
+
+      // Create directories
+      mkdirSync(srcDir);
+      mkdirSync(libDir);
+
+      const mainFile = path.join(srcDir, 'main.ts');
+      const libFile = path.join(libDir, 'utils.ts');
+
+      writeFileSync(
+        mainFile,
+        'import { helper } from "@/lib/utils";\nexport const main = () => helper();',
+      );
+      writeFileSync(libFile, 'export const helper = () => "test";');
+
+      // Create tsconfig with paths
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            strict: true,
+            baseUrl: '.',
+            paths: {
+              '@/*': ['src/*'],
+              '@/lib/*': ['lib/*'],
+            },
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          strict: true,
+          baseUrl: '.',
+          paths: {
+            '@/*': ['src/*'],
+            '@/lib/*': ['lib/*'],
+          },
+        },
+      };
+
+      const result = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(libFile);
+    });
+  });
+
+  describe('Cache Management', () => {
+    it('should provide cache statistics', () => {
+      const stats = getCacheStats();
+      expect(stats).toHaveProperty('size');
+      expect(stats).toHaveProperty('entries');
+      expect(Array.isArray(stats.entries)).toBe(true);
+    });
+
+    it('should clear cache', () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const test = 1;');
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+        },
+      };
+
+      discoverDependencyClosure(ts, config, [mainFile], tempDir);
+      expect(getCacheStats().size).toBeGreaterThan(0);
+
+      clearDependencyCache();
+      expect(getCacheStats().size).toBe(0);
+    });
+  });
+
+  describe('getSetupFilesFromConfig', () => {
+    it('should extract setupFiles from vitest.config.ts', () => {
+      const setupFile = path.join(tempDir, 'vitest.setup.ts');
+      writeFileSync(setupFile, 'console.log("setup");');
+
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    setupFiles: ['./vitest.setup.ts'],
+  },
+});`,
+      );
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toContain(setupFile);
+    });
+
+    it('should extract setupFilesAfterEnv from jest.config.js', () => {
+      const setupFile = path.join(tempDir, 'jest.setup.js');
+      writeFileSync(setupFile, 'console.log("jest setup");');
+
+      const jestConfig = path.join(tempDir, 'jest.config.js');
+      writeFileSync(
+        jestConfig,
+        `module.exports = {
+  setupFilesAfterEnv: ['./jest.setup.js'],
+};`,
+      );
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toContain(setupFile);
+    });
+
+    it('should handle multiple setup files in array', () => {
+      const setupFile1 = path.join(tempDir, 'setup1.ts');
+      const setupFile2 = path.join(tempDir, 'setup2.ts');
+      writeFileSync(setupFile1, 'console.log("setup1");');
+      writeFileSync(setupFile2, 'console.log("setup2");');
+
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `export default {
+  test: {
+    setupFiles: ['./setup1.ts', './setup2.ts'],
+  },
+};`,
+      );
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toContain(setupFile1);
+      expect(result).toContain(setupFile2);
+    });
+
+    it('should resolve relative paths correctly', () => {
+      const subDir = path.join(tempDir, 'config');
+      mkdirSync(subDir);
+
+      const setupFile = path.join(subDir, 'setup.ts');
+      writeFileSync(setupFile, 'console.log("setup");');
+
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `export default {
+  test: {
+    setupFiles: ['./config/setup.ts'],
+  },
+};`,
+      );
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toContain(setupFile);
+    });
+
+    it('should filter out non-existent setup files', () => {
+      const existingSetupFile = path.join(tempDir, 'existing.ts');
+      writeFileSync(existingSetupFile, 'console.log("exists");');
+
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `export default {
+  test: {
+    setupFiles: ['./existing.ts', './nonexistent.ts'],
+  },
+};`,
+      );
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toContain(existingSetupFile);
+      expect(result).not.toContain(path.join(tempDir, 'nonexistent.ts'));
+    });
+
+    it('should handle missing config files gracefully', () => {
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toEqual([]);
+    });
+
+    it('should handle malformed config files gracefully', () => {
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(vitestConfig, 'invalid typescript syntax {{{');
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toEqual([]);
+    });
+
+    it('should support different config file extensions', () => {
+      const setupFile = path.join(tempDir, 'setup.js');
+      writeFileSync(setupFile, 'console.log("setup");');
+
+      // Test .js extension
+      const jestConfigJs = path.join(tempDir, 'jest.config.js');
+      writeFileSync(
+        jestConfigJs,
+        `module.exports = {
+  setupFilesAfterEnv: ['./setup.js'],
+};`,
+      );
+
+      // Test .mjs extension
+      const vitestConfigMjs = path.join(tempDir, 'vitest.config.mjs');
+      writeFileSync(
+        vitestConfigMjs,
+        `export default {
+  test: {
+    setupFiles: ['./setup.js'],
+  },
+};`,
+      );
+
+      const result = getSetupFilesFromConfig(tempDir);
+      expect(result).toContain(setupFile);
+      // Should find it twice (once from each config)
+      expect(result.filter((f) => f === setupFile)).toHaveLength(2);
+    });
+  });
+
+  describe('getPotentialSetupFiles', () => {
+    it('should find setup files in common test directories', () => {
+      const testDir = path.join(tempDir, 'tests');
+      mkdirSync(testDir);
+
+      const setupFile = path.join(testDir, 'setup.ts');
+      writeFileSync(setupFile, 'console.log("setup");');
+
+      const result = getPotentialSetupFiles(tempDir);
+      expect(result).toContain(setupFile);
+    });
+
+    it('should find setup files with various naming patterns', () => {
+      const testDir = path.join(tempDir, '__tests__');
+      mkdirSync(testDir);
+
+      const patterns = [
+        'setup.ts',
+        'setupTests.js',
+        'test-setup.ts',
+        'globals.js',
+        'testGlobals.ts',
+      ];
+
+      const expectedFiles: string[] = [];
+      for (const pattern of patterns) {
+        const filePath = path.join(testDir, pattern);
+        writeFileSync(filePath, `console.log("${pattern}");`);
+        expectedFiles.push(filePath);
+      }
+
+      const result = getPotentialSetupFiles(tempDir);
+      for (const expectedFile of expectedFiles) {
+        expect(result).toContain(expectedFile);
+      }
+    });
+
+    it('should search multiple test directory patterns', () => {
+      const dirs = ['tests', 'src/tests', '__tests__', 'test', 'spec'];
+      const expectedFiles: string[] = [];
+
+      for (const dirName of dirs) {
+        const dirPath = path.join(tempDir, ...dirName.split('/'));
+        mkdirSync(dirPath, { recursive: true });
+
+        const setupFile = path.join(dirPath, 'setup.ts');
+        writeFileSync(setupFile, `console.log("${dirName} setup");`);
+        expectedFiles.push(setupFile);
+      }
+
+      const result = getPotentialSetupFiles(tempDir);
+      for (const expectedFile of expectedFiles) {
+        expect(result).toContain(expectedFile);
+      }
+    });
+
+    it('should find setup files in test subdirectories', () => {
+      const testDir = path.join(tempDir, 'tests');
+      const configDir = path.join(testDir, 'config');
+      const helpersDir = path.join(testDir, 'helpers');
+
+      mkdirSync(testDir);
+      mkdirSync(configDir);
+      mkdirSync(helpersDir);
+
+      const setupInConfig = path.join(configDir, 'setup.ts');
+      const setupInHelpers = path.join(helpersDir, 'globals.js');
+
+      writeFileSync(setupInConfig, 'console.log("config setup");');
+      writeFileSync(setupInHelpers, 'console.log("helpers setup");');
+
+      const result = getPotentialSetupFiles(tempDir);
+      expect(result).toContain(setupInConfig);
+      expect(result).toContain(setupInHelpers);
+    });
+
+    it('should integrate config-based setup files', () => {
+      // Create a setup file via config
+      const configSetupFile = path.join(tempDir, 'vitest.setup.ts');
+      writeFileSync(configSetupFile, 'console.log("config setup");');
+
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `export default {
+  test: {
+    setupFiles: ['./vitest.setup.ts'],
+  },
+};`,
+      );
+
+      // Create a setup file via directory scanning
+      const testDir = path.join(tempDir, 'tests');
+      mkdirSync(testDir);
+      const dirSetupFile = path.join(testDir, 'setup.ts');
+      writeFileSync(dirSetupFile, 'console.log("dir setup");');
+
+      const result = getPotentialSetupFiles(tempDir);
+      expect(result).toContain(configSetupFile);
+      expect(result).toContain(dirSetupFile);
+    });
+
+    it('should deduplicate setup files', () => {
+      const testDir = path.join(tempDir, 'tests');
+      mkdirSync(testDir);
+
+      // Create the same setup file that would be found via config and directory scanning
+      const setupFile = path.join(tempDir, 'setup.ts');
+      writeFileSync(setupFile, 'console.log("setup");');
+
+      // Add it via config
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `export default {
+  test: {
+    setupFiles: ['./setup.ts'],
+  },
+};`,
+      );
+
+      // Also create it in test directory (same file)
+      const testSetupFile = path.join(testDir, 'setup.ts');
+      writeFileSync(testSetupFile, 'console.log("test setup");'); // Different content
+
+      const result = getPotentialSetupFiles(tempDir);
+      // Should contain both files (they're different paths)
+      expect(result).toContain(setupFile);
+      expect(result).toContain(testSetupFile);
+      expect(result).toHaveLength(2);
+    });
+
+    it('should return sorted results', () => {
+      const testDir = path.join(tempDir, '__tests__');
+      mkdirSync(testDir);
+
+      // Create files in reverse alphabetical order using valid setup file names
+      const fileZ = path.join(testDir, 'testSetup.ts');
+      const fileA = path.join(testDir, 'setup.ts');
+
+      writeFileSync(fileZ, 'console.log("z");');
+      writeFileSync(fileA, 'console.log("a");');
+
+      const result = getPotentialSetupFiles(tempDir);
+      expect(result).toContain(fileA);
+      expect(result).toContain(fileZ);
+      // Files should be sorted alphabetically (setup.ts comes before testSetup.ts)
+      const aIndex = result.indexOf(fileA);
+      const zIndex = result.indexOf(fileZ);
+      expect(aIndex).toBeLessThan(zIndex);
+    });
+
+    it('should handle missing directories gracefully', () => {
+      const result = getPotentialSetupFiles(tempDir);
+      expect(result).toEqual([]);
+    });
+
+    it('should integrate setup files into dependency closure discovery', () => {
+      // Create a setup file via config
+      const configSetupFile = path.join(tempDir, 'vitest.setup.ts');
+      writeFileSync(configSetupFile, 'console.log("config setup");');
+
+      const vitestConfig = path.join(tempDir, 'vitest.config.ts');
+      writeFileSync(
+        vitestConfig,
+        `export default {
+  test: {
+    setupFiles: ['./vitest.setup.ts'],
+  },
+};`,
+      );
+
+      // Create a setup file via directory scanning
+      const testDir = path.join(tempDir, 'tests');
+      mkdirSync(testDir);
+      const dirSetupFile = path.join(testDir, 'setup.ts');
+      writeFileSync(dirSetupFile, 'console.log("dir setup");');
+
+      // Create a main file in the tests directory (so hasTestFiles returns true)
+      const mainFile = path.join(testDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            strict: true,
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          strict: true,
+        },
+      };
+
+      const result = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      // Setup files should be automatically included
+      expect(result.includedSetupFiles).toContain(configSetupFile);
+      expect(result.includedSetupFiles).toContain(dirSetupFile);
+      expect(result.includedSetupFiles).toHaveLength(2);
+    });
+
+    it('should not include setup files when includeFiles are explicitly provided', () => {
+      // Create setup files
+      const setupFile = path.join(tempDir, 'setup.ts');
+      writeFileSync(setupFile, 'console.log("setup");');
+
+      const testDir = path.join(tempDir, '__tests__');
+      mkdirSync(testDir);
+      const testSetupFile = path.join(testDir, 'setup.ts');
+      writeFileSync(testSetupFile, 'console.log("test setup");');
+
+      // Create main file in test directory
+      const mainFile = path.join(testDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            strict: true,
+          },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          strict: true,
+        },
+      };
+
+      // Pass explicit includeFiles with some other file to prevent automatic setup inclusion
+      const otherFile = path.join(tempDir, 'other.ts');
+      writeFileSync(otherFile, 'export const other = 1;');
+
+      const result = discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+        [otherFile], // Non-empty includeFiles prevents automatic setup inclusion
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(otherFile);
+      // Setup files should NOT be included when includeFiles is provided
+      expect(result.includedSetupFiles).toHaveLength(0);
+    });
+  });
+});

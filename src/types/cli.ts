@@ -17,6 +17,7 @@ export type RawCliOptions = {
   benchmark?: boolean;
   fallback?: boolean;
   tips?: boolean;
+  include?: string;
 };
 
 /**
@@ -35,6 +36,7 @@ export type ValidatedCliOptions = {
   benchmark: boolean;
   fallback: boolean;
   tips: boolean;
+  include?: string[];
 };
 
 /**
@@ -71,6 +73,7 @@ export const CliOptionsSchema = z.object({
   benchmark: z.boolean().default(false),
   fallback: z.boolean().default(true),
   tips: z.boolean().default(false),
+  include: z.string().optional(),
 });
 
 /**
@@ -91,6 +94,7 @@ export function toCheckOptions(
     showCompiler: validated.showCompiler,
     benchmark: validated.benchmark,
     fallback: validated.fallback,
+    include: validated.include,
     cwd,
   };
 }
@@ -110,5 +114,16 @@ export function validateCliOptions(rawOptions: unknown): ValidatedCliOptions {
     );
   }
 
-  return parsed;
+  // Parse include option from comma-separated string to array
+  const include = parsed.include
+    ? parsed.include
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    : undefined;
+
+  return {
+    ...parsed,
+    include,
+  };
 }

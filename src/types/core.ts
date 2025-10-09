@@ -28,6 +28,8 @@ export type CheckOptions = {
   benchmark?: boolean;
   /** Enable automatic fallback from tsgo to tsc (default: true) */
   fallback?: boolean;
+  /** Additional files to include in type checking */
+  include?: string[];
 };
 
 /**
@@ -66,6 +68,8 @@ export type CheckResult = {
   duration: number;
   /** List of files that were checked */
   checkedFiles: string[];
+  /** Setup files that were automatically included */
+  includedSetupFiles?: string[];
 };
 
 /**

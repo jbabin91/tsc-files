@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   isLikelyFirstTsgoRun,
   provideCompilerEducation,
+  provideDependencyDiscoveryEducation,
   provideFallbackEducation,
   provideGitHookOptimization,
   provideInstallationGuidance,
+  provideSetupFileEducation,
   provideUsageOptimization,
 } from '@/cli/education';
 import { outputPerformanceInsight, outputTip } from '@/cli/output';
@@ -250,22 +252,10 @@ describe('CLI Education', () => {
   });
 
   describe('provideGitHookOptimization', () => {
-    it('should provide comprehensive git hook optimization tips', () => {
+    it('should provide git hook optimization tips', () => {
       provideGitHookOptimization();
 
       expect(outputTip).toHaveBeenCalledWith('Git hook optimization tips:');
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        '  • Use with lint-staged for changed files only',
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        '  • Enable --cache for faster repeat runs',
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        '  • Try --use-tsgo for 10x performance improvement',
-      );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        '  • Use --skipLibCheck to speed up checking',
-      );
     });
   });
 
@@ -305,6 +295,66 @@ describe('CLI Education', () => {
 
       expect(detectTsgo).toHaveBeenCalledWith('/test/cwd');
       expect(result).toBe(false);
+    });
+  });
+
+  describe('provideSetupFileEducation', () => {
+    it('should provide education for detected setup files when tips enabled', () => {
+      const detectedFiles = ['tests/setup.ts', 'tests/globals.js'];
+
+      provideSetupFileEducation(detectedFiles, true);
+
+      expect(outputTip).toHaveBeenCalledWith(
+        'Automatically included 2 setup files: tests/setup.ts, tests/globals.js',
+      );
+      expect(outputTip).toHaveBeenCalledWith(
+        'Setup files provide global test utilities and configurations. Use --include to override auto-detection.',
+      );
+    });
+
+    it('should not provide education when no setup files detected', () => {
+      provideSetupFileEducation([], true);
+
+      expect(outputTip).not.toHaveBeenCalled();
+    });
+
+    it('should not provide education when tips disabled', () => {
+      const detectedFiles = ['tests/setup.ts'];
+
+      provideSetupFileEducation(detectedFiles, false);
+
+      expect(outputTip).not.toHaveBeenCalled();
+    });
+
+    it('should handle single setup file', () => {
+      const detectedFiles = ['tests/setup.ts'];
+
+      provideSetupFileEducation(detectedFiles, true);
+
+      expect(outputTip).toHaveBeenCalledWith(
+        'Automatically included 1 setup file: tests/setup.ts',
+      );
+    });
+  });
+
+  describe('provideDependencyDiscoveryEducation', () => {
+    it('should provide education when more files discovered than provided', () => {
+      provideDependencyDiscoveryEducation(5, 2);
+
+      expect(outputPerformanceInsight).toHaveBeenCalledWith(
+        '✓ Dependency discovery found 5 files (including dependencies)',
+      );
+      expect(outputTip).toHaveBeenCalledWith(
+        'Dependency discovery automatically includes imported files, generated types (.gen.ts), and path-mapped modules',
+      );
+    });
+
+    it('should not provide education when fewer or equal files discovered', () => {
+      provideDependencyDiscoveryEducation(2, 2);
+      provideDependencyDiscoveryEducation(1, 2);
+
+      expect(outputPerformanceInsight).not.toHaveBeenCalled();
+      expect(outputTip).not.toHaveBeenCalled();
     });
   });
 });

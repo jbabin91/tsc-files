@@ -34,6 +34,7 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 - ✅ **Monorepo support** - Per-file tsconfig resolution for complex projects
 - ✅ **JavaScript support** - Handles allowJs/checkJs configurations automatically
 - ✅ **Package manager detection** - Works with npm, yarn, pnpm, and bun
+- ✅ **Automatic setup file detection** - Finds and includes test setup files automatically
 
 ### Enhanced CLI Experience
 
@@ -139,6 +140,32 @@ tsc-files 'src/**/*.ts' 'tests/**/*.ts'
 
 # Check all TypeScript files
 tsc-files "**/*.{ts,tsx}"
+```
+
+#### Automatic Setup File Detection
+
+`tsc-files` automatically detects and includes test setup files when checking test files:
+
+```bash
+# Setup files are automatically included when checking test files
+tsc-files "tests/**/*.test.ts"
+
+# Output shows which setup files were included
+✓ Automatically included 2 setup files: tests/setup.ts, tests/globals.ts
+```
+
+**Supported setup file patterns:**
+
+- `setup.ts`, `setup.js`, `setupTests.ts`, `setupTests.js`
+- `test-setup.ts`, `test-setup.js`, `testSetup.ts`, `testSetup.js`
+- `globals.ts`, `globals.js`, `test-globals.ts`, `test-globals.js`
+- Custom patterns defined in `vitest.config.ts`, `jest.config.js`, etc.
+
+**Manual override:**
+
+```bash
+# Explicitly specify setup files
+tsc-files --include tests/custom-setup.ts "tests/**/*.test.ts"
 ```
 
 #### Advanced Options
@@ -370,6 +397,7 @@ TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
 | `--cache`        |       | Use cache directory for temp files      | `true`        |
 | `--no-cache`     |       | Disable caching                         |               |
 | `--json`         |       | Output results as JSON                  |               |
+| `--include`      |       | Additional files to include             |               |
 
 ## 🔄 Package Manager Support
 

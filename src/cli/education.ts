@@ -36,6 +36,27 @@ export function provideCompilerEducation(
 }
 
 /**
+ * Provide educational messaging about setup file auto-detection
+ */
+export function provideSetupFileEducation(
+  detectedFiles: string[],
+  tipsEnabled: boolean,
+): void {
+  if (detectedFiles.length === 0) {
+    return; // No setup files detected, no education needed
+  }
+
+  if (tipsEnabled) {
+    outputTip(
+      `Automatically included ${detectedFiles.length} setup file${detectedFiles.length > 1 ? 's' : ''}: ${detectedFiles.join(', ')}`,
+    );
+    outputTip(
+      'Setup files provide global test utilities and configurations. Use --include to override auto-detection.',
+    );
+  }
+}
+
+/**
  * Provide educational messaging about fallback scenarios
  */
 export function provideFallbackEducation(
@@ -86,6 +107,23 @@ export function provideInstallationGuidance(
   } else {
     outputTip('Install TypeScript: npm install -D typescript');
     outputTip('Or use with npx: npx tsc-files [files...]');
+  }
+}
+
+/**
+ * Provide educational messaging about dependency discovery
+ */
+export function provideDependencyDiscoveryEducation(
+  discoveredCount: number,
+  totalFiles: number,
+): void {
+  if (discoveredCount > totalFiles) {
+    outputPerformanceInsight(
+      `✓ Dependency discovery found ${discoveredCount} files (including dependencies)`,
+    );
+    outputTip(
+      'Dependency discovery automatically includes imported files, generated types (.gen.ts), and path-mapped modules',
+    );
   }
 }
 

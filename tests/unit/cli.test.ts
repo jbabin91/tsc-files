@@ -20,11 +20,11 @@ const cleanupTempDir = (tempDir: string) => {
   try {
     rmSync(tempDir, { recursive: true, force: true });
   } catch {
-    // Ignore cleanup errors
+    // Ignore cleanup errors in tests
   }
 };
 
-const createTestProject = (tempDir: string) => {
+const createCliTestProject = (tempDir: string) => {
   // Create a basic tsconfig.json
   const tsconfig = {
     compilerOptions: {
@@ -171,7 +171,7 @@ describe('CLI', () => {
 
   beforeEach(() => {
     tempDir = createTempDir();
-    ({ srcDir } = createTestProject(tempDir));
+    ({ srcDir } = createCliTestProject(tempDir));
     // Clear console mocks before each test
     mockConsoleLog.mockClear();
     mockConsoleError.mockClear();

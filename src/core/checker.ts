@@ -139,7 +139,11 @@ async function processFileGroup(
       },
     );
 
-    return result;
+    // Include setup files information in the result
+    return {
+      ...result,
+      includedSetupFiles: tempHandle.includedSetupFiles,
+    };
   } catch (error) {
     if (effectiveOptions.throwOnError) {
       throw error;
@@ -207,6 +211,7 @@ function combineResults(results: CheckResult[]): CheckResult {
   const combinedErrors = results.flatMap((r) => r.errors);
   const combinedWarnings = results.flatMap((r) => r.warnings);
   const combinedCheckedFiles = results.flatMap((r) => r.checkedFiles);
+  const combinedSetupFiles = results.flatMap((r) => r.includedSetupFiles ?? []);
   const maxDuration = Math.max(...results.map((r) => r.duration));
 
   return {
@@ -217,6 +222,7 @@ function combineResults(results: CheckResult[]): CheckResult {
     warnings: combinedWarnings,
     duration: maxDuration,
     checkedFiles: combinedCheckedFiles,
+    includedSetupFiles: combinedSetupFiles,
   };
 }
 

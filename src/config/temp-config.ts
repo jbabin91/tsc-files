@@ -2,9 +2,13 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import tmp from 'tmp';
+import * as ts from 'typescript';
 
+import { provideDependencyDiscoveryEducation } from '@/cli/education';
+import { discoverDependencyClosure } from '@/config/dependency-discovery';
 import type { TypeScriptConfig } from '@/config/parser';
 import type { CheckOptions } from '@/types/core';
+import { logger } from '@/utils/logger';
 
 // Ensure graceful cleanup of temp files
 tmp.setGracefulCleanup();
@@ -17,6 +21,8 @@ export type TempConfigHandle = {
   path: string;
   /** Cleanup function to remove temporary file */
   cleanup: () => void;
+  /** Setup files that were automatically included */
+  includedSetupFiles: string[];
 };
 
 /**
@@ -44,6 +50,7 @@ export function createTempConfigPath(cacheDir?: string): TempConfigHandle {
   return {
     path: tmpFile.name,
     cleanup: tmpFile.removeCallback,
+    includedSetupFiles: [],
   };
 }
 
@@ -61,7 +68,42 @@ export function createTempConfig(
   options: CheckOptions,
   originalConfigDir: string,
 ): TempConfigHandle {
+  // Discover dependency closure for the selected files
+  const closure = discoverDependencyClosure(
+    ts,
+    originalConfig,
+    files,
+    originalConfigDir,
+    options.verbose,
+    options.include,
+  );
+
+  // Use discovered files if available, otherwise fall back to original files
+  const resolvedFiles = closure.discovered ? closure.sourceFiles : files;
+
+  // Log discovery results in verbose mode
+  if (options.verbose) {
+    if (closure.discovered) {
+      logger.info(
+        `✓ Discovered ${resolvedFiles.length} source files for type checking (cache key: ${closure.cacheKey})`,
+      );
+      if (resolvedFiles.length !== files.length) {
+        logger.info(
+          `  Original files: ${files.length}, Discovered: ${resolvedFiles.length}`,
+        );
+        provideDependencyDiscoveryEducation(resolvedFiles.length, files.length);
+      }
+    } else {
+      logger.warn(
+        '⚠ Dependency discovery failed, using fallback include patterns',
+      );
+    }
+  }
+
   const tempHandle = createTempConfigPath(options.cacheDir);
+
+  // Set the included setup files on the handle
+  tempHandle.includedSetupFiles = closure.includedSetupFiles;
 
   // Preserve ALL user compiler options (including types, typeRoots)
   // This ensures type checking matches user's environment exactly
@@ -173,11 +215,15 @@ export function createTempConfig(
     ...baseConfig,
     // Override with isolated settings
     extends: undefined,
-    files,
+    files: resolvedFiles,
     // Include .d.ts and .gen.ts files for type definitions and module augmentations
     // This ensures ambient type declarations and generated types (like TanStack Router) are available
-    include:
-      typeIncludePatterns.length > 0
+    // Only use fallback patterns if discovery failed
+    include: closure.discovered
+      ? typeIncludePatterns.length > 0
+        ? typeIncludePatterns
+        : ['**/*.d.ts']
+      : typeIncludePatterns.length > 0
         ? typeIncludePatterns
         : ['**/*.d.ts', '**/*.gen.ts'],
     exclude: excludePatterns,

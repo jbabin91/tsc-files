@@ -1,6 +1,7 @@
 import {
   provideCompilerEducation,
   provideGitHookOptimization,
+  provideSetupFileEducation,
 } from '@/cli/education';
 import {
   categorizeError,
@@ -146,6 +147,18 @@ export async function runTypeCheck(
 
     // Update progress indicator
     updateProgress(outputContext, result);
+
+    // Provide education about automatically included setup files
+    if (
+      result.includedSetupFiles &&
+      result.includedSetupFiles.length > 0 &&
+      !validatedOptions.json
+    ) {
+      provideSetupFileEducation(
+        result.includedSetupFiles,
+        validatedOptions.tips,
+      );
+    }
 
     // Format output
     const { stdout, stderr } = formatOutput(outputContext, result);

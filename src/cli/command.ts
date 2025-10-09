@@ -75,6 +75,10 @@ export function createProgram(
       '--tips',
       'show performance optimization tips for git hooks and TypeScript compilation',
     )
+    .option(
+      '--include <files>',
+      'additional files to include in type checking (comma-separated, useful for test setup files)',
+    )
     .hook('preAction', (_, actionCommand) => {
       const options = actionCommand.opts();
       if (options.verbose) {

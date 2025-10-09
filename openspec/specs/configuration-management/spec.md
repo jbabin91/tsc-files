@@ -179,3 +179,42 @@ The system SHALL cache parsed configurations for performance.
 
 - **WHEN** configuration file changes
 - **THEN** the system invalidates cache and re-parses
+
+### Requirement: Dependency Closure Discovery
+
+The system SHALL discover the complete set of source files required for type checking specific files.
+
+#### Scenario: Basic dependency discovery
+
+- **WHEN** checking specific files
+- **THEN** the system discovers all imported dependencies recursively
+
+#### Scenario: Generated file inclusion
+
+- **WHEN** source files import generated files (e.g., .gen.ts)
+- **THEN** the system includes generated files in the dependency closure
+
+#### Scenario: Path alias resolution
+
+- **WHEN** source files use TypeScript path aliases
+- **THEN** the system resolves and includes aliased dependencies
+
+#### Scenario: Project reference handling
+
+- **WHEN** tsconfig.json has project references
+- **THEN** the system includes referenced project files in dependency closure
+
+#### Scenario: Discovery failure fallback
+
+- **WHEN** dependency discovery fails
+- **THEN** the system falls back to include patterns with verbose logging when requested
+
+#### Scenario: Discovery caching
+
+- **WHEN** same file set is checked multiple times
+- **THEN** the system caches discovery results and validates cache freshness
+
+#### Scenario: Verbose logging control
+
+- **WHEN** dependency discovery encounters errors
+- **THEN** the system only logs warnings when verbose mode is enabled

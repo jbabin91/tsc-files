@@ -1,6 +1,51 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { checkFiles } from '@/core/checker';
+
+const createTestProject = (
+  tempDir: string,
+  customConfig?: Record<string, unknown>,
+) => {
+  const defaultConfig = {
+    compilerOptions: {
+      target: 'ES2022',
+      module: 'ESNext',
+      moduleResolution: 'bundler',
+      strict: true,
+      noEmit: true,
+    },
+    include: ['src/**/*'],
+  };
+
+  const tsconfig = customConfig
+    ? { ...defaultConfig, ...customConfig }
+    : defaultConfig;
+
+  writeFileSync(
+    path.join(tempDir, 'tsconfig.json'),
+    JSON.stringify(tsconfig, null, 2),
+  );
+
+  const srcDir = path.join(tempDir, 'src');
+  mkdirSync(srcDir, { recursive: true });
+
+  return { tsconfig, srcDir };
+};
+
+const writeTestFile = (
+  baseDir: string,
+  filePath: string,
+  content: string,
+): string => {
+  const fullPath = path.join(baseDir, filePath);
+  const dir = path.dirname(fullPath);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(fullPath, content.trim());
+  return fullPath;
+};
 
 /**
  * Integration tests for TypeScript type resolution from files not in temp config

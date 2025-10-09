@@ -1,5 +1,16 @@
 # @jbabin91/tsc-files
 
+## 0.5.0
+
+### Minor Changes
+
+- [`fc3470d`](https://github.com/jbabin91/tsc-files/commit/fc3470d9636b68d7762b997667fa9d4d23ef5512) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🐛 Bug Fixes
+  - **config**: :bug: include .gen.ts files for module augmentation support
+
+  ### ✨ Features
+
+  - **ci**: :sparkles: add auto-merge workflow for release PRs
+
 ## 0.4.5
 
 ### Patch Changes

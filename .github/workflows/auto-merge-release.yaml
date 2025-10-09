@@ -18,6 +18,11 @@ jobs:
     if: startsWith(github.head_ref, 'changeset-release/')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Enable auto-merge
         run: gh pr merge ${{ github.event.pull_request.number }} --auto --squash
         env:

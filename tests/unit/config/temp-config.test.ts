@@ -408,12 +408,44 @@ describe('createTempConfig', () => {
 
       // Check structure
       expect(tempConfigContent.files).toEqual(testFiles);
-      // Include should contain *.d.ts for ambient declarations (test globals, custom types, etc.)
-      expect(tempConfigContent.include).toEqual(['**/*.d.ts']);
+      // Include should contain both *.d.ts and *.gen.ts patterns
+      expect(tempConfigContent.include).toContain('**/*.d.ts');
+      expect(tempConfigContent.include).toContain('**/*.gen.ts');
       // Exclude should always contain node_modules and dist patterns
       expect(tempConfigContent.exclude).toContain('**/node_modules/**');
       expect(tempConfigContent.exclude).toContain('**/dist/**');
       expect(tempConfigContent.extends).toBeUndefined();
+    });
+
+    it('should include .gen.ts files for module augmentations (e.g., TanStack Router)', () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          moduleResolution: 'bundler',
+        },
+        include: ['**/*.ts', '**/*.tsx'],
+      };
+
+      tempHandle = createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // Should include both .d.ts and .gen.ts patterns to support:
+      // - Ambient type declarations (.d.ts)
+      // - Generated files with module augmentations (.gen.ts, like routeTree.gen.ts)
+      expect(tempConfigContent.include).toEqual([
+        '**/*.d.ts',
+        '**/*.gen.ts',
+        '**/*.d.ts',
+        '**/*.gen.ts',
+      ]);
     });
   });
 

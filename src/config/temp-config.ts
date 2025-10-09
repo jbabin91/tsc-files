@@ -145,21 +145,28 @@ export function createTempConfig(
     ]),
   ];
 
-  // Convert original include patterns to .d.ts-only patterns
-  // This ensures ambient declarations are available without checking all .ts files
+  // Convert original include patterns to .d.ts and .gen.ts patterns
+  // - .d.ts files: ambient declarations
+  // - .gen.ts files: generated files with module augmentations (e.g., TanStack Router's routeTree.gen.ts)
   const originalInclude = originalConfig.include ?? [];
-  const dtsIncludePatterns = originalInclude
-    .map((pattern) => {
+  const typeIncludePatterns = originalInclude
+    .flatMap((pattern) => {
       if (typeof pattern === 'string') {
-        // Replace .ts/.tsx extensions with .d.ts
-        return pattern
+        const dtsPattern = pattern
           .replace(/\.tsx?$/, '.d.ts')
           .replace(/\*\.ts$/, '*.d.ts')
           .replace(/\*\.tsx$/, '*.d.ts');
+        const genPattern = pattern
+          .replace(/\.tsx?$/, '.gen.ts')
+          .replace(/\*\.ts$/, '*.gen.ts')
+          .replace(/\*\.tsx$/, '*.gen.ts');
+        return [dtsPattern, genPattern];
       }
-      return pattern;
+      return [pattern];
     })
-    .filter((pattern) => pattern.includes('.d.ts'));
+    .filter(
+      (pattern) => pattern.includes('.d.ts') || pattern.includes('.gen.ts'),
+    );
 
   const tempConfig = {
     // Copy base config structure but exclude dependency-related fields
@@ -167,9 +174,12 @@ export function createTempConfig(
     // Override with isolated settings
     extends: undefined,
     files,
-    // Include only .d.ts files matching original include patterns
-    // This ensures ambient type declarations are available without checking all files
-    include: dtsIncludePatterns.length > 0 ? dtsIncludePatterns : ['**/*.d.ts'],
+    // Include .d.ts and .gen.ts files for type definitions and module augmentations
+    // This ensures ambient type declarations and generated types (like TanStack Router) are available
+    include:
+      typeIncludePatterns.length > 0
+        ? typeIncludePatterns
+        : ['**/*.d.ts', '**/*.gen.ts'],
     exclude: excludePatterns,
     compilerOptions: {
       ...adjustedCompilerOptions,

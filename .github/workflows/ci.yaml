@@ -87,3 +87,74 @@ jobs:
         uses: ./.github/actions/integration-tests
         with:
           test_scenario: ${{ matrix.test_scenario }}
+
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [static-analysis, unit-tests, integration]
+    steps:
+      - name: Check Workflow Status
+        run: |
+          # Helper function to fail on specific job results
+          exit_on_result() {
+            if [[ "$2" == "failure" ]]; then
+              echo "❌ Job '$1' failed"
+              exit 1
+            elif [[ "$2" == "cancelled" ]]; then
+              echo "🚫 Job '$1' was cancelled"
+              exit 1
+            fi
+          }
+
+          # Create GitHub Step Summary
+          echo "## 📊 CI Status Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status | Required |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Static Analysis | \`${{ needs.static-analysis.result }}\` | ✅ Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | \`${{ needs.unit-tests.result }}\` | ✅ Yes |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration | \`${{ needs.integration.result }}\` | ⚠️ No |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "🔍 Checking CI job results..."
+          echo ""
+          echo "📊 Job Results:"
+          echo "  Static Analysis: ${{ needs.static-analysis.result }}"
+          echo "  Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "  Integration: ${{ needs.integration.result }}"
+          echo ""
+
+          # Required jobs (must not fail or be cancelled)
+          exit_on_result "static-analysis" "${{ needs.static-analysis.result }}"
+          exit_on_result "unit-tests" "${{ needs.unit-tests.result }}"
+
+          # Integration tests are optional - only report status
+          INTEGRATION="${{ needs.integration.result }}"
+          if [[ "$INTEGRATION" == "skipped" ]]; then
+            if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+              echo "⏭️ Integration tests skipped (merge queue - by design)"
+              echo "**Note:** Integration tests skipped for merge queue (fast-track merge)" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
+              echo "⏭️ Integration tests skipped (draft PR)"
+              echo "**Note:** Integration tests skipped for draft PR" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⏭️ Integration tests skipped"
+              echo "**Note:** Integration tests skipped" >> $GITHUB_STEP_SUMMARY
+            fi
+          elif [[ "$INTEGRATION" == "cancelled" ]]; then
+            echo "⚠️ Integration tests cancelled - review before merging"
+            echo "⚠️ **Warning:** Integration tests were cancelled" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$INTEGRATION" == "failure" ]]; then
+            echo "⚠️ Integration tests failed - review before merging"
+            echo "⚠️ **Warning:** Integration tests failed (check individual platform results)" >> $GITHUB_STEP_SUMMARY
+          elif [[ "$INTEGRATION" == "success" ]]; then
+            echo "✅ All jobs passed - safe to merge"
+            echo "✅ **All checks passed** - safe to merge" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**View full run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+
+          echo ""
+          echo "✅ Required checks passed - ready for merge"

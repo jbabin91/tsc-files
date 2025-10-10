@@ -1,5 +1,20 @@
 # @jbabin91/tsc-files
 
+## 0.6.0
+
+### Minor Changes
+
+- [`4ea4091`](https://github.com/jbabin91/tsc-files/commit/4ea40918a07fce58fd1a4203ded015e1aed84d2d) Thanks [@jbabin91](https://github.com/jbabin91)! - ### ✨ Features
+  - add advanced dependency discovery with setup file detection
+
+  ### 📝 Documentation
+
+  - **openspec**: enhance documentation for OpenSpec commands
+
+  ### 🔧 Miscellaneous Chores
+
+  - **deps**: update actions/checkout action to v5 (#36)
+
 ## 0.5.0
 
 ### Minor Changes

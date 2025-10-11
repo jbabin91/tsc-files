@@ -219,7 +219,7 @@ const other: number = "not a number";`,
           project: 'nonexistent.json',
           throwOnError: true,
         }),
-      ).rejects.toThrow('TypeScript config not found');
+      ).rejects.toThrow('Failed to parse TypeScript config at');
 
       cleanupTempDir(emptyTempDir);
     });
@@ -316,7 +316,7 @@ const other: number = "not a number";`,
           project: './nonexistent-tsconfig.json',
           throwOnError: true,
         }),
-      ).rejects.toThrow('TypeScript config not found');
+      ).rejects.toThrow('Failed to parse TypeScript config at');
 
       cleanupTempDir(emptyTempDir);
     });
@@ -367,7 +367,7 @@ const other: number = "not a number";`,
           project: 'nonexistent-tsconfig.json',
           throwOnError: true,
         }),
-      ).rejects.toThrow('TypeScript config not found');
+      ).rejects.toThrow('Failed to parse TypeScript config at');
     });
 
     it('should handle glob resolution fallback when fast-glob fails', async () => {
@@ -822,7 +822,9 @@ const other: number = "not a number";`,
       expect(result.success).toBe(false);
       expect(result.errorCount).toBe(1);
       expect(result.errors[0].code).toBe('CONFIG_ERROR');
-      expect(result.errors[0].message).toContain('TypeScript config not found');
+      expect(result.errors[0].message).toContain(
+        'Failed to parse TypeScript config at',
+      );
     });
 
     it('should handle throwOnError: false for missing tsconfig in directory', async () => {

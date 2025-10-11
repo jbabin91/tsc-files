@@ -32,28 +32,25 @@ describe('tsconfig-resolver', () => {
     const testCwd = '/test/project';
     const testConfigPath = '/test/project/tsconfig.json';
 
-    it('should return resolved project path when projectPath is provided and valid', () => {
+    it('should return resolved project path when projectPath is provided', () => {
       const projectPath = 'tsconfig.build.json';
       const resolvedPath = path.resolve(testCwd, projectPath);
-
-      mockParseTsconfig.mockReturnValue({ compilerOptions: {} });
 
       const result = findTsConfig(testCwd, projectPath);
 
       expect(result).toBe(resolvedPath);
-      expect(mockParseTsconfig).toHaveBeenCalledWith(resolvedPath);
+      // findTsConfig no longer validates - mockParseTsconfig is not called
     });
 
-    it('should throw error when projectPath is provided but file does not exist', () => {
+    it('should return resolved path even if file does not exist (validation deferred)', () => {
       const projectPath = 'nonexistent.json';
+      const expected = path.resolve(testCwd, projectPath);
 
-      mockParseTsconfig.mockImplementation(() => {
-        throw new Error('File not found');
-      });
+      // findTsConfig no longer validates - just returns the resolved path
+      // Validation happens in parseTypeScriptConfig
+      const result = findTsConfig(testCwd, projectPath);
 
-      expect(() => findTsConfig(testCwd, projectPath)).toThrow(
-        /TypeScript config not found:/,
-      );
+      expect(result).toBe(expected);
     });
 
     it('should find tsconfig in current directory when no projectPath provided', () => {
@@ -99,12 +96,10 @@ describe('tsconfig-resolver', () => {
       const projectPath = 'tsconfig.build.json';
       const resolvedPath = path.resolve(testFileDir, projectPath);
 
-      mockParseTsconfig.mockReturnValue({ compilerOptions: {} });
-
       const result = findTsConfigForFile(testFilePath, projectPath);
 
       expect(result).toBe(resolvedPath);
-      expect(mockParseTsconfig).toHaveBeenCalledWith(resolvedPath);
+      // findTsConfig no longer validates - mockParseTsconfig is not called
     });
 
     it('should find tsconfig for file directory when no projectPath provided', () => {
@@ -184,7 +179,7 @@ describe('tsconfig-resolver', () => {
       });
 
       expect(() => parseTypeScriptConfig(testConfigPath)).toThrow(
-        /TypeScript config not found:/,
+        /Failed to parse TypeScript config at/,
       );
     });
 

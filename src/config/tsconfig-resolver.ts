@@ -35,15 +35,9 @@ export type TypeScriptConfig = {
  */
 export function findTsConfig(cwd: string, projectPath?: string): string {
   if (projectPath) {
-    const resolvedPath = path.resolve(cwd, projectPath);
-    // parseTsconfig returns config directly, not an object with path
-    // We validate it exists by catching the error, then return the path
-    try {
-      parseTsconfig(resolvedPath);
-      return resolvedPath;
-    } catch {
-      throw new Error(`TypeScript config not found: ${resolvedPath}`);
-    }
+    // Return resolved path without validation - parseTypeScriptConfig handles validation
+    // This avoids redundant parsing (parse once for validation, parse again for use)
+    return path.resolve(cwd, projectPath);
   }
 
   const result = getTsconfig(cwd);
@@ -95,8 +89,12 @@ export function parseTypeScriptConfig(configPath: string): TypeScriptConfig {
     // parseTsconfig's return type is structurally compatible with TypeScriptConfig
     // TypeScript enforces this at compile time via structural typing
     return config;
-  } catch {
-    throw new Error(`TypeScript config not found: ${configPath}`);
+  } catch (error) {
+    // Preserve original error message for better debugging
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(
+      `Failed to parse TypeScript config at ${configPath}: ${message}`,
+    );
   }
 }
 

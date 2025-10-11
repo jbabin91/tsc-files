@@ -57,6 +57,10 @@ async function processFileGroup(
 ): Promise<CheckResult> {
   const cwd = options.cwd ?? process.cwd();
 
+  // Parse original config first to validate it exists
+  // This ensures we catch invalid tsconfig paths early, before file resolution
+  const originalConfig = parseTypeScriptConfig(tsconfigPath);
+
   // Resolve files using the file resolver
   const resolvedFiles = await resolveFiles(rawFiles, cwd, tsconfigPath);
 
@@ -74,9 +78,6 @@ async function processFileGroup(
       checkedFiles: [],
     };
   }
-
-  // Parse original config
-  const originalConfig = parseTypeScriptConfig(tsconfigPath);
 
   // Analyze tsgo compatibility and determine optimal compiler
   const tsgoDecision = shouldUseTsgo(

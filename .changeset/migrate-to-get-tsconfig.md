@@ -21,10 +21,13 @@ refactor(config): simplify config parsing with get-tsconfig
 
 - 66% bundle size reduction: 368kB → 125kB
 - Faster installation and module loading
+- Eliminated redundant tsconfig parsing (single parse instead of double validation)
+- Early config validation before expensive file resolution
 - Better error handling with get-tsconfig's forgiving JSON parser
 
 **Quality:**
 
 - 100% API compatibility maintained
-- All 460 tests passing
-- Coverage thresholds increased (CLI +5%, Config +7%, Utils +6%)
+- All 488 tests passing (up from 460)
+- Coverage thresholds exceeded: 88.92% statements (+4.92% above threshold)
+- Enhanced error messages with preserved original error context for better debugging

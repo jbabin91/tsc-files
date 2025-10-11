@@ -92,7 +92,8 @@ export function parseTypeScriptConfig(configPath: string): TypeScriptConfig {
   try {
     const config = parseTsconfig(configPath);
     // get-tsconfig returns fully resolved config with extends chain merged
-    // Return type is enforced by function signature - no assertion needed
+    // parseTsconfig's return type is structurally compatible with TypeScriptConfig
+    // TypeScript enforces this at compile time via structural typing
     return config;
   } catch {
     throw new Error(`TypeScript config not found: ${configPath}`);

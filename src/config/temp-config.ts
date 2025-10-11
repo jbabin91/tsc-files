@@ -6,7 +6,7 @@ import * as ts from 'typescript';
 
 import { provideDependencyDiscoveryEducation } from '@/cli/education';
 import { discoverDependencyClosure } from '@/config/dependency-discovery';
-import type { TypeScriptConfig } from '@/config/parser';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
 import { logger } from '@/utils/logger';
 

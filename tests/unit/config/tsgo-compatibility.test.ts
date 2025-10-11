@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { TypeScriptConfig } from '@/config/parser';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import { analyzeTsgoCompatibility } from '@/config/tsgo-compatibility';
 
 describe('tsgo-compatibility', () => {

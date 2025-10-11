@@ -11,7 +11,7 @@ import {
   getPotentialSetupFiles,
   getSetupFilesFromConfig,
 } from '@/config/dependency-discovery';
-import type { TypeScriptConfig } from '@/config/parser';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 
 describe('Dependency Discovery', () => {
   let tempDir: string;

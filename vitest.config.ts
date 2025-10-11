@@ -34,17 +34,17 @@ export default defineConfig({
         },
         // CLI modules - user-facing interface (main.ts excluded from coverage)
         'src/cli/**': {
-          branches: 85,
+          branches: 89,
           functions: 94,
-          lines: 89,
-          statements: 89,
+          lines: 94,
+          statements: 94,
         },
         // Configuration modules - solid coverage for setup logic
         'src/config/**': {
-          branches: 80,
+          branches: 87,
           functions: 85,
-          lines: 80,
-          statements: 80,
+          lines: 87,
+          statements: 87,
         },
         // Core business logic should have higher coverage
         'src/core/**': {
@@ -76,7 +76,7 @@ export default defineConfig({
         },
         // Utility modules - highest standards for pure functions
         'src/utils/**': {
-          branches: 90,
+          branches: 96,
           functions: 100,
           lines: 95,
           statements: 95,
@@ -88,7 +88,7 @@ export default defineConfig({
       optimizer: {
         ssr: {
           enabled: true,
-          include: ['tmp', 'commander', 'execa', 'fast-glob', 'kleur'],
+          include: ['tmp', 'commander', 'execa', 'kleur'],
         },
       },
     },

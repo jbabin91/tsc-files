@@ -1,8 +1,10 @@
 import path from 'node:path';
 
-import { findTsConfig } from '@/config/discovery';
-import { parseTypeScriptConfig } from '@/config/parser';
 import { createTempConfig } from '@/config/temp-config';
+import {
+  findTsConfig,
+  parseTypeScriptConfig,
+} from '@/config/tsconfig-resolver';
 import { shouldUseTsgo } from '@/config/tsgo-compatibility';
 import { resolveFiles } from '@/core/file-resolver';
 import { executeAndParseTypeScript } from '@/execution/executor';

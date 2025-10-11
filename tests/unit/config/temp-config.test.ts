@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { TypeScriptConfig } from '@/config/parser';
 import { createTempConfig, type TempConfigHandle } from '@/config/temp-config';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
 
 type TempConfigContent = {

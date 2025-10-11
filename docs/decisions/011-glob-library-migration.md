@@ -39,8 +39,7 @@ We migrated from **fast-glob to tinyglobby** for file pattern matching:
 
 1. **Duplicate handling** (removed `unique: true`):
    - ✅ **No regression**: tinyglobby automatically deduplicates results
-   - Test confirms no duplicates with overlapping patterns like `['src/**/*.ts', 'src/core/*.ts']`
-   - See: `tests/unit/tinyglobby-behavior.test.ts`
+   - Verified no duplicates with overlapping patterns like `['src/**/*.ts', 'src/core/*.ts']`
 
 2. **Basename matching** (removed `baseNameMatch: true`):
    - ✅ **No regression**: Never used in our implementation
@@ -112,7 +111,9 @@ We migrated from **fast-glob to tinyglobby** for file pattern matching:
 
 ## Verification
 
-**Test coverage**: 7 comprehensive tests in `tests/unit/tinyglobby-behavior.test.ts`
+**Temporary verification testing** (not committed):
+
+During migration, we created temporary verification tests to confirm tinyglobby behavior:
 
 1. ✅ Automatic deduplication of overlapping patterns
 2. ✅ Basename-only patterns correctly limited to root directory
@@ -122,31 +123,28 @@ We migrated from **fast-glob to tinyglobby** for file pattern matching:
 6. ✅ Case-insensitive option available when needed
 7. ✅ Actual file-resolver usage patterns work correctly
 
-**Integration testing**: All 488 existing tests pass without modification
+Per project testing guidelines, temporary third-party verification tests were deleted after documenting findings in this ADR. See [Testing Best Practices](../testing/best-practices.md#third-party-library-verification).
+
+**Integration testing**: All 488 existing tests pass without modification, providing ongoing validation of correct behavior.
 
 **Copilot review**: Addressed concern #2423172785 with comprehensive analysis
 
 ## Implementation
 
 **Migration commit**: 96b2fde - refactor(config): simplify config parsing with get-tsconfig
-**Verification commit**: 217db82 - test(core): verify tinyglobby equivalence to fast-glob
 
 **Files changed**:
 
 - `src/core/file-resolver.ts:114-119` - Removed fast-glob options, updated to tinyglobby
-- `tests/unit/tinyglobby-behavior.test.ts` - Added verification test suite
 - `package.json` - Removed fast-glob, added tinyglobby
 
 **Validation commands**:
 
 ```bash
-# Run verification tests
-pnpm vitest tests/unit/tinyglobby-behavior.test.ts
-
 # Verify bundle size reduction
 pnpm build && du -h dist/
 
-# Run full test suite
+# Run full test suite (488 tests validate correct behavior)
 pnpm test
 ```
 

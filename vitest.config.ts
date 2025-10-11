@@ -83,15 +83,6 @@ export default defineConfig({
         },
       },
     },
-    // Enable dependency optimization for better performance
-    deps: {
-      optimizer: {
-        ssr: {
-          enabled: true,
-          include: ['tmp', 'commander', 'execa', 'kleur'],
-        },
-      },
-    },
     environment: 'node',
     fileParallelism: true,
     globals: true,

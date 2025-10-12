@@ -49,6 +49,66 @@ Read these files on-demand when you need specific guidance:
 
 - [.claude/github-workflow.md](.claude/github-workflow.md) - MCP vs gh CLI decision tree for PR comments, reviews, and threaded replies
 
+**For AI Assistant Coordination:**
+
+- [.github/copilot-instructions.md](.github/copilot-instructions.md) - GitHub Copilot PR review instructions
+
+This project uses TWO AI assistants with different purposes:
+
+1. **Claude Code** (`.claude/*.md`) - Development workflows, Plan Mode, sub-agents, context management
+2. **GitHub Copilot** (`.github/copilot-instructions.md`) - PR review feedback on coding standards
+
+### Sync Checklist
+
+When updating project standards, check if BOTH instruction sets need updates:
+
+**Content that should be synced:**
+
+- ✅ TypeScript guidelines (type safety, imports, comments)
+- ✅ Commit conventions (format, gitmojis, scopes)
+- ✅ Code comment policy (no file headers, explain WHY)
+- ✅ Security requirements (temp files, command execution)
+- ✅ Quality standards (zero-tolerance policy, coverage thresholds)
+- ✅ File organization principles
+- ✅ Error handling conventions
+
+**Content unique to Claude Code (`.claude/`):**
+
+- ❌ Plan Mode usage patterns
+- ❌ Sub-agent delegation strategies
+- ❌ Context management techniques
+- ❌ UltraThink decision points
+- ❌ Git operations permissions
+
+**Content unique to Copilot (`.github/copilot-instructions.md`):**
+
+- ❌ Project architecture overview (for PR context)
+- ❌ Exit code conventions (CLI-specific)
+- ❌ Testing framework details
+
+**When to update both:**
+
+1. Adding/changing TypeScript coding standards
+2. Modifying commit message conventions
+3. Updating security requirements
+4. Changing quality gate requirements
+5. Adding new import conventions or file organization rules
+
+**Update workflow:**
+
+```bash
+# 1. Update shared standards in both locations
+edit .github/copilot-instructions.md  # For Copilot PR reviews
+edit .claude/commit-conventions.md    # If commit format changed
+edit CLAUDE.md                         # If major project standards changed
+
+# 2. Test with next PR to verify Copilot applies new guidance
+
+# 3. Commit both changes together
+git add .github/copilot-instructions.md .claude/
+git commit -m "docs: :memo: sync AI assistant instructions"
+```
+
 ## 🎯 Project Mission
 
 Build a TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration. Designed for git hooks, lint-staged, and CI/CD workflows.

@@ -83,6 +83,20 @@ After deployment, create separate PR to:
 - [ ] Run `openspec list` to see active changes
 - [ ] Run `openspec list --specs` to see existing capabilities
 
+**AI Assistant Coordination:**
+
+This project uses TWO AI assistants with different purposes:
+
+1. **Claude Code** (`.claude/*.md`) - Development workflows, Plan Mode, sub-agents, context management
+2. **GitHub Copilot** (`.github/copilot-instructions.md`) - PR review feedback on coding standards
+
+When working with OpenSpec:
+
+- Follow project conventions in `openspec/project.md` (TypeScript guidelines, commit format, security requirements)
+- Follow OpenSpec workflow in this file (proposal → implementation → archive)
+- For PR reviews, GitHub Copilot will apply `.github/copilot-instructions.md` standards
+- See `CLAUDE.md` sync checklist for maintaining consistency across instruction sets
+
 **Before Creating Specs:**
 
 - Always check if capability already exists

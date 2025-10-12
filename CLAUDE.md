@@ -45,6 +45,10 @@ Read these files on-demand when you need specific guidance:
 - [docs/architecture/security.md](docs/architecture/security.md) - Comprehensive security requirements
 - [docs/testing/strategy.md](docs/testing/strategy.md) - Complete testing approach
 
+**For GitHub Operations:**
+
+- [.claude/github-workflow.md](.claude/github-workflow.md) - MCP vs gh CLI decision tree for PR comments, reviews, and threaded replies
+
 ## 🎯 Project Mission
 
 Build a TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration. Designed for git hooks, lint-staged, and CI/CD workflows.

@@ -1,4 +1,4 @@
-import type { TypeScriptConfig } from '@/config/parser';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import { detectTsgo } from '@/detectors/typescript';
 
 /**

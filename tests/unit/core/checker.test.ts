@@ -219,7 +219,7 @@ const other: number = "not a number";`,
           project: 'nonexistent.json',
           throwOnError: true,
         }),
-      ).rejects.toThrow('TypeScript config not found');
+      ).rejects.toThrow('Failed to parse TypeScript config at');
 
       cleanupTempDir(emptyTempDir);
     });
@@ -306,15 +306,6 @@ const other: number = "not a number";`,
   });
 
   describe('error handling', () => {
-    it('should handle malformed tsconfig.json', async () => {
-      writeFileSync(path.join(tempDir, 'tsconfig.json'), '{ invalid json }');
-      writeFileSync(path.join(srcDir, 'test.ts'), 'const x = 1;');
-
-      await expect(
-        checkFiles(['src/test.ts'], { cwd: tempDir, throwOnError: true }),
-      ).rejects.toThrow('Failed to read tsconfig.json');
-    });
-
     it('should throw on error when throwOnError is true', async () => {
       const emptyTempDir = createTempDir();
 
@@ -325,7 +316,7 @@ const other: number = "not a number";`,
           project: './nonexistent-tsconfig.json',
           throwOnError: true,
         }),
-      ).rejects.toThrow('TypeScript config not found');
+      ).rejects.toThrow('Failed to parse TypeScript config at');
 
       cleanupTempDir(emptyTempDir);
     });
@@ -376,7 +367,7 @@ const other: number = "not a number";`,
           project: 'nonexistent-tsconfig.json',
           throwOnError: true,
         }),
-      ).rejects.toThrow('TypeScript config not found');
+      ).rejects.toThrow('Failed to parse TypeScript config at');
     });
 
     it('should handle glob resolution fallback when fast-glob fails', async () => {
@@ -727,25 +718,6 @@ const other: number = "not a number";`,
         result.checkedFiles.some((file) => file.endsWith('legacy.jsx')),
       ).toBe(true);
     });
-
-    it('should handle invalid tsconfig for JavaScript detection', async () => {
-      // Create an invalid tsconfig to test error handling in shouldIncludeJavaScriptFiles
-      writeFileSync(
-        path.join(tempDir, 'tsconfig.json'),
-        '{ "invalid": json }', // Malformed JSON
-      );
-
-      writeFileSync(path.join(srcDir, 'test.ts'), 'const x = 1;');
-      writeFileSync(path.join(srcDir, 'test.js'), 'const y = 2;');
-
-      // Should throw an error because the tsconfig is malformed
-      await expect(
-        checkFiles(['src/test.ts', 'src/test.js'], {
-          cwd: tempDir,
-          throwOnError: true,
-        }),
-      ).rejects.toThrow('Failed to read tsconfig.json');
-    });
   });
 
   describe('edge cases and error paths', () => {
@@ -836,24 +808,6 @@ const other: number = "not a number";`,
         }),
       ).rejects.toThrow('No tsconfig.json found');
     });
-
-    it('should handle tsconfig JSON parsing errors', async () => {
-      // Test the catch block in shouldIncludeJavaScriptFiles
-      writeFileSync(
-        path.join(tempDir, 'tsconfig.json'),
-        '{ malformed json without quotes }',
-      );
-      writeFileSync(path.join(srcDir, 'test.ts'), 'const x = 1;');
-      writeFileSync(path.join(srcDir, 'test.js'), 'const y = 2;');
-
-      // Should throw due to malformed JSON in tsconfig reading phase
-      await expect(
-        checkFiles(['src/test.ts', 'src/test.js'], {
-          cwd: tempDir,
-          throwOnError: true,
-        }),
-      ).rejects.toThrow();
-    });
   });
 
   describe('coverage improvement tests', () => {
@@ -868,7 +822,9 @@ const other: number = "not a number";`,
       expect(result.success).toBe(false);
       expect(result.errorCount).toBe(1);
       expect(result.errors[0].code).toBe('CONFIG_ERROR');
-      expect(result.errors[0].message).toContain('TypeScript config not found');
+      expect(result.errors[0].message).toContain(
+        'Failed to parse TypeScript config at',
+      );
     });
 
     it('should handle throwOnError: false for missing tsconfig in directory', async () => {

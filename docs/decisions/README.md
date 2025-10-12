@@ -29,3 +29,8 @@ Each ADR follows this structure:
 - [008: JavaScript File Handling Strategy](./008-javascript-file-handling.md)
 - [009: Cross-Platform Execution Strategy](./009-cross-platform-execution.md)
 - [010: Error Handling & Process Management](./010-error-handling-process-management.md)
+
+### Optimization Decisions (Phase 2.5)
+
+- [011: File Pattern Matching Library Migration](./011-glob-library-migration.md)
+- [012: TypeScript Configuration Parsing Consolidation](./012-tsconfig-parsing-consolidation.md)

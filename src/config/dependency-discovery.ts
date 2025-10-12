@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import type * as ts from 'typescript';
 
-import type { TypeScriptConfig } from '@/config/parser';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import { logger } from '@/utils/logger';
 
 /**

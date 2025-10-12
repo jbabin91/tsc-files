@@ -7,6 +7,7 @@ export default defineConfig({
   exports: true,
   external: ['typescript'],
   format: ['esm', 'cjs'],
+  minify: true,
   publint: true,
   shims: true,
   sourcemap: true,

@@ -1,9 +1,9 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-import fastGlob from 'fast-glob';
+import { glob } from 'tinyglobby';
 
-import { shouldIncludeJavaScriptFiles } from '@/config/parser';
+import { shouldIncludeJavaScriptFiles } from '@/config/tsconfig-resolver';
 import { getFileExtensions, hasValidExtension } from '@/utils/file-patterns';
 
 /**
@@ -111,13 +111,10 @@ export async function resolveFiles(
   }
 
   try {
-    const files = await fastGlob(globPatterns, {
+    const files = await glob(globPatterns, {
       cwd,
       absolute: true,
       onlyFiles: true,
-      unique: true, // Prevent duplicate results from overlapping patterns
-      baseNameMatch: true, // Allow *.ts to match src/file.ts efficiently
-      caseSensitiveMatch: false, // Better cross-platform compatibility
       ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
     });
 

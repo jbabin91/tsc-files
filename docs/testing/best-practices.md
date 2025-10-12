@@ -13,6 +13,7 @@ This document outlines the testing best practices and patterns we've implemented
 - [Custom Matchers](#custom-matchers)
 - [Parameterized Testing](#parameterized-testing)
 - [Performance Testing](#performance-testing)
+- [Third-Party Library Verification](#third-party-library-verification)
 - [Migration Guide](#migration-guide)
 
 ## Overview
@@ -530,6 +531,136 @@ describe('Package Manager Detection', () => {
    - Use automatic cleanup with fixtures
    - Monitor temp directory cleanup
 
+## Third-Party Library Verification
+
+### Temporary Verification Tests
+
+When evaluating or migrating third-party libraries, you may need to write tests to verify behavior. **These tests should be temporary and NOT committed.**
+
+#### Guidelines
+
+**DO:**
+
+- ✅ Write verification tests locally to understand library behavior
+- ✅ Document findings in ADRs (Architectural Decision Records)
+- ✅ Delete verification tests before committing
+- ✅ Keep only integration tests that verify our code's usage
+
+**DON'T:**
+
+- ❌ Commit tests that verify third-party library behavior
+- ❌ Test third-party library edge cases (that's their responsibility)
+- ❌ Maintain tests for library features we don't use
+
+#### Example: Library Migration Verification
+
+```typescript
+// ❌ BAD - Do not commit this
+// tests/unit/tinyglobby-behavior.test.ts
+describe('tinyglobby behavior verification', () => {
+  it('should automatically deduplicate results', async () => {
+    // Testing tinyglobby's internal behavior
+    const results = await glob(['src/**/*.ts', 'src/core/*.ts']);
+    const uniqueResults = [...new Set(results)];
+    expect(results.length).toBe(uniqueResults.length);
+  });
+});
+
+// ✅ GOOD - Commit this instead
+// tests/unit/core/file-resolver.test.ts
+describe('file-resolver', () => {
+  it('should resolve files without duplicates', async () => {
+    // Testing OUR code that uses tinyglobby
+    const files = await resolveFiles(['src/**/*.ts', 'src/core/*.ts'], cwd);
+    const uniqueFiles = [...new Set(files)];
+    expect(files.length).toBe(uniqueFiles.length);
+  });
+});
+```
+
+#### Workflow for Library Verification
+
+1. **Research Phase** (Local, not committed):
+
+   ```bash
+   # Create temporary verification test
+   touch tests/unit/library-verification.test.ts
+
+   # Run verification
+   pnpm vitest tests/unit/library-verification.test.ts
+   ```
+
+2. **Documentation Phase** (Committed):
+
+   ```bash
+   # Document findings in ADR
+   vi docs/decisions/011-library-migration.md
+
+   # Include:
+   # - What you verified
+   # - Key findings (duplicates, edge cases, performance)
+   # - Why the library is suitable for our use case
+   ```
+
+3. **Cleanup Phase** (Before commit):
+
+   ```bash
+   # Delete verification test
+   rm tests/unit/library-verification.test.ts
+   # DO NOT git add this file
+   ```
+
+#### When to Keep Tests
+
+**Keep tests when:**
+
+- Testing **your code's integration** with the library
+- Testing **your abstractions** over the library
+- Testing **error handling** in your wrappers
+- Testing **configuration** of the library in your context
+
+**Example of tests to keep:**
+
+```typescript
+// ✅ GOOD - Testing our integration
+describe('file-resolver integration', () => {
+  it('should handle glob errors gracefully', async () => {
+    // Testing our error handling when glob fails
+    await expect(resolveFiles(['invalid'], cwd)).rejects.toThrow();
+  });
+
+  it('should apply our ignore patterns correctly', async () => {
+    // Testing our configuration of the glob library
+    const files = await resolveFiles(['**/*.ts'], cwd);
+    expect(files.every((f) => !f.includes('node_modules'))).toBe(true);
+  });
+});
+```
+
+#### Documentation
+
+Document verification findings in:
+
+- **ADRs** - For architectural decisions (library selection, migration)
+- **PR comments** - For reviewer context during code review
+- **Commit messages** - Brief summary of what was verified
+
+Do NOT document in:
+
+- ❌ Test files (temporary verification only)
+- ❌ Inline comments (test third-party behavior elsewhere)
+
+#### Real Example: tinyglobby Migration
+
+**What we did:** ✅ Correct approach
+
+1. Created temporary `tests/unit/tinyglobby-behavior.test.ts` locally
+2. Verified duplicate handling, basename matching, case sensitivity
+3. Documented findings in ADR-011: File Pattern Matching Library Migration
+4. Posted findings in PR review comment for Copilot
+5. **Deleted the verification test** before final commit
+6. Kept only integration tests that verify our file-resolver code
+
 ## Best Practices Summary
 
 1. **Always use fixtures** for common setup patterns
@@ -542,5 +673,7 @@ describe('Package Manager Detection', () => {
 8. **Monitor performance** with custom matchers
 9. **Maintain isolation** between tests
 10. **Document test patterns** for team consistency
+11. **Delete third-party verification tests** - Document in ADRs instead
+12. **Test your integration** - Not the library's internal behavior
 
 By following these patterns, our tests are fast, reliable, maintainable, and provide excellent coverage of both happy path and error scenarios.

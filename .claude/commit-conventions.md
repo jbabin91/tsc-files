@@ -87,3 +87,20 @@ git commit -m "revert: :rewind: revert previous commit changes"
 - **Header**: Max 200 characters
 - **Body**: No line length limit
 - **Gitmojis**: Always include the appropriate gitmoji code (e.g., :sparkles:)
+
+## Troubleshooting
+
+### Unwanted Co-authored-by Trailer
+
+**Issue**: Very rarely (~0.5% of commits), `Co-authored-by: Claude Code <claude@anthropic.com>` may appear in commit messages despite `.claude/settings.json` having `"includeCoAuthoredBy": false`.
+
+**Cause**: Transient bug in Claude Code CLI (not a configuration issue - the setting works 99.5% of the time).
+
+**Quick Fix**: Amend the last commit to remove it:
+
+```bash
+# Remove Co-authored-by from last commit
+git log -1 --format=%B | grep -v "Co-authored-by: Claude Code" | git commit --amend -F -
+```
+
+**Note**: This is a known issue and does not require changes to your workflow or configuration.

@@ -37,6 +37,7 @@ export function findTsConfig(cwd: string, projectPath?: string): string {
   if (projectPath) {
     // Return resolved path without validation - parseTypeScriptConfig handles validation
     // This avoids redundant parsing (parse once for validation, parse again for use)
+    // Callers should expect and handle validation errors from parseTypeScriptConfig
     return path.resolve(cwd, projectPath);
   }
 

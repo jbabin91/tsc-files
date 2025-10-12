@@ -19,7 +19,12 @@ refactor(config): simplify config parsing with get-tsconfig
 
 **Performance:**
 
-- 66% bundle size reduction: 368kB → 125kB
+- 66% total bundle size reduction: 368kB → 125kB
+- 45% code size reduction via minification: 160K → 88K
+  - cli.js: 20K → 16K (20% reduction)
+  - cli.cjs: 24K → 16K (33% reduction)
+  - checker.js: 52K → 24K (54% reduction)
+  - checker.cjs: 56K → 28K (50% reduction)
 - Faster installation and module loading
 - Eliminated redundant tsconfig parsing (single parse instead of double validation)
 - Early config validation before expensive file resolution

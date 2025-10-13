@@ -173,6 +173,34 @@ ln -s AGENTS.md CLAUDE.md
 - ⚠️ Con: External dependency (mitigated by active maintenance and popularity)
 - **Verdict:** Best fit for multi-agent + selective inclusion + high overlap needs
 
+## Token Optimization Strategy
+
+Comprehensive analysis of existing AI instruction files (2,487 total lines) reveals opportunities to reduce context weight while improving functionality. See [findings.md](./findings.md) for detailed research.
+
+**Key Optimizations:**
+
+1. **Command Batching** - Consolidate quality gates (lint, format, typecheck, test, lint:md, build) from 6 separate commands to 1 batched command
+   - **Impact:** 5+ tool calls saved per quality check
+   - **Benefit:** Fail-fast execution with clear sequential order
+
+2. **Content Deduplication** - Single source of truth for commands, examples, and architecture diagrams
+   - **Impact:** ~70-95 lines saved (~3-4% reduction)
+   - **Benefit:** Eliminates repetition across multiple locations
+
+3. **Sub-Agent Pattern Documentation** - Add orchestrator-worker pattern to `.ruler/agentic-workflows.md`
+   - **Impact:** Enables parallelization for Cursor and future agents (Amp)
+   - **Benefit:** Makes delegation patterns available to 3 of 4 supported tools
+
+4. **Reference Over Duplication** - Link to detailed docs instead of repeating architecture diagrams
+   - **Impact:** ~30-40 lines saved per file
+   - **Benefit:** Single source of truth with reduced maintenance burden
+
+**Estimated Savings:**
+
+- Tool calls: 5+ per quality check (high impact)
+- Context weight: ~70-95 lines saved while adding capabilities
+- Maintenance: Eliminates 3-4 duplicate locations for common patterns
+
 ## Impact
 
 ### Affected Specs
@@ -207,6 +235,7 @@ This change requires a new capability spec:
 6. **Consistency:** All agents synchronized automatically via `ruler apply` - no drift, no manual sync
 7. **Clear Separation:** Universal standards (82-85%) vs tool-specific features (15-18%) explicitly organized
 8. **No Manual Sync:** Eliminates fragile lefthook scripts and manual file maintenance
+9. **Token Optimization:** Command batching reduces tool calls (6 quality gates → 1 command), content deduplication saves ~70-95 lines (~3-4%) while adding new capabilities
 
 ### Risks
 

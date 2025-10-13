@@ -81,6 +81,23 @@
   - [ ] 2.9.1 Identify any Copilot-specific content not in AGENTS.md
   - [ ] 2.9.2 Migrate unique content to appropriate `.ruler/*.md` file
 
+- [ ] 2.10 Apply token optimization strategies (see [findings.md](./findings.md))
+  - [ ] 2.10.1 Command batching in `.ruler/instructions.md`
+    - Replace separate quality gate commands with unified batched command
+    - Document fail-fast execution benefits
+  - [ ] 2.10.2 Deduplicate command documentation
+    - Consolidate repeated command listings (currently at lines 180-184, 206-211, 731 in CLAUDE.md)
+    - Create single source of truth with references
+  - [ ] 2.10.3 Collapse similar example code blocks
+    - Merge 3-4 separate examples into single comprehensive block with inline comments
+  - [ ] 2.10.4 Add architecture references
+    - Replace duplicated architecture diagrams with links to @docs/architecture/README.md
+    - Keep only quick reference layer diagram
+  - [ ] 2.10.5 Enhance sub-agent pattern documentation in `agentic-workflows.md`
+    - Document orchestrator-worker pattern for universal agents
+    - Add tool-specific delegation strategies (Claude Task tool, Cursor agent mode, Amp subagents)
+    - Include when to use parallel vs sequential processing
+
 ## 3. Configuration
 
 - [ ] 3.1 Configure `.ruler/ruler.toml` with agent definitions and selective inclusion

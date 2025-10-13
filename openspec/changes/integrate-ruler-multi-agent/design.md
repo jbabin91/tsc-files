@@ -274,6 +274,69 @@ pre-commit:
 - Developer manually stages all changed files (both .ruler/ source and generated outputs)
 - Priority 1 ensures generation happens before other hooks
 
+### Decision 6: Token Optimization Strategy
+
+**Chosen Approach:** Apply systematic optimizations to reduce context weight while improving functionality.
+
+**Key Optimizations:**
+
+1. **Command Batching** - Consolidate quality gate commands:
+
+```bash
+# Before: 6 separate commands (6 tool calls)
+pnpm lint
+pnpm format
+pnpm typecheck
+pnpm test:coverage
+pnpm lint:md
+pnpm build
+
+# After: 1 batched command (1 tool call)
+pnpm lint && pnpm format && pnpm typecheck && pnpm test:coverage && pnpm lint:md && pnpm build
+```
+
+2. **Content Deduplication** - Single source of truth for commands, examples, architecture diagrams
+   - Eliminate 3-4 duplicate command listings
+   - Collapse similar code blocks into comprehensive examples
+   - Reference detailed architecture docs instead of repeating diagrams
+
+3. **Sub-Agent Pattern Documentation** - Add orchestrator-worker pattern to `agentic-workflows.md`
+   - Claude Code: Task tool (already documented)
+   - Cursor: Agent mode with auto-context
+   - Amp (Sourcegraph): Native subagent spawning (new discovery, July 2025)
+
+4. **Architecture References** - Link to `@docs/architecture/README.md` instead of duplicating
+   - Keep only quick reference layer diagram
+   - Save ~30-40 lines per instruction file
+
+**Impact Analysis:**
+
+| Metric              | Before | After     | Savings        |
+| ------------------- | ------ | --------- | -------------- |
+| Total lines         | 2,487  | 2,390-415 | ~70-95 (~3-4%) |
+| Quality gate calls  | 6      | 1         | 5 calls        |
+| Command duplicates  | 3-4    | 1         | Eliminated     |
+| Architecture copies | 2-3    | 1         | Eliminated     |
+
+**Rationale:**
+
+- Command batching provides high-impact reduction in tool call overhead (5+ calls per quality check)
+- Content deduplication reduces maintenance burden and context weight
+- Sub-agent documentation enables parallelization for 3 of 4 supported tools
+- Optimizations applied during content migration (Section 2.10 in tasks.md)
+
+**Trade-offs:**
+
+- Slightly longer single command vs separate commands (acceptable: fail-fast behavior maintained)
+- References require documentation to be comprehensive (already true)
+- Sub-agent patterns may not apply to all future tools (mitigated: clearly documented per-tool support)
+
+**Future Considerations:**
+
+- Monitor Amp (Sourcegraph) adoption for potential 5th agent support
+- Research Windsurf (Codeium) instruction file format
+- Continue evaluating command batching effectiveness in CI/CD
+
 ## Architecture Design
 
 ### Directory Structure

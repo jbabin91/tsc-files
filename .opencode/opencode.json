@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "pretter": {
+      "command": ["pnpm format"]
+    }
+  },
+  "tools": {
+    "github*": false
+  }
+}

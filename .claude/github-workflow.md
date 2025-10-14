@@ -13,13 +13,38 @@ This document provides guidance for GitHub operations using MCP (Model Context P
 - Consistent API across operations
 - Integrated with Claude Code workflows
 
-### When to Use gh CLI
+### When to Use gh CLI as Backup
 
-Only use `gh` commands when:
+Only use `gh` commands when MCP cannot handle the operation:
 
-1. MCP returns 404 (feature doesn't exist in MCP)
-2. After confirming it's not a permission issue (403)
-3. MCP cannot express the operation (e.g., threaded review comment replies)
+1. **MCP returns 404 (Not Found)**: Feature doesn't exist in MCP
+2. **Threaded review comment replies**: MCP cannot create threaded replies to existing review comments
+3. **After confirming it's not a permission issue (403)**: Check token permissions first
+4. **Complex bulk operations**: When MCP doesn't support the specific workflow
+
+### gh CLI as Backup Strategy
+
+**Always verify MCP limitation first:**
+
+```bash
+# Step 1: Try MCP operation
+# Step 2: If 404 error → Use gh CLI equivalent
+# Step 3: If 403 error → Check permissions, then retry MCP or use gh CLI
+# Step 4: Document the limitation for future reference
+```
+
+**Common gh CLI fallbacks:**
+
+```bash
+# Threaded review comment replies (MCP limitation)
+gh api --method POST repos/OWNER/REPO/pulls/PR_NUMBER/comments/COMMENT_ID/replies -f body="Reply text"
+
+# Bulk operations (MCP may not support)
+gh pr list --state open --json number,title,author --jq '.[] | select(.author.login == "username")'
+
+# Complex queries (MCP has limited filtering)
+gh issue list --label "bug" --assignee "username" --state open
+```
 
 ## Permission Requirements
 

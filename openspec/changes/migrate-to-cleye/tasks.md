@@ -1,5 +1,29 @@
 # Implementation Tasks
 
+## 0. Pre-Implementation Research (CRITICAL - MUST COMPLETE FIRST)
+
+- [x] 0.1 Research cleye's error handling API (throw vs return, error types)
+- [x] 0.2 Research cleye's environment variable support (`TSC_PROJECT` equivalent)
+- [x] 0.3 Research cleye's validation API (validate property vs argParser)
+- [x] 0.4 Research cleye's lifecycle hooks or alternative patterns (preAction equivalent)
+- [x] 0.5 Research cleye's help text customization API
+- [x] 0.6 Research cleye's error output customization
+- [x] 0.7 Research cleye's parse API and return structure
+- [x] 0.8 Research cleye's required parameter enforcement
+- [x] 0.9 Document cleye API equivalents for all commander features used
+- [x] 0.10 Create cleye API reference document for team review
+
+**Key Findings**:
+
+- ✅ Cleye has direct equivalents for most commander features
+- ❌ No `exitOverride()` equivalent - need try-catch wrapper
+- ❌ No built-in env var support - need manual `default: process.env.TSC_PROJECT`
+- ❌ No pre-action hooks - need manual implementation in callback
+- ❌ No error output customization - need manual error handling
+- ✅ Help text customization via `help` configuration object
+- ✅ Validation via `validate` function property
+- ✅ Return structure: `result._` (files), `result.flags` (options)
+
 ## 1. Dependency Swap
 
 - [ ] 1.1 Add `cleye` (^1.3.2) to package.json dependencies
@@ -19,6 +43,16 @@
 - [ ] 2.8 Ensure all 13 options are preserved with identical behavior
 - [ ] 2.9 Verify exit code handling (0, 1, 2, 3)
 - [ ] 2.10 Run `pnpm typecheck` to ensure no type errors
+- [ ] 2.11 Implement cleye error handling to replace `exitOverride()` mechanism
+- [ ] 2.12 Create `handleCleyeError()` function with cleye error patterns
+- [ ] 2.13 Implement manual `TSC_PROJECT` env var reading with correct precedence
+- [ ] 2.14 Update verbose logging for env var display (cleye equivalent of preAction)
+- [ ] 2.15 Migrate validation logic to cleye's validation approach
+- [ ] 2.16 Implement pre-action logging without hook (inline or wrapper pattern)
+- [ ] 2.17 Migrate help text styling to cleye's API
+- [ ] 2.18 Implement error output coloring with kleur
+- [ ] 2.19 Add "show help" hint after validation errors
+- [ ] 2.20 Handle no-files-argument scenario explicitly
 
 ## 3. Update Type Definitions
 
@@ -44,6 +78,15 @@
 - [ ] 5.5 Ensure 100% coverage for command module
 - [ ] 5.6 Update `tests/setup.ts` if commander mocks exist
 - [ ] 5.7 Run `pnpm test` to ensure all tests pass
+- [ ] 5.8 Test cleye error handling for all commander error scenarios
+- [ ] 5.9 Test TSC_PROJECT env var with and without --project flag
+- [ ] 5.10 Test env var precedence (flag > env var)
+- [ ] 5.11 Test validation errors match current format
+- [ ] 5.12 Test verbose logging shows env var value
+- [ ] 5.13 Test help text format matches current output
+- [ ] 5.14 Test error output uses red coloring
+- [ ] 5.15 Test "show help" hint appears after errors
+- [ ] 5.16 Test no-files-argument displays help and exits with code 1
 
 ## 6. Integration Testing
 
@@ -78,6 +121,12 @@
 - [ ] 6.15.12 Cross-platform monorepo: Test cleye on Windows with backslash paths in multi-package structure
 - [ ] 6.15.13 Monorepo deduplication: Test CLI deduplicates same file matched by multiple patterns
 - [ ] 6.15.14 Mixed package patterns: Test cleye with absolute, relative, and glob patterns across packages
+- [ ] 6.15.15 Test error exit codes match across Node.js and Bun
+- [ ] 6.15.16 Test env var support works under Bun runtime
+- [ ] 6.15.17 Test validation errors work under Bun runtime
+- [ ] 6.15.18 Test help text renders correctly under Bun
+- [ ] 6.15.19 Test verbose logging works under Bun
+- [ ] 6.15.20 Test colored output works under Bun
 
 ## 7. Cross-Platform Verification
 

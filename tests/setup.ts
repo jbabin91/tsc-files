@@ -4,7 +4,6 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { Command } from 'commander';
 import kleur from 'kleur';
 import tmp from 'tmp';
 import { afterEach, expect, test as baseTest } from 'vitest';
@@ -126,8 +125,6 @@ export async function runCliDirect(
   args: string[],
   cwd: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const program = new Command();
-
   let stdout = '';
   let stderr = '';
   const originalConsoleLog = console.log;
@@ -142,30 +139,59 @@ export async function runCliDirect(
   };
 
   try {
-    program
-      .name('tsc-files')
-      .description(
-        'Run TypeScript compiler on specific files while respecting tsconfig.json',
-      )
-      .argument('<files...>', 'TypeScript files to check')
-      .option('-p, --project <path>', 'path to tsconfig.json')
-      .option('--verbose', 'enable detailed output')
-      .option('--json', 'output results as JSON')
-      .option('--no-cache', 'disable temporary file caching')
-      .option('--skip-lib-check', 'skip type checking of declaration files')
-      .configureOutput({
-        writeOut: (str) => {
-          stdout += str;
-        },
-        writeErr: (str) => {
-          stderr += str;
-        },
-      })
-      .exitOverride();
+    // Parse arguments manually since we're not using the actual CLI
+    const files: string[] = [];
+    const rawOptions: Record<string, unknown> = {};
 
-    const parsedArgs = program.parse(args, { from: 'user' });
-    const files = parsedArgs.args;
-    const rawOptions = parsedArgs.opts();
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      if (arg.startsWith('--')) {
+        const key = arg.slice(2);
+        switch (key) {
+          case 'no-cache': {
+            rawOptions.cache = false;
+            break;
+          }
+          case 'skip-lib-check': {
+            rawOptions.skipLibCheck = true;
+            break;
+          }
+          case 'verbose': {
+            rawOptions.verbose = true;
+            break;
+          }
+          case 'json': {
+            rawOptions.json = true;
+            break;
+          }
+          case 'help': {
+            rawOptions.help = true;
+            break;
+          }
+          case 'version': {
+            rawOptions.version = true;
+            break;
+          }
+          default: {
+            if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+              rawOptions[key] = args[i + 1];
+              i++; // Skip next argument as it's the value
+            } else {
+              rawOptions[key] = true;
+            }
+            break;
+          }
+        }
+      } else if (arg.startsWith('-') && arg.length > 1) {
+        const key = arg.slice(1);
+        if (key === 'p' && i + 1 < args.length) {
+          rawOptions.project = args[i + 1];
+          i++; // Skip next argument as it's the value
+        }
+      } else if (!arg.startsWith('-')) {
+        files.push(arg);
+      }
+    }
 
     if (rawOptions.help || rawOptions.version) {
       return { stdout, stderr, exitCode: 0 };

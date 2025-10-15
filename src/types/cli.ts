@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { CheckOptions } from '@/types/core';
 
 /**
- * Raw CLI options as parsed by commander.js
+ * Raw CLI options as parsed by cleye
  */
 export type RawCliOptions = {
   project?: string;

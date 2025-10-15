@@ -1,59 +1,56 @@
 import { createProgram } from '@/cli/command';
-import { handleCommanderError, runTypeCheckWithOutput } from '@/cli/runner';
-import { logger } from '@/utils/logger';
+import { runTypeCheckWithOutput } from '@/cli/runner';
+
+/**
+ * Create action handler for CLI program
+ */
+export function createActionHandler(): (
+  files: string[],
+  options: unknown,
+) => Promise<number> {
+  return async (files: string[], options: unknown): Promise<number> => {
+    return await runTypeCheckWithOutput(files, options, process.cwd());
+  };
+}
+
+/**
+ * Create parseAsync function that returns the exit code using provider
+ */
+export function createParseAsyncFunction(
+  getExitCode: () => number,
+): (args?: string[]) => Promise<number> {
+  return (_args?: string[]): Promise<number> => {
+    // Cleye automatically parses process.argv when createProgram is called
+    // The callback is executed if parsing succeeds
+    // For help/version, cleye shows output and exits automatically
+    // We just need to return the exit code that was set
+    return Promise.resolve(getExitCode());
+  };
+}
 
 /**
  * Create and configure the CLI program
+ * Note: cleye automatically parses process.argv when called
  */
 export function createCli(): {
   parseAsync: (args?: string[]) => Promise<number>;
 } {
-  const program = createProgram(async (files: string[], options: unknown) => {
-    const exitCode = await runTypeCheckWithOutput(
-      files,
-      options,
-      process.cwd(),
-    );
-    // Return exit code for immediate process.exit() in cli.ts
-    process.exitCode = exitCode;
-  });
+  let exitCode = 0;
 
-  // Override exitOverride for testing
-  program.exitOverride((err) => {
-    const result = handleCommanderError(err);
-    if (result.stdout) {
-      logger.info(result.stdout.replace(/\n$/, ''));
-    }
-    if (result.stderr) {
-      logger.error(result.stderr.replace(/\n$/, ''));
-    }
-    // Use exitCode assignment to allow event loop to drain
-    process.exitCode = result.exitCode;
+  const actionHandler = createActionHandler();
+
+  createProgram(async (files: string[], options: unknown) => {
+    exitCode = await actionHandler(files, options);
   });
 
   return {
-    parseAsync: async (args?: string[]): Promise<number> => {
-      try {
-        await program.parseAsync(args);
-        // Return the exit code that was set by the action handler
-        const exitCode = process.exitCode ?? 0;
-        return exitCode as number;
-      } catch (error) {
-        const result = handleCommanderError(error as Error);
-        if (result.stdout) {
-          logger.info(result.stdout.replace(/\n$/, ''));
-        }
-        if (result.stderr) {
-          logger.error(result.stderr.replace(/\n$/, ''));
-        }
-        return result.exitCode;
-      }
-    },
+    parseAsync: createParseAsyncFunction(() => exitCode),
   };
 }
 
 /**
  * Main CLI entry point - returns exit code for testability
+ * Note: This function is mainly for testing - cleye handles the main execution
  */
 export async function main(args?: string[]): Promise<number> {
   const cli = createCli();

@@ -7,17 +7,19 @@ import {
 import {
   createOutputContext,
   formatOutput,
+  outputTip,
   outputToConsole,
   startProgress,
   updateProgress,
 } from '@/cli/output';
 import {
-  handleCommanderError,
+  handleCleyeError,
   runTypeCheck,
   runTypeCheckWithOutput,
 } from '@/cli/runner';
 import { checkFiles } from '@/core/checker';
 import type { CheckResult } from '@/types/core';
+import { logger } from '@/utils/logger';
 
 // Mock the checkFiles function
 vi.mock('@/core/checker', () => ({
@@ -39,7 +41,7 @@ vi.mock('@/detectors/typescript', () => ({
     packageManager: { manager: 'npm' },
     isWindows: false,
     compilerType: 'tsc',
-    fallbackAvailable: false,
+    fallbackAvailable: true,
   })),
 }));
 
@@ -61,12 +63,22 @@ vi.mock('@/cli/output', () => ({
   outputPerformanceInsight: vi.fn(),
 }));
 
+vi.mock('@/utils/logger', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 const mockCheckFiles = vi.mocked(checkFiles);
 const mockCreateOutputContext = vi.mocked(createOutputContext);
 const mockStartProgress = vi.mocked(startProgress);
 const mockUpdateProgress = vi.mocked(updateProgress);
 const mockFormatOutput = vi.mocked(formatOutput);
 const mockOutputToConsole = vi.mocked(outputToConsole);
+const mockOutputTip = vi.mocked(outputTip);
 
 // Education module mocks
 const mockProvideCompilerEducation = vi.mocked(provideCompilerEducation);
@@ -517,6 +529,82 @@ describe('CLI Runner', () => {
       // Should call checkFiles twice (failed benchmark + fallback)
       expect(mockCheckFiles).toHaveBeenCalledTimes(2);
     });
+
+    it('should log compiler information when showCompiler flag is set and fallback exists', async () => {
+      const mockResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 100,
+        checkedFiles: ['test.ts'],
+      };
+
+      mockCheckFiles.mockResolvedValue(mockResult);
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      const loggerInfoMock = vi.mocked(logger.info);
+
+      const result = await runTypeCheck(['test.ts'], {
+        showCompiler: true,
+        tips: false,
+        json: false,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(loggerInfoMock).toHaveBeenCalledTimes(2);
+      expect(loggerInfoMock).toHaveBeenCalledWith(
+        expect.stringContaining('Using tsc compiler'),
+      );
+      expect(loggerInfoMock).toHaveBeenCalledWith(
+        expect.stringContaining('Fallback compiler available'),
+      );
+    });
+
+    it('should reuse compiler education helper when tips flag includes setup files', async () => {
+      const mockResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 100,
+        checkedFiles: ['test.ts'],
+        includedSetupFiles: ['setup.ts'],
+      };
+
+      mockCheckFiles.mockResolvedValue(mockResult);
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      await runTypeCheck(['test.ts'], {
+        tips: true,
+        json: false,
+        verbose: false,
+      });
+
+      expect(mockProvideGitHookOptimization).toHaveBeenCalledTimes(1);
+      expect(mockOutputTip).not.toHaveBeenCalled();
+      expect(mockProvideCompilerEducation).toHaveBeenCalled();
+    });
+
+    it('should map cleye help and version outputs to success', () => {
+      const result = handleCleyeError(new Error('version flag requested'));
+      expect(result).toEqual({ exitCode: 0, stdout: '', stderr: '' });
+    });
+
+    it('should treat cleye validation errors as user errors without additional stderr', () => {
+      const result = handleCleyeError(
+        new Error('Missing required parameter <files...>'),
+      );
+      expect(result).toEqual({ exitCode: 1, stdout: '', stderr: '' });
+    });
   });
 
   describe('runTypeCheckWithOutput', () => {
@@ -583,61 +671,6 @@ describe('CLI Runner', () => {
         '',
         'test.ts:1:1 - Type error\n',
       );
-    });
-  });
-
-  describe('handleCommanderError', () => {
-    it('should handle missing mandatory option error', () => {
-      const error = new Error('Required option missing') as Error & {
-        code: string;
-      };
-      error.code = 'commander.missingMandatoryOptionValue';
-
-      const result = handleCommanderError(error);
-
-      expect(result).toEqual({
-        exitCode: 1,
-        stdout: '',
-        stderr: '', // Commander.js handles the output directly
-      });
-    });
-
-    it('should handle missing argument error', () => {
-      const error = new Error('Missing required argument') as Error & {
-        code: string;
-      };
-      error.code = 'commander.missingArgument';
-
-      const result = handleCommanderError(error);
-
-      expect(result).toEqual({
-        exitCode: 1,
-        stdout: '',
-        stderr: '', // Commander.js handles the output directly
-      });
-    });
-
-    it('should handle unknown commander errors', () => {
-      const error = new Error('Unknown commander error') as Error & {
-        code: string;
-      };
-      error.code = 'commander.unknownError';
-
-      const result = handleCommanderError(error);
-
-      expect(result.exitCode).toBe(99);
-      expect(result.stderr).toContain('Error:');
-      expect(result.stderr).toContain('Unknown commander error');
-    });
-
-    it('should handle general errors', () => {
-      const error = new Error('General error');
-
-      const result = handleCommanderError(error);
-
-      expect(result.exitCode).toBe(99);
-      expect(result.stderr).toContain('Error:');
-      expect(result.stderr).toContain('General error');
     });
   });
 });

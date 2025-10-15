@@ -223,41 +223,35 @@ export async function runTypeCheckWithOutput(
 }
 
 /**
- * Handle commander errors (like missing arguments)
+ * Handle cleye errors (like missing arguments)
  */
-export function handleCommanderError(error: Error): CliResult {
+export function handleCleyeError(error: Error): CliResult {
   const message = error.message;
 
-  // Handle specific commander errors
-  if (error instanceof Error && 'code' in error) {
-    const commanderError = error as { code: string; exitCode?: number };
+  // Handle specific cleye errors (cleye doesn't have error codes like commander)
+  // Check error message patterns instead
 
-    // Handle version and help commands - these are successful exits, not errors
-    // Commander.js already outputs these to stdout/stderr, so we don't need to duplicate
-    if (
-      commanderError.code === 'commander.version' ||
-      commanderError.code === 'commander.helpDisplayed'
-    ) {
-      return {
-        exitCode: 0,
-        stdout: '', // Commander.js already printed the output
-        stderr: '',
-      };
-    }
+  // Handle version and help commands - these are successful exits, not errors
+  if (message.includes('version') || message.includes('help')) {
+    return {
+      exitCode: 0,
+      stdout: '', // Cleye already printed the output
+      stderr: '',
+    };
+  }
 
-    // Handle argument/option errors - Commander.js already outputs these with showHelpAfterError
-    if (
-      commanderError.code === 'commander.missingMandatoryOptionValue' ||
-      commanderError.code === 'commander.missingArgument' ||
-      commanderError.code === 'commander.unknownOption' ||
-      commanderError.code === 'commander.invalidArgument'
-    ) {
-      return {
-        exitCode: 1,
-        stdout: '',
-        stderr: '', // Commander.js already printed the error with showHelpAfterError
-      };
-    }
+  // Handle argument/option errors - Cleye already outputs these
+  if (
+    message.includes('Missing required parameter') ||
+    message.includes('Unknown flag') ||
+    message.includes('Invalid argument') ||
+    message.includes('validation')
+  ) {
+    return {
+      exitCode: 1,
+      stdout: '',
+      stderr: '', // Cleye already printed the error
+    };
   }
 
   // Treat as unknown error

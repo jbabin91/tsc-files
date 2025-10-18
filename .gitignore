@@ -148,3 +148,7 @@ reports/
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Local configuration files
+*.local
+*.local.*

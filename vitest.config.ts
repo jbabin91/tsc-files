@@ -19,14 +19,16 @@ export default defineConfig({
         '.markdownlint-cli2.mjs',
         'eslint.config.js',
         'tsdown.config.ts',
-        'src/cli.ts', // CLI entry point with process.exit() calls
+        'src/cli.ts',
         'scripts/**',
         'bin/**',
       ],
+      include: ['src/**/*.ts'],
       provider: 'v8',
       reporter: process.env.CI
         ? ['text', 'lcov']
         : ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage',
       thresholds: {
         global: {
           branches: 80,

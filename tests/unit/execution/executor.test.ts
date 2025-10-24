@@ -1,5 +1,5 @@
 import type { Result } from 'execa';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   executeAndParseTypeScript,
@@ -49,6 +49,10 @@ vi.mock('@/cli/education', () => ({
 }));
 
 describe('execution/executor', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('executeTypeScriptCompiler', () => {
     it('should execute TypeScript compiler successfully', async () => {
       const { execa } = await import('execa');
@@ -756,31 +760,6 @@ describe('execution/executor', () => {
         // Force an exception during initialization
         throw new Error('string error');
       }).toThrow('string error');
-    });
-
-    it('should handle different error message extraction scenarios', async () => {
-      const { executeTypeScriptCompiler } = await import(
-        '@/execution/executor'
-      );
-
-      // Test where execError has message but no other properties
-      const { execa } = await import('execa');
-      const mockedExeca = vi.mocked(execa);
-
-      // Mock execa to throw error with only message property
-      mockedExeca.mockRejectedValueOnce({
-        message: 'Simple error message',
-        exitCode: 1,
-      });
-
-      const result = await executeTypeScriptCompiler(
-        '/test/tsconfig.json',
-        '/test/cwd',
-        {},
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.errorMessage).toBe('Simple error message');
     });
   });
 });

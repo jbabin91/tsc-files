@@ -407,6 +407,34 @@ if (result.success) {
 - **Complex logic clarification** - Explain non-obvious algorithms, workarounds, or performance considerations
 - **Remove redundant comments** - Clean up comments that don't add value or simply restate obvious code
 
+**NEVER add comments that:**
+
+- State framework/library version changes (e.g., "Vitest v4: ...")
+- Describe configuration defaults (e.g., "Use default threading for...")
+- Explain common patterns everyone knows
+- Repeat what the code clearly shows
+
+**Examples of BAD comments to avoid:**
+
+```typescript
+// ❌ BAD: States the obvious about version changes
+// Vitest v4: 'all' option was removed
+include: ['src/**/*.ts'],
+
+// ❌ BAD: Describes common configuration
+// Use default threading for better compatibility
+pool: 'threads',
+
+// ❌ BAD: Repeats what code clearly shows
+// Set verbose to true
+verbose: true,
+```
+
+**Examples of GOOD comments (when needed):**
+
+- Explains WHY: `// useAtomics: true causes worker termination in CI - keeping disabled until upstream fix`
+- Documents security: `// Restrict permissions to owner-only (0600) to prevent privilege escalation`
+
 #### TypeScript Path Aliases
 
 The project uses TypeScript path aliases for cleaner imports. **ALWAYS use path aliases instead of relative imports**:

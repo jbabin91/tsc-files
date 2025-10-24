@@ -5,6 +5,10 @@ import path from 'node:path';
 import type * as ts from 'typescript';
 
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
+import {
+  hasValidFileExtension,
+  isDeclarationFile,
+} from '@/utils/file-patterns';
 import { logger } from '@/utils/logger';
 
 /**
@@ -36,6 +40,17 @@ type ClosureCacheEntry = {
  * In-memory cache for dependency closures
  */
 const closureCache = new Map<string, ClosureCacheEntry>();
+
+/**
+ * Check if a file path is in node_modules (cross-platform)
+ * @param filePath - File path to check
+ * @returns True if path contains node_modules
+ */
+function isNodeModulesPath(filePath: string): boolean {
+  // Normalize to forward slashes for consistent checking across platforms
+  const normalized = filePath.split(path.sep).join('/');
+  return normalized.includes('/node_modules/');
+}
 
 /**
  * Compute SHA-256 hash of file content or paths
@@ -213,9 +228,21 @@ function generateCacheKey(
   tsconfigHash: string,
   rootFiles: string[],
   configDir: string,
+  includePatterns?: string[],
+  excludePatterns?: string[],
 ): string {
   const rootFilesHash = computeHash(rootFiles.toSorted().join('|'));
-  return `${tsconfigHash}-${rootFilesHash}-${configDir}`;
+
+  // Include pattern hashes to invalidate cache when patterns change
+  // This ensures new ambient files matching patterns are discovered
+  const patternsHash = computeHash(
+    JSON.stringify({
+      include: includePatterns?.toSorted() ?? [],
+      exclude: excludePatterns?.toSorted() ?? [],
+    }),
+  );
+
+  return `${tsconfigHash}-${rootFilesHash}-${patternsHash}-${configDir}`;
 }
 
 /**
@@ -244,25 +271,49 @@ function hasTestFiles(rootFiles: string[]): boolean {
 /**
  * Discover the complete set of source files required to typecheck the given root files
  */
-export function discoverDependencyClosure(
+export async function discoverDependencyClosure(
   tsInstance: typeof ts,
   originalConfig: TypeScriptConfig,
   rootFiles: string[],
   configDir: string,
   verbose = false,
   includeFiles?: string[],
-): DependencyClosure {
+): Promise<DependencyClosure> {
   // Generate cache key
   const tsconfigContent = JSON.stringify(originalConfig);
   const tsconfigHash = computeHash(tsconfigContent);
-  const cacheKey = generateCacheKey(tsconfigHash, rootFiles, configDir);
+  const includePatterns = originalConfig.include;
+  const excludePatterns = originalConfig.exclude;
+  const cacheKey = generateCacheKey(
+    tsconfigHash,
+    rootFiles,
+    configDir,
+    includePatterns,
+    excludePatterns,
+  );
 
   // Check cache
   const cached = closureCache.get(cacheKey);
   if (cached) {
     // Verify cache is still valid by checking mtime hash
     const currentMtimeHash = computeMtimeHash(cached.sourceFiles);
-    if (currentMtimeHash === cached.mtimeHash) {
+
+    // Also check if new ambient files have been added
+    // This handles the case where a new .d.ts file matching existing patterns is created
+    const currentAmbientFiles = await findAmbientDeclarations(
+      configDir,
+      originalConfig,
+      false, // Don't verbose log on cache validation
+    );
+
+    const cachedAmbientFileCount = cached.sourceFiles.filter((f) =>
+      isDeclarationFile(f),
+    ).length;
+
+    if (
+      currentMtimeHash === cached.mtimeHash &&
+      currentAmbientFiles.length === cachedAmbientFileCount
+    ) {
       return {
         sourceFiles: cached.sourceFiles,
         cacheKey,
@@ -270,7 +321,17 @@ export function discoverDependencyClosure(
         includedSetupFiles: cached.includedSetupFiles,
       };
     }
-    // Cache invalid, remove it
+
+    // Cache invalid (files changed or new ambient files added), remove it
+    if (verbose) {
+      if (currentMtimeHash === cached.mtimeHash) {
+        logger.info(
+          `Cache invalidated: ambient file count changed (${cachedAmbientFileCount} → ${currentAmbientFiles.length})`,
+        );
+      } else {
+        logger.info('Cache invalidated: file modifications detected');
+      }
+    }
     closureCache.delete(cacheKey);
   }
 
@@ -324,23 +385,21 @@ export function discoverDependencyClosure(
     });
 
     // Extract source files from the program
+    const includeJs =
+      originalConfig.compilerOptions?.allowJs === true ||
+      originalConfig.compilerOptions?.checkJs === true;
+
     let sourceFiles = program
       .getSourceFiles()
       .map((sf: ts.SourceFile) => sf.fileName)
-      // Filter out node_modules and declaration files we don't want
+      // Filter out node_modules files
       .filter((fileName: string) => {
         const relativePath = path.relative(configDir, fileName);
         return (
           !relativePath.startsWith('node_modules') &&
-          !fileName.includes('/node_modules/') &&
-          // Include TypeScript and JavaScript files based on configuration
-          (fileName.endsWith('.ts') ||
-            fileName.endsWith('.tsx') ||
-            fileName.endsWith('.d.ts') ||
-            // Include JavaScript files when allowJs is enabled
-            ((originalConfig.compilerOptions?.allowJs === true ||
-              originalConfig.compilerOptions?.checkJs === true) &&
-              (fileName.endsWith('.js') || fileName.endsWith('.jsx'))))
+          !isNodeModulesPath(fileName) &&
+          // Include all valid TypeScript, JavaScript, and declaration files
+          hasValidFileExtension(fileName, includeJs, true)
         );
       });
 
@@ -389,6 +448,23 @@ export function discoverDependencyClosure(
       logger.info(
         `No test files detected in root files: ${rootFiles.join(', ')}`,
       );
+    }
+
+    // Find and include ambient declaration files
+    // These files are not imported but provide global types (e.g., vite-plugin-svgr, styled-components)
+    const ambientFiles = await findAmbientDeclarations(
+      configDir,
+      originalConfig,
+      verbose,
+    );
+
+    for (const ambientFile of ambientFiles) {
+      if (!sourceFiles.includes(ambientFile)) {
+        sourceFiles.push(ambientFile);
+        if (verbose) {
+          logger.info(`Including ambient declaration: ${ambientFile}`);
+        }
+      }
     }
 
     sourceFiles = sourceFiles.toSorted();
@@ -454,6 +530,109 @@ export { getSetupFilesFromConfig };
  * Get potential setup files by searching common locations and patterns (exported for testing)
  */
 export { getPotentialSetupFiles };
+
+/**
+ * Find ambient declaration files matching tsconfig include patterns
+ * These files are not imported but provide global types
+ * @param configDir - Configuration directory
+ * @param originalConfig - Parsed TypeScript configuration
+ * @param verbose - Enable verbose logging
+ * @returns Promise resolving to array of absolute paths to ambient declaration files
+ */
+async function findAmbientDeclarations(
+  configDir: string,
+  originalConfig: TypeScriptConfig,
+  verbose = false,
+): Promise<string[]> {
+  const { glob } = await import('tinyglobby');
+
+  // Get include and exclude patterns from tsconfig
+  const includePatterns = originalConfig.include ?? ['**/*'];
+  const excludePatterns = originalConfig.exclude ?? [];
+
+  // Convert include patterns to declaration file patterns
+  const declarationPatterns = includePatterns.flatMap((pattern) => {
+    // If pattern already specifies .d.ts, keep it as-is
+    if (pattern.includes('.d.ts')) {
+      return [pattern];
+    }
+
+    // Remove explicit extensions from pattern
+    const base = pattern
+      .replace(/\.(ts|tsx|js|jsx|mts|cts|mjs|cjs)$/, '')
+      .replace(/\*\.(ts|tsx)$/, '*')
+      .replace(/\*\.(js|jsx)$/, '*');
+
+    // Generate patterns for all declaration file types
+    return [
+      `${base}.d.ts`, // Standard declarations
+      `${base}/**/*.d.ts`, // Nested declarations
+      `${base}.d.mts`, // ES module declarations
+      `${base}/**/*.d.mts`,
+      `${base}.d.cts`, // CommonJS declarations
+      `${base}/**/*.d.cts`,
+      `${base}.gen.ts`, // Generated files (TanStack Router, GraphQL)
+      `${base}/**/*.gen.ts`,
+      `${base}.gen.mts`, // Generated ES modules
+      `${base}/**/*.gen.mts`,
+      `${base}.gen.cts`, // Generated CommonJS
+      `${base}/**/*.gen.cts`,
+      `${base}.gen.d.ts`, // Generated declarations
+      `${base}/**/*.gen.d.ts`,
+    ];
+  });
+
+  if (verbose) {
+    logger.info(`Searching for ambient declarations with patterns:`);
+    for (const p of declarationPatterns) {
+      logger.info(`  - ${p}`);
+    }
+  }
+
+  try {
+    // Glob for ambient declaration files
+    const ambientFiles = await glob(declarationPatterns, {
+      cwd: configDir,
+      absolute: true,
+      onlyFiles: true,
+      ignore: [
+        ...excludePatterns,
+        '**/node_modules/**',
+        'node_modules/**',
+        '**/dist/**',
+        'dist/**',
+        '**/build/**',
+        'build/**',
+        '**/.next/**',
+        '.next/**',
+      ],
+    });
+
+    // Deduplicate (glob might return same file from multiple patterns)
+    const uniqueFiles = [...new Set(ambientFiles)].toSorted();
+
+    if (verbose && uniqueFiles.length > 0) {
+      logger.info(
+        `✓ Found ${uniqueFiles.length} ambient/generated declaration files`,
+      );
+      for (const file of uniqueFiles) {
+        const relative = path.relative(configDir, file);
+        logger.info(`  - ${relative}`);
+      }
+    } else if (verbose) {
+      logger.info('No ambient declaration files found');
+    }
+
+    return uniqueFiles;
+  } catch (error) {
+    if (verbose) {
+      logger.warn(
+        `Failed to glob for ambient declarations: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    return [];
+  }
+}
 
 /**
  * Get cache statistics for debugging

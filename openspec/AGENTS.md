@@ -64,6 +64,91 @@ Track these steps as TODOs and complete them one by one.
 6. **Update checklist** - After all work is done, set every task to `- [x]` so the list reflects reality
 7. **Approval gate** - Do not start implementation until the proposal is reviewed and approved
 
+#### Standard tasks.md Structure
+
+Follow this order for consistent, quality implementations:
+
+```markdown
+## 1. Implementation
+
+- [ ] 1.1 Core functionality changes
+- [ ] 1.2 Update affected modules
+
+## 2. Testing
+
+- [ ] 2.1 Add/update unit tests
+- [ ] 2.2 Add/update integration tests
+  - [ ] Update `.github/actions/integration-tests/action.yaml` for new capabilities
+  - [ ] Add test scenarios that validate real-world usage
+- [ ] 2.3 Verify coverage thresholds
+
+## 3. Documentation
+
+- [ ] 3.1 Update README.md
+- [ ] 3.2 Update API documentation
+- [ ] 3.3 Update architecture docs
+
+## 4. Quality Checks (run AFTER documentation updates)
+
+- [ ] 4.1 `pnpm lint` - zero errors/warnings
+- [ ] 4.2 `pnpm typecheck` - zero errors
+- [ ] 4.3 `pnpm test` - all tests passing
+- [ ] 4.4 `pnpm build` - clean build
+- [ ] 4.5 `pnpm lint:md` - markdown compliance (AFTER doc updates)
+```
+
+**Critical**: Run `pnpm lint:md` AFTER completing documentation updates, not before. This ensures markdown formatting is validated on the final documentation state.
+
+#### Testing Integration Workflows Locally
+
+Before pushing changes that affect `.github/actions/integration-tests/`, validate locally to avoid CI failures.
+
+**Cross-platform Vitest integration tests**
+
+Write integration tests in TypeScript using Vitest + execa (already in the project):
+
+```bash
+# Run unit tests (default, fast feedback ~15s)
+pnpm test
+
+# Run all tests (unit + integration, ~50s)
+pnpm test:all
+
+# Run integration tests only (cross-platform CLI validation)
+pnpm test:integration
+
+# Watch mode during development
+pnpm test:watch
+pnpm test:integration:watch
+
+# Run unit tests with coverage
+pnpm test:coverage
+
+# Performance profiling (creates profiles in test-profiles/)
+pnpm test:profile:cpu        # CPU profiling for performance bottlenecks
+pnpm test:profile:heap       # Heap profiling for memory analysis
+pnpm test:profile:slow       # Find slow tests with verbose timing
+pnpm test:profile:watch      # Watch mode with verbose output
+```
+
+Tests are in `tests/integration/` and use:
+
+- **Vitest Projects**: Separate unit and integration test configurations
+- **execa**: Cross-platform process execution
+- **Real package**: Tests the actual built and packaged CLI (npm pack)
+- **Test Isolation**: Integration tests have longer timeouts (120s) and no coverage overhead
+
+**Why Vitest integration tests?**
+
+- ✅ Cross-platform (Windows/macOS/Linux)
+- ✅ TypeScript support with type safety
+- ✅ Watch mode for rapid development
+- ✅ Same patterns as unit tests
+- ✅ Project-based separation (unit vs integration)
+- ✅ No extra dependencies needed
+
+This catches integration issues before pushing, saving CI time and avoiding broken builds.
+
 ### Stage 3: Archiving Changes
 
 After deployment, create separate PR to:

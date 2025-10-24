@@ -60,16 +60,16 @@ export function createTempConfigPath(cacheDir?: string): TempConfigHandle {
  * @param files - List of files to include in temporary config
  * @param options - Check options for compiler option overrides
  * @param originalConfigDir - Directory containing the original tsconfig.json
- * @returns Temporary config file handle
+ * @returns Promise resolving to temporary config file handle
  */
-export function createTempConfig(
+export async function createTempConfig(
   originalConfig: TypeScriptConfig,
   files: string[],
   options: CheckOptions,
   originalConfigDir: string,
-): TempConfigHandle {
+): Promise<TempConfigHandle> {
   // Discover dependency closure for the selected files
-  const closure = discoverDependencyClosure(
+  const closure = await discoverDependencyClosure(
     ts,
     originalConfig,
     files,

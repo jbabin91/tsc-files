@@ -37,7 +37,7 @@ describe('createTempConfig', () => {
   });
 
   describe('TypeRoots functionality', () => {
-    it('should NOT add typeRoots by default (for tsgo compatibility)', () => {
+    it('should NOT add typeRoots by default (for tsgo compatibility)', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -46,7 +46,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -62,7 +62,7 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
     });
 
-    it('should add typeRoots only when explicitly using tsc', () => {
+    it('should add typeRoots only when explicitly using tsc', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -72,7 +72,7 @@ describe('createTempConfig', () => {
       };
 
       const optionsWithTsc = { ...defaultOptions, useTsc: true };
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         optionsWithTsc,
@@ -90,7 +90,7 @@ describe('createTempConfig', () => {
       ]);
     });
 
-    it('should preserve existing typeRoots when present', () => {
+    it('should preserve existing typeRoots when present', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -99,7 +99,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -117,7 +117,7 @@ describe('createTempConfig', () => {
   });
 
   describe('Path alias resolution', () => {
-    it('should convert explicit relative paths to absolute paths', () => {
+    it('should convert explicit relative paths to absolute paths', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -128,7 +128,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -145,7 +145,7 @@ describe('createTempConfig', () => {
       });
     });
 
-    it('should convert implicit relative paths to absolute paths', () => {
+    it('should convert implicit relative paths to absolute paths', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -156,7 +156,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -173,7 +173,7 @@ describe('createTempConfig', () => {
       });
     });
 
-    it('should preserve absolute paths and node_modules paths as-is', () => {
+    it('should preserve absolute paths and node_modules paths as-is', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -184,7 +184,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -201,7 +201,7 @@ describe('createTempConfig', () => {
       });
     });
 
-    it('should handle mixed path types correctly', () => {
+    it('should handle mixed path types correctly', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -214,7 +214,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -233,7 +233,7 @@ describe('createTempConfig', () => {
       });
     });
 
-    it('should handle non-array path values gracefully', () => {
+    it('should handle non-array path values gracefully', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -244,7 +244,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -263,7 +263,7 @@ describe('createTempConfig', () => {
   });
 
   describe('BaseUrl handling', () => {
-    it('should set baseUrl when moduleResolution is not bundler', () => {
+    it('should set baseUrl when moduleResolution is not bundler', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -274,7 +274,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -288,7 +288,7 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.baseUrl).toBe('/test/project');
     });
 
-    it('should not set baseUrl when moduleResolution is bundler', () => {
+    it('should not set baseUrl when moduleResolution is bundler', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -299,7 +299,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -315,7 +315,7 @@ describe('createTempConfig', () => {
   });
 
   describe('User environment preservation', () => {
-    it('should preserve all user compiler options including types', () => {
+    it('should preserve all user compiler options including types', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -328,7 +328,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -354,7 +354,7 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.esModuleInterop).toBe(true);
     });
 
-    it('should apply CheckOptions overrides correctly', () => {
+    it('should apply CheckOptions overrides correctly', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -368,7 +368,7 @@ describe('createTempConfig', () => {
         noEmit: true,
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         options,
@@ -385,7 +385,7 @@ describe('createTempConfig', () => {
   });
 
   describe('Config structure', () => {
-    it('should create proper temp config structure with files array', () => {
+    it('should create proper temp config structure with files array', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -395,7 +395,7 @@ describe('createTempConfig', () => {
         extends: './base.json',
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -417,7 +417,7 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.extends).toBeUndefined();
     });
 
-    it('should include .gen.ts files for module augmentations (e.g., TanStack Router)', () => {
+    it('should include .gen.ts files for module augmentations (e.g., TanStack Router)', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -426,7 +426,7 @@ describe('createTempConfig', () => {
         include: ['**/*.ts', '**/*.tsx'],
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -450,12 +450,12 @@ describe('createTempConfig', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle configs without compilerOptions', () => {
+    it('should handle configs without compilerOptions', async () => {
       const originalConfig: TypeScriptConfig = {
         include: ['src/**/*'],
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,
@@ -472,7 +472,7 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.skipLibCheck).toBe(true);
     });
 
-    it('should handle configs without paths', () => {
+    it('should handle configs without paths', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -480,7 +480,7 @@ describe('createTempConfig', () => {
         },
       };
 
-      tempHandle = createTempConfig(
+      tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
         defaultOptions,

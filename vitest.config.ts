@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
+    // Coverage configuration (applies to unit tests only via include pattern)
     coverage: {
       exclude: [
         'node_modules/',
@@ -12,6 +13,7 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.config.*',
         'tests/fixtures/**',
+        'tests/integration/**', // Exclude integration tests from coverage
         '.commitlintrc.js',
         '.prettierrc.js',
         '.markdownlint-cli2.mjs',
@@ -83,42 +85,49 @@ export default defineConfig({
         },
       },
     },
+    // Shared configuration for all tests
     environment: 'node',
-    fileParallelism: true,
     globals: true,
     outputFile: {
       junit: 'reports/test-report.junit.xml',
     },
-    // Enable threading for better performance
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        maxThreads: process.env.CI ? 4 : undefined,
-        minThreads: process.env.CI ? 2 : 1,
-        // useAtomics: true, // Temporarily disabled - might cause worker termination issues
-        ...(process.env.VITEST_PROFILE
-          ? {
-              // Enable profiling if VITEST_PROFILE env var is set
-              execArgv: [
-                '--cpu-prof',
-                '--cpu-prof-dir=test-profiles',
-                '--heap-prof',
-                '--heap-prof-dir=test-profiles',
-              ],
-              singleThread: true, // Single thread for clearer profiling
-            }
-          : {}),
+    // Use projects to separate unit and integration tests
+    projects: [
+      // Unit tests project with coverage
+      {
+        plugins: [tsconfigPaths()],
+        test: {
+          environment: 'node',
+          exclude: ['tests/integration/**'],
+          globals: true,
+          include: ['tests/unit/**/*.test.ts'],
+          name: 'unit',
+          restoreMocks: true,
+          setupFiles: ['./tests/setup.ts'],
+          testTimeout: process.env.CI ? 10_000 : 5000,
+          unstubEnvs: true,
+        },
       },
-    },
+      // Integration tests project without coverage
+      {
+        plugins: [tsconfigPaths()],
+        test: {
+          environment: 'node',
+          globals: true,
+          include: ['tests/integration/**/*.test.ts'],
+          name: 'integration',
+          restoreMocks: true,
+          setupFiles: ['./tests/setup.ts'],
+          testTimeout: 120_000, // 2 minutes for integration tests
+          unstubEnvs: true,
+        },
+      },
+    ],
     reporters: process.env.CI
       ? ['github-actions']
       : ['default', 'github-actions', 'junit'],
-    // Enable automatic mock restoration and environment variable cleanup
     restoreMocks: true,
     setupFiles: ['./tests/setup.ts'],
-    testTimeout: process.env.CI ? 10_000 : 5000,
-    unstubEnvs: true, // 10s in CI, 5s locally
-    // Disable isolation for better performance (safe for our filesystem-based tests)
-    // isolate: false, // Causes worker thread termination issues - keeping isolation enabled
+    unstubEnvs: true,
   },
 });

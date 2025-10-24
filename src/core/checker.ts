@@ -112,7 +112,7 @@ async function processFileGroup(
     cacheDir: options.cacheDir ?? originalConfigDir,
   };
 
-  const tempHandle = createTempConfig(
+  const tempHandle = await createTempConfig(
     originalConfig,
     resolvedFiles,
     effectiveOptions,

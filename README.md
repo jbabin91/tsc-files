@@ -35,6 +35,7 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 - ✅ **JavaScript support** - Handles allowJs/checkJs configurations automatically
 - ✅ **Package manager detection** - Works with npm, yarn, pnpm, and bun
 - ✅ **Automatic setup file detection** - Finds and includes test setup files automatically
+- ✅ **Ambient declaration support** - Automatically discovers `.d.ts`, `.d.mts`, `.d.cts`, and `.gen.ts` files
 
 ### Enhanced CLI Experience
 
@@ -51,7 +52,7 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 - ✅ **Cross-platform** - Tested on Windows, macOS, and Linux
 - ✅ **Git hook friendly** - Perfect for pre-commit hooks and lint-staged
 - ✅ **CI/CD optimized** - Designed for continuous integration workflows
-- ✅ **Comprehensive testing** - 290+ tests with 84% coverage
+- ✅ **Comprehensive testing** - 518 tests with 84%+ coverage
 
 ### Security & Quality
 
@@ -342,6 +343,78 @@ esac
 exit $exit_code
 ```
 
+## 🔮 Ambient Declaration Support
+
+`tsc-files` automatically discovers and includes ambient declaration files (`.d.ts`, `.d.mts`, `.d.cts`) and generated type files (`.gen.ts`) without requiring explicit imports. This ensures type checking works correctly with libraries that provide global types.
+
+### Supported File Types
+
+- **`.d.ts`** - Standard TypeScript declaration files
+- **`.d.mts`** - ES module declaration files (TypeScript 4.7+)
+- **`.d.cts`** - CommonJS declaration files (TypeScript 4.7+)
+- **`.gen.ts`** - Generated type files (TanStack Router, GraphQL Code Generator, etc.)
+
+### Common Use Cases
+
+#### SVG Module Declarations (vite-plugin-svgr)
+
+```typescript
+// custom.d.ts (automatically included)
+declare module '*.svg' {
+  const content: string;
+  export default content;
+}
+
+// main.ts (type checking works!)
+import Logo from './logo.svg';
+export const logo: string = Logo;
+```
+
+#### Global Type Augmentations (styled-components)
+
+```typescript
+// styled.d.ts (automatically included)
+import 'styled-components';
+
+declare module 'styled-components' {
+  export interface DefaultTheme {
+    colors: {
+      primary: string;
+    };
+  }
+}
+
+// App.tsx (theme typing works!)
+const Button = styled.button`
+  color: ${({ theme }) => theme.colors.primary};
+`;
+```
+
+#### Generated Routes (TanStack Router)
+
+```typescript
+// routes.gen.ts (automatically included)
+export const routes = {
+  home: { path: '/' },
+  about: { path: '/about' },
+} as const;
+
+// router.ts (type checking works!)
+import { routes } from './routes.gen';
+const homePath: string = routes.home.path;
+```
+
+### How It Works
+
+`tsc-files` uses your `tsconfig.json` include/exclude patterns to discover ambient files:
+
+1. Converts include patterns to declaration file patterns
+2. Discovers all matching `.d.ts`, `.d.mts`, `.d.cts`, and `.gen.ts` files
+3. Respects your `exclude` patterns (e.g., `node_modules`, `dist`)
+4. Includes them automatically in the type checking process
+
+No configuration needed - it just works!
+
 ## 🎯 Best Practices
 
 ### Performance Tips
@@ -420,7 +493,7 @@ No configuration needed - it just works!
 - **Research & Analysis**: ✅ Complete (original tsc-files community solutions analyzed and implemented)
 - **Core Implementation**: ✅ Complete (1,400+ lines: CLI, type checker, package detection, cross-platform support)
 - **All Critical Features**: ✅ Complete (monorepo, package managers, JavaScript support, error handling)
-- **Testing & Quality**: ✅ Complete (280 tests passing, 84%+ coverage, comprehensive test suite)
+- **Testing & Quality**: ✅ Complete (518 tests passing, 84%+ coverage, comprehensive test suite)
 - **Status**: 🚀 **Production Ready** - Feature complete TypeScript CLI tool
 
 ## 📚 Documentation

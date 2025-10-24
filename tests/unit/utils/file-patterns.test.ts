@@ -13,33 +13,55 @@ import {
 describe('file-patterns', () => {
   describe('constants', () => {
     it('should have correct TypeScript extensions', () => {
-      expect(TS_EXTENSIONS).toEqual(['ts', 'tsx']);
+      expect(TS_EXTENSIONS).toEqual(['ts', 'tsx', 'mts', 'cts']);
     });
 
     it('should have correct JavaScript extensions', () => {
-      expect(JS_EXTENSIONS).toEqual(['js', 'jsx']);
+      expect(JS_EXTENSIONS).toEqual(['js', 'jsx', 'mjs', 'cjs']);
     });
 
     it('should have all extensions combined', () => {
-      expect(ALL_EXTENSIONS).toEqual(['ts', 'tsx', 'js', 'jsx']);
+      expect(ALL_EXTENSIONS).toEqual([
+        'ts',
+        'tsx',
+        'mts',
+        'cts',
+        'js',
+        'jsx',
+        'mjs',
+        'cjs',
+      ]);
     });
   });
 
   describe('getFileExtensions', () => {
     it('should return TypeScript extensions when includeJs is false', () => {
       const result = getFileExtensions(false);
-      expect(result.extensions).toEqual(['ts', 'tsx']);
-      expect(result.globPattern).toBe('{ts,tsx}');
+      expect(result.extensions).toEqual(['ts', 'tsx', 'mts', 'cts']);
+      expect(result.globPattern).toBe('{ts,tsx,mts,cts}');
       expect(result.regexPattern.test('file.ts')).toBe(true);
+      expect(result.regexPattern.test('file.mts')).toBe(true);
+      expect(result.regexPattern.test('file.cts')).toBe(true);
       expect(result.regexPattern.test('file.js')).toBe(false);
     });
 
     it('should return all extensions when includeJs is true', () => {
       const result = getFileExtensions(true);
-      expect(result.extensions).toEqual(['ts', 'tsx', 'js', 'jsx']);
-      expect(result.globPattern).toBe('{ts,tsx,js,jsx}');
+      expect(result.extensions).toEqual([
+        'ts',
+        'tsx',
+        'mts',
+        'cts',
+        'js',
+        'jsx',
+        'mjs',
+        'cjs',
+      ]);
+      expect(result.globPattern).toBe('{ts,tsx,mts,cts,js,jsx,mjs,cjs}');
       expect(result.regexPattern.test('file.ts')).toBe(true);
+      expect(result.regexPattern.test('file.mts')).toBe(true);
       expect(result.regexPattern.test('file.js')).toBe(true);
+      expect(result.regexPattern.test('file.mjs')).toBe(true);
     });
   });
 
@@ -48,13 +70,21 @@ describe('file-patterns', () => {
       it('should accept TypeScript file patterns', () => {
         expect(hasValidExtension('file.ts', false)).toBe(true);
         expect(hasValidExtension('file.tsx', false)).toBe(true);
+        expect(hasValidExtension('file.mts', false)).toBe(true);
+        expect(hasValidExtension('file.cts', false)).toBe(true);
         expect(hasValidExtension('src/**/*.ts', false)).toBe(true);
         expect(hasValidExtension('src/**/*.tsx', false)).toBe(true);
+        expect(hasValidExtension('src/**/*.mts', false)).toBe(true);
+        expect(hasValidExtension('src/**/*.cts', false)).toBe(true);
       });
 
       it('should accept TypeScript brace patterns', () => {
         expect(hasValidExtension('src/**/*.{ts,tsx}', false)).toBe(true);
         expect(hasValidExtension('src/**/*.{tsx,ts}', false)).toBe(true);
+        expect(hasValidExtension('src/**/*.{ts,tsx,mts,cts}', false)).toBe(
+          true,
+        );
+        expect(hasValidExtension('src/**/*.{mts,cts}', false)).toBe(true);
       });
 
       it('should reject JavaScript patterns', () => {
@@ -74,20 +104,30 @@ describe('file-patterns', () => {
       it('should accept all file patterns', () => {
         expect(hasValidExtension('file.ts', true)).toBe(true);
         expect(hasValidExtension('file.tsx', true)).toBe(true);
+        expect(hasValidExtension('file.mts', true)).toBe(true);
+        expect(hasValidExtension('file.cts', true)).toBe(true);
         expect(hasValidExtension('file.js', true)).toBe(true);
         expect(hasValidExtension('file.jsx', true)).toBe(true);
+        expect(hasValidExtension('file.mjs', true)).toBe(true);
+        expect(hasValidExtension('file.cjs', true)).toBe(true);
       });
 
       it('should accept mixed brace patterns', () => {
-        expect(hasValidExtension('src/**/*.{ts,tsx,js,jsx}', true)).toBe(true);
-        expect(hasValidExtension('src/**/*.{tsx,ts,jsx,js}', true)).toBe(true);
-        expect(hasValidExtension('src/**/*.{ts,js}', true)).toBe(true);
-        expect(hasValidExtension('src/**/*.{js,ts}', true)).toBe(true);
+        expect(
+          hasValidExtension('src/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}', true),
+        ).toBe(true);
+        expect(
+          hasValidExtension('src/**/*.{tsx,ts,jsx,js,mts,cts,mjs,cjs}', true),
+        ).toBe(true);
+        expect(hasValidExtension('src/**/*.{ts,js,mts,mjs}', true)).toBe(true);
+        expect(hasValidExtension('src/**/*.{js,ts,cjs,cts}', true)).toBe(true);
       });
 
       it('should accept JavaScript-only patterns', () => {
         expect(hasValidExtension('src/**/*.{js,jsx}', true)).toBe(true);
         expect(hasValidExtension('src/**/*.{jsx,js}', true)).toBe(true);
+        expect(hasValidExtension('src/**/*.{js,jsx,mjs,cjs}', true)).toBe(true);
+        expect(hasValidExtension('src/**/*.{mjs,cjs}', true)).toBe(true);
       });
 
       it('should reject unsupported extensions', () => {
@@ -115,16 +155,24 @@ describe('file-patterns', () => {
       const regex = createFileExtensionRegex(false);
       expect(regex.test('file.ts')).toBe(true);
       expect(regex.test('file.tsx')).toBe(true);
+      expect(regex.test('file.mts')).toBe(true);
+      expect(regex.test('file.cts')).toBe(true);
       expect(regex.test('file.js')).toBe(false);
       expect(regex.test('file.jsx')).toBe(false);
+      expect(regex.test('file.mjs')).toBe(false);
+      expect(regex.test('file.cjs')).toBe(false);
     });
 
     it('should create regex for all supported files', () => {
       const regex = createFileExtensionRegex(true);
       expect(regex.test('file.ts')).toBe(true);
       expect(regex.test('file.tsx')).toBe(true);
+      expect(regex.test('file.mts')).toBe(true);
+      expect(regex.test('file.cts')).toBe(true);
       expect(regex.test('file.js')).toBe(true);
       expect(regex.test('file.jsx')).toBe(true);
+      expect(regex.test('file.mjs')).toBe(true);
+      expect(regex.test('file.cjs')).toBe(true);
     });
 
     it('should not match unsupported extensions', () => {
@@ -137,11 +185,11 @@ describe('file-patterns', () => {
 
   describe('buildGlobPattern', () => {
     it('should build pattern for TypeScript files only', () => {
-      expect(buildGlobPattern(false)).toBe('{ts,tsx}');
+      expect(buildGlobPattern(false)).toBe('{ts,tsx,mts,cts}');
     });
 
     it('should build pattern for all supported files', () => {
-      expect(buildGlobPattern(true)).toBe('{ts,tsx,js,jsx}');
+      expect(buildGlobPattern(true)).toBe('{ts,tsx,mts,cts,js,jsx,mjs,cjs}');
     });
   });
 });

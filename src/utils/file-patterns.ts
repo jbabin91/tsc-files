@@ -1,17 +1,45 @@
 /**
- * TypeScript file extensions
+ * TypeScript file extensions (including modern module formats)
  */
-export const TS_EXTENSIONS = ['ts', 'tsx'] as const;
+export const TS_EXTENSIONS = [
+  'ts',
+  'tsx',
+  'mts', // ES module TypeScript (TS 4.7+)
+  'cts', // CommonJS TypeScript (TS 4.7+)
+] as const;
 
 /**
- * JavaScript file extensions
+ * TypeScript declaration file extensions
  */
-export const JS_EXTENSIONS = ['js', 'jsx'] as const;
+export const TS_DECLARATION_EXTENSIONS = [
+  'd.ts',
+  'd.mts', // ES module declarations (TS 4.7+)
+  'd.cts', // CommonJS declarations (TS 4.7+)
+] as const;
+
+/**
+ * JavaScript file extensions (including modern module formats)
+ */
+export const JS_EXTENSIONS = [
+  'js',
+  'jsx',
+  'mjs', // ES module JavaScript
+  'cjs', // CommonJS JavaScript
+] as const;
 
 /**
  * All supported file extensions
  */
 export const ALL_EXTENSIONS = [...TS_EXTENSIONS, ...JS_EXTENSIONS] as const;
+
+/**
+ * All extensions including declaration files
+ */
+export const ALL_EXTENSIONS_WITH_DECLARATIONS = [
+  ...TS_EXTENSIONS,
+  ...TS_DECLARATION_EXTENSIONS,
+  ...JS_EXTENSIONS,
+] as const;
 
 /**
  * Get file extensions to include based on TypeScript configuration
@@ -50,40 +78,18 @@ function patternIncludesExtensions(
     }
   }
 
-  // Check brace patterns - generate common combinations
-  const braceCombinations = [
-    `{${extensions.join(',')}}`,
-    `{${[...extensions].toReversed().join(',')}}`,
-  ];
-
-  // Add pairwise combinations for smaller sets
-  if (extensions.length === 2) {
-    braceCombinations.push(
-      `{${extensions[0]},${extensions[1]}}`,
-      `{${extensions[1]},${extensions[0]}}`,
-    );
+  // Extract brace pattern if present
+  const braceRegex = /\{([^}]+)\}/;
+  const braceMatch = braceRegex.exec(pattern);
+  if (!braceMatch) {
+    return false;
   }
 
-  // Add JavaScript-only combinations when included
-  if (extensions.length === 4) {
-    braceCombinations.push(
-      `{${extensions[2]},${extensions[3]}}`, // {js,jsx}
-      `{${extensions[3]},${extensions[2]}}`, // {jsx,js}
-    );
-  }
+  // Get extensions from the brace pattern
+  const patternExtensions = braceMatch[1].split(',');
 
-  // Add common 4-extension combinations
-  if (extensions.length === 4) {
-    const [ts, tsx, js, jsx] = extensions;
-    braceCombinations.push(
-      `{${ts},${tsx},${js},${jsx}}`,
-      `{${tsx},${ts},${jsx},${js}}`,
-      `{${ts},${js}}`,
-      `{${js},${ts}}`,
-    );
-  }
-
-  return braceCombinations.some((combo) => pattern.includes(combo));
+  // Check if all pattern extensions are in the allowed extensions
+  return patternExtensions.every((ext) => extensions.includes(ext));
 }
 
 /**
@@ -124,4 +130,36 @@ export function createFileExtensionRegex(includeJs: boolean): RegExp {
 export function buildGlobPattern(includeJs: boolean): string {
   const extensions = includeJs ? ALL_EXTENSIONS : TS_EXTENSIONS;
   return `{${extensions.join(',')}}`;
+}
+
+/**
+ * Check if a file path is a TypeScript declaration file
+ * @param filePath - File path to check
+ * @returns True if file is a .d.ts, .d.mts, or .d.cts file
+ */
+export function isDeclarationFile(filePath: string): boolean {
+  return TS_DECLARATION_EXTENSIONS.some((ext) => filePath.endsWith(`.${ext}`));
+}
+
+/**
+ * Check if a file has a valid TypeScript or JavaScript extension
+ * @param filePath - File path to check
+ * @param includeJs - Whether to include JavaScript extensions
+ * @param includeDeclarations - Whether to include declaration file extensions
+ * @returns True if file has a valid extension
+ */
+export function hasValidFileExtension(
+  filePath: string,
+  includeJs: boolean,
+  includeDeclarations = false,
+): boolean {
+  const extensionsToCheck = includeDeclarations
+    ? includeJs
+      ? ALL_EXTENSIONS_WITH_DECLARATIONS
+      : [...TS_EXTENSIONS, ...TS_DECLARATION_EXTENSIONS]
+    : includeJs
+      ? ALL_EXTENSIONS
+      : TS_EXTENSIONS;
+
+  return extensionsToCheck.some((ext) => filePath.endsWith(`.${ext}`));
 }

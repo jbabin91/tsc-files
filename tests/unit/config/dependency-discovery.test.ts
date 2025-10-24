@@ -27,7 +27,7 @@ describe('Dependency Discovery', () => {
   });
 
   describe('discoverDependencyClosure', () => {
-    it('should discover basic TypeScript files', () => {
+    it('should discover basic TypeScript files', async () => {
       // Create test files
       const mainFile = path.join(tempDir, 'main.ts');
       const utilsFile = path.join(tempDir, 'utils.ts');
@@ -63,7 +63,7 @@ describe('Dependency Discovery', () => {
         include: ['**/*.ts'],
       };
 
-      const result = discoverDependencyClosure(
+      const result = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -78,7 +78,7 @@ describe('Dependency Discovery', () => {
       expect(result.cacheKey).toBeDefined();
     });
 
-    it('should filter out node_modules files', () => {
+    it('should filter out node_modules files', async () => {
       const mainFile = path.join(tempDir, 'main.ts');
       writeFileSync(mainFile, 'import * as fs from "fs";');
 
@@ -103,7 +103,7 @@ describe('Dependency Discovery', () => {
         },
       };
 
-      const result = discoverDependencyClosure(
+      const result = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -119,7 +119,7 @@ describe('Dependency Discovery', () => {
       );
     });
 
-    it('should cache results and invalidate on file changes', () => {
+    it('should cache results and invalidate on file changes', async () => {
       const mainFile = path.join(tempDir, 'main.ts');
       const utilsFile = path.join(tempDir, 'utils.ts');
 
@@ -146,7 +146,7 @@ describe('Dependency Discovery', () => {
       };
 
       // First discovery
-      const result1 = discoverDependencyClosure(
+      const result1 = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -155,7 +155,7 @@ describe('Dependency Discovery', () => {
       expect(result1.discovered).toBe(true);
 
       // Second discovery should use cache
-      const result2 = discoverDependencyClosure(
+      const result2 = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -167,7 +167,7 @@ describe('Dependency Discovery', () => {
       // Modify file to invalidate cache
       writeFileSync(utilsFile, 'export const helper = () => "modified";');
 
-      const result3 = discoverDependencyClosure(
+      const result3 = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -178,7 +178,7 @@ describe('Dependency Discovery', () => {
       expect(result3.cacheKey).toBe(result1.cacheKey);
     });
 
-    it('should handle generated .gen.ts files', () => {
+    it('should handle generated .gen.ts files', async () => {
       // Create test files with generated types
       const mainFile = path.join(tempDir, 'main.ts');
       const genFile = path.join(tempDir, 'routes.gen.ts');
@@ -210,7 +210,7 @@ describe('Dependency Discovery', () => {
         },
       };
 
-      const result = discoverDependencyClosure(
+      const result = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -223,7 +223,7 @@ describe('Dependency Discovery', () => {
       expect(result.sourceFiles).toContain(genFile);
     });
 
-    it('should handle path aliases', () => {
+    it('should handle path aliases', async () => {
       // Create directory structure with path alias
       const srcDir = path.join(tempDir, 'src');
       const libDir = path.join(tempDir, 'lib');
@@ -272,7 +272,7 @@ describe('Dependency Discovery', () => {
         },
       };
 
-      const result = discoverDependencyClosure(
+      const result = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -294,7 +294,7 @@ describe('Dependency Discovery', () => {
       expect(Array.isArray(stats.entries)).toBe(true);
     });
 
-    it('should clear cache', () => {
+    it('should clear cache', async () => {
       const mainFile = path.join(tempDir, 'main.ts');
       writeFileSync(mainFile, 'export const test = 1;');
 
@@ -304,7 +304,7 @@ describe('Dependency Discovery', () => {
         },
       };
 
-      discoverDependencyClosure(ts, config, [mainFile], tempDir);
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir);
       expect(getCacheStats().size).toBeGreaterThan(0);
 
       clearDependencyCache();
@@ -611,7 +611,7 @@ export default defineConfig({
       expect(result).toEqual([]);
     });
 
-    it('should integrate setup files into dependency closure discovery', () => {
+    it('should integrate setup files into dependency closure discovery', async () => {
       // Create a setup file via config
       const configSetupFile = path.join(tempDir, 'vitest.setup.ts');
       writeFileSync(configSetupFile, 'console.log("config setup");');
@@ -657,7 +657,7 @@ export default defineConfig({
         },
       };
 
-      const result = discoverDependencyClosure(
+      const result = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -673,7 +673,7 @@ export default defineConfig({
       expect(result.includedSetupFiles).toHaveLength(2);
     });
 
-    it('should not include setup files when includeFiles are explicitly provided', () => {
+    it('should not include setup files when includeFiles are explicitly provided', async () => {
       // Create setup files
       const setupFile = path.join(tempDir, 'setup.ts');
       writeFileSync(setupFile, 'console.log("setup");');
@@ -713,7 +713,7 @@ export default defineConfig({
       const otherFile = path.join(tempDir, 'other.ts');
       writeFileSync(otherFile, 'export const other = 1;');
 
-      const result = discoverDependencyClosure(
+      const result = await discoverDependencyClosure(
         ts,
         config,
         [mainFile],
@@ -727,6 +727,291 @@ export default defineConfig({
       expect(result.sourceFiles).toContain(otherFile);
       // Setup files should NOT be included when includeFiles is provided
       expect(result.includedSetupFiles).toHaveLength(0);
+    });
+  });
+
+  describe('ambient declaration discovery', () => {
+    it('should discover basic .d.ts files', async () => {
+      // Create ambient declaration file
+      const ambientFile = path.join(tempDir, 'custom.d.ts');
+      writeFileSync(
+        ambientFile,
+        'declare module "*.svg" { const content: string; export default content; }',
+      );
+
+      // Create main file
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(ambientFile);
+    });
+
+    it('should discover .d.mts and .d.cts files', async () => {
+      // Create module-specific declaration files
+      const mtsDeclFile = path.join(tempDir, 'module.d.mts');
+      const ctsDeclFile = path.join(tempDir, 'commonjs.d.cts');
+
+      writeFileSync(
+        mtsDeclFile,
+        'declare module "*.module.css" { const content: Record<string, string>; export default content; }',
+      );
+      writeFileSync(
+        ctsDeclFile,
+        'declare module "legacy" { export function legacy(): string; }',
+      );
+
+      // Create main file
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'esnext',
+          },
+          include: ['**/*'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'esnext' },
+        include: ['**/*'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(mtsDeclFile);
+      expect(result.sourceFiles).toContain(ctsDeclFile);
+    });
+
+    it('should discover .gen.ts generated files', async () => {
+      // Create generated file (e.g., from TanStack Router or GraphQL)
+      const genFile = path.join(tempDir, 'routes.gen.ts');
+      writeFileSync(
+        genFile,
+        'export const routes = { home: "/", about: "/about" };',
+      );
+
+      // Create main file
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(genFile);
+    });
+
+    it('should respect exclude patterns', async () => {
+      // Create ambient file in excluded directory
+      const distDir = path.join(tempDir, 'dist');
+      mkdirSync(distDir);
+      const excludedAmbientFile = path.join(distDir, 'excluded.d.ts');
+      writeFileSync(excludedAmbientFile, 'declare const EXCLUDED: string;');
+
+      // Create ambient file in included directory
+      const srcDir = path.join(tempDir, 'src');
+      mkdirSync(srcDir);
+      const includedAmbientFile = path.join(srcDir, 'included.d.ts');
+      writeFileSync(includedAmbientFile, 'declare const INCLUDED: string;');
+
+      // Create main file
+      const mainFile = path.join(srcDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['src/**/*.ts'],
+          exclude: ['dist/**/*'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['src/**/*.ts'],
+        exclude: ['dist/**/*'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(includedAmbientFile);
+      expect(result.sourceFiles).not.toContain(excludedAmbientFile);
+    });
+
+    it('should discover ambient files in nested directories', async () => {
+      // Create nested directory structure
+      const typesDir = path.join(tempDir, 'src', 'types');
+      mkdirSync(typesDir, { recursive: true });
+
+      const nestedAmbientFile = path.join(typesDir, 'global.d.ts');
+      writeFileSync(
+        nestedAmbientFile,
+        'declare global { interface Window { MY_APP: boolean; } }',
+      );
+
+      // Create main file
+      const srcDir = path.join(tempDir, 'src');
+      const mainFile = path.join(srcDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['src/**/*'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['src/**/*'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(nestedAmbientFile);
+    });
+
+    it('should invalidate cache when new ambient file is added', async () => {
+      // Create main file
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      // First discovery - no ambient files
+      const result1 = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+      );
+
+      expect(result1.discovered).toBe(true);
+      expect(result1.sourceFiles).toContain(mainFile);
+      expect(result1.sourceFiles).toHaveLength(1);
+
+      // Add ambient file
+      const ambientFile = path.join(tempDir, 'new.d.ts');
+      writeFileSync(ambientFile, 'declare const NEW: string;');
+
+      // Second discovery - should detect new ambient file and invalidate cache
+      const result2 = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false, // verbose off
+      );
+
+      expect(result2.discovered).toBe(true);
+      expect(result2.sourceFiles).toContain(mainFile);
+      expect(result2.sourceFiles).toContain(ambientFile);
+      expect(result2.sourceFiles).toHaveLength(2);
     });
   });
 });

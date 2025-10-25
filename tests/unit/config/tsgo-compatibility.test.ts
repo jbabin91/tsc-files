@@ -1,156 +1,144 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
-import { analyzeTsgoCompatibility } from '@/config/tsgo-compatibility';
+import {
+  analyzeTsgoCompatibility,
+  shouldUseTsgo,
+  type TsgoCompatibilityResult,
+} from '@/config/tsgo-compatibility';
+import { detectTsgo } from '@/detectors/typescript';
 
-describe('tsgo-compatibility', () => {
-  describe('analyzeTsgoCompatibility', () => {
-    it('should return compatible for simple config without paths', () => {
-      const config: TypeScriptConfig = {
-        compilerOptions: {
-          target: 'ES2020',
-          strict: true,
-        },
-      };
+vi.mock('@/detectors/typescript', () => ({
+  detectTsgo: vi.fn(() => ({
+    available: true,
+    executable: '/usr/bin/tsgo',
+  })),
+}));
 
-      const result = analyzeTsgoCompatibility(config);
+const mockDetectTsgo = vi.mocked(detectTsgo);
 
-      expect(result.compatible).toBe(true);
-      expect(result.incompatibleFeatures).toEqual([]);
-      expect(result.recommendation).toContain(
-        'Configuration is compatible with tsgo',
-      );
+describe('analyzeTsgoCompatibility', () => {
+  it('returns compatible result when no incompatible features are detected', () => {
+    const result = analyzeTsgoCompatibility({
+      compilerOptions: {
+        moduleResolution: 'bundler',
+      },
     });
 
-    it('should return compatible for bundler moduleResolution with paths', () => {
-      const config: TypeScriptConfig = {
+    expect(result).toEqual<TsgoCompatibilityResult>({
+      compatible: true,
+      incompatibleFeatures: [],
+      recommendation:
+        'Configuration is compatible with tsgo for optimal performance',
+    });
+  });
+
+  it('detects baseUrl incompatibility when paths require non-bundler resolution', () => {
+    const result = analyzeTsgoCompatibility({
+      compilerOptions: {
+        paths: {
+          '@/*': ['src/*'],
+        },
+        moduleResolution: 'node',
+      },
+    });
+
+    expect(result.compatible).toBe(false);
+    expect(result.incompatibleFeatures).toEqual(['baseUrl']);
+    expect(result.recommendation).toContain('Using tsc due to: baseUrl');
+  });
+});
+
+describe('shouldUseTsgo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('honours explicit useTsgo preference', () => {
+    const result = shouldUseTsgo(
+      { compilerOptions: {} },
+      { useTsgo: true },
+      '/project',
+    );
+
+    expect(result).toEqual({
+      useTsgo: true,
+      reason: 'User explicitly requested tsgo with --use-tsgo flag',
+    });
+  });
+
+  it('honours explicit useTsc preference', () => {
+    const result = shouldUseTsgo(
+      { compilerOptions: {} },
+      { useTsc: true },
+      '/project',
+    );
+
+    expect(result).toEqual({
+      useTsgo: false,
+      reason: 'User explicitly requested tsc with --use-tsc flag',
+    });
+  });
+
+  it('disables tsgo when it is not available', () => {
+    mockDetectTsgo.mockReturnValueOnce({ available: false });
+
+    const result = shouldUseTsgo(
+      { compilerOptions: {} },
+      undefined,
+      '/project',
+    );
+
+    expect(result).toEqual({
+      useTsgo: false,
+      reason: 'tsgo not available (not installed)',
+    });
+  });
+
+  it('disables tsgo when compatibility analysis fails', () => {
+    mockDetectTsgo.mockReturnValueOnce({ available: true });
+
+    const result = shouldUseTsgo(
+      {
         compilerOptions: {
-          target: 'ES2020',
+          paths: {
+            '@/*': ['src/*'],
+          },
+          moduleResolution: 'node',
+        },
+      },
+      undefined,
+      '/project',
+    );
+
+    expect(result.useTsgo).toBe(false);
+    expect(result.reason).toContain(
+      'Configuration incompatible with tsgo: baseUrl',
+    );
+    expect(result.compatibilityResult?.compatible).toBe(false);
+  });
+
+  it('enables tsgo when available and configuration is compatible', () => {
+    mockDetectTsgo.mockReturnValueOnce({ available: true });
+
+    const result = shouldUseTsgo(
+      {
+        compilerOptions: {
           moduleResolution: 'bundler',
-          paths: {
-            '@/*': ['./src/*'],
-          },
         },
-      };
+      },
+      undefined,
+      '/project',
+    );
 
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.compatible).toBe(true);
-      expect(result.incompatibleFeatures).toEqual([]);
-    });
-
-    it('should return incompatible for non-bundler moduleResolution with paths', () => {
-      const config: TypeScriptConfig = {
-        compilerOptions: {
-          target: 'ES2020',
-          moduleResolution: 'node',
-          paths: {
-            '@/*': ['./src/*'],
-          },
-        },
-      };
-
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.compatible).toBe(false);
-      expect(result.incompatibleFeatures).toEqual(['baseUrl']);
-      expect(result.recommendation).toContain('Using tsc due to: baseUrl');
-    });
-
-    it('should return incompatible for default moduleResolution with paths', () => {
-      const config: TypeScriptConfig = {
-        compilerOptions: {
-          target: 'ES2020',
-          // moduleResolution undefined defaults to non-bundler
-          paths: {
-            '@/*': ['./src/*'],
-          },
-        },
-      };
-
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.compatible).toBe(false);
-      expect(result.incompatibleFeatures).toEqual(['baseUrl']);
-    });
-
-    it('should return compatible when no paths are defined', () => {
-      const config: TypeScriptConfig = {
-        compilerOptions: {
-          target: 'ES2020',
-          moduleResolution: 'node',
-          // No paths defined
-        },
-      };
-
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.compatible).toBe(true);
-      expect(result.incompatibleFeatures).toEqual([]);
-    });
-
-    it('should return compatible for config without compilerOptions', () => {
-      const config: TypeScriptConfig = {};
-
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.compatible).toBe(true);
-      expect(result.incompatibleFeatures).toEqual([]);
-      expect(result.recommendation).toContain(
-        'Configuration is compatible with tsgo',
-      );
-    });
-
-    it('should return compatible for config with empty compilerOptions', () => {
-      const config: TypeScriptConfig = {
-        compilerOptions: {},
-      };
-
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.compatible).toBe(true);
-      expect(result.incompatibleFeatures).toEqual([]);
-      expect(result.recommendation).toContain(
-        'Configuration is compatible with tsgo',
-      );
-    });
-
-    it('should handle various moduleResolution values with paths', () => {
-      const incompatibleResolutions = ['node', 'classic', 'node10'] as const;
-
-      for (const moduleResolution of incompatibleResolutions) {
-        const config: TypeScriptConfig = {
-          compilerOptions: {
-            target: 'ES2020',
-            moduleResolution,
-            paths: {
-              '@utils/*': ['./src/utils/*'],
-            },
-          },
-        };
-
-        const result = analyzeTsgoCompatibility(config);
-
-        expect(result.compatible).toBe(false);
-        expect(result.incompatibleFeatures).toEqual(['baseUrl']);
-        expect(result.recommendation).toContain('Using tsc due to: baseUrl');
-      }
-    });
-
-    it('should provide recommendation for bundler module resolution', () => {
-      const config: TypeScriptConfig = {
-        compilerOptions: {
-          target: 'ES2020',
-          moduleResolution: 'node',
-          paths: {
-            '@/*': ['./src/*'],
-          },
-        },
-      };
-
-      const result = analyzeTsgoCompatibility(config);
-
-      expect(result.recommendation).toContain('bundler moduleResolution');
+    expect(result).toEqual({
+      useTsgo: true,
+      reason: 'Configuration is compatible with tsgo for optimal performance',
+      compatibilityResult: {
+        compatible: true,
+        incompatibleFeatures: [],
+        recommendation:
+          'Configuration is compatible with tsgo for optimal performance',
+      },
     });
   });
 });

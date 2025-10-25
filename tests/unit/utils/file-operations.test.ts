@@ -79,6 +79,18 @@ describe('utils/file-operations', () => {
         'Failed to parse JSON file /path/to/protected.json: Permission denied',
       );
     });
+
+    it('should handle non-Error exceptions when parsing JSON', () => {
+      vi.mocked(existsSync).mockReturnValueOnce(true);
+      vi.mocked(readFileSync).mockImplementationOnce(() => {
+        const nonError = 'Unknown failure' as unknown as Error;
+        throw nonError;
+      });
+
+      expect(() => readJsonFile('/path/to/odd.json')).toThrow(
+        'Failed to parse JSON file /path/to/odd.json: Unknown failure',
+      );
+    });
   });
 
   describe('readTextFile', () => {
@@ -109,6 +121,18 @@ describe('utils/file-operations', () => {
 
       expect(() => readTextFile('/path/to/protected.txt')).toThrow(
         'Failed to read file /path/to/protected.txt: Permission denied',
+      );
+    });
+
+    it('should handle non-Error exceptions when reading text file', () => {
+      vi.mocked(existsSync).mockReturnValueOnce(true);
+      vi.mocked(readFileSync).mockImplementationOnce(() => {
+        const nonError = 'Unknown failure' as unknown as Error;
+        throw nonError;
+      });
+
+      expect(() => readTextFile('/path/to/weird.txt')).toThrow(
+        'Failed to read file /path/to/weird.txt: Unknown failure',
       );
     });
   });

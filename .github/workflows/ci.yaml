@@ -85,8 +85,6 @@ jobs:
         uses: ./.github/actions/build-package
       - name: Integration Tests
         uses: ./.github/actions/integration-tests
-        with:
-          test_scenario: ${{ matrix.test_scenario }}
 
   ci-summary:
     name: CI Summary

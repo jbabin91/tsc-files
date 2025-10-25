@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as commandModule from '@/cli/command';
 import { createCli, main } from '@/cli/main';
+import * as runnerModule from '@/cli/runner';
 import { logger } from '@/utils/logger';
 
 // Mock process.cwd for tests
@@ -129,6 +131,48 @@ describe('CLI Main', () => {
       expect(exitCode).toBe(99);
 
       loggerErrorSpy.mockRestore();
+    });
+
+    it('should log stdout and stderr when commander error propagates', async () => {
+      const createProgramSpy = vi
+        .spyOn(commandModule, 'createProgram')
+        .mockImplementation(() => {
+          const program = {
+            parseAsync: vi.fn().mockRejectedValue(new Error('commander error')),
+            exitOverride: vi.fn(),
+          };
+          return program as unknown as ReturnType<
+            typeof commandModule.createProgram
+          >;
+        });
+      const handleErrorSpy = vi
+        .spyOn(runnerModule, 'handleCommanderError')
+        .mockReturnValue({
+          exitCode: 7,
+          stdout: 'Usage: tsc-files [options]\n',
+          stderr: 'Commander failure\n',
+        });
+      const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* empty */
+      });
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
+
+      const cli = createCli();
+      const exitCode = await cli.parseAsync(['node', 'tsc-files']);
+
+      expect(exitCode).toBe(7);
+      expect(loggerInfoSpy).toHaveBeenCalledWith('Usage: tsc-files [options]');
+      expect(loggerErrorSpy).toHaveBeenCalledWith('Commander failure');
+
+      createProgramSpy.mockRestore();
+      handleErrorSpy.mockRestore();
+      loggerInfoSpy.mockRestore();
+      loggerErrorSpy.mockRestore();
+      process.exitCode = undefined;
     });
   });
 

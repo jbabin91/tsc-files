@@ -603,7 +603,7 @@ interface Detector<T> {
 
 ### Current Test Coverage
 
-- **518 passing tests** across 27 test files
+- **531 passing tests** across 27 test files
 - **84%+ core coverage** with strict thresholds
 - **Vitest framework** with comprehensive mocking
 - **Cross-platform testing** via GitHub Actions
@@ -700,9 +700,6 @@ export default defineConfig({
 // Cross-platform integration testing via GitHub Actions
 - name: Run Integration Tests
   uses: ./.github/actions/integration-tests
-  with:
-    test_scenario: 'basic' # or 'full'
-
 // Tests include:
 // - Package installation via npm pack
 // - CLI execution across Windows/macOS/Linux

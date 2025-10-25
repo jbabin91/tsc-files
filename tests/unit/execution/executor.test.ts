@@ -361,6 +361,33 @@ describe('execution/executor', () => {
         exitCode: 0,
       });
     });
+
+    it('should handle non-string stdout and stderr in execution errors', async () => {
+      const { execa } = await import('execa');
+      const mockedExeca = vi.mocked(execa);
+
+      mockedExeca.mockRejectedValueOnce({
+        stdout: Buffer.from('buffered output'),
+        stderr: Buffer.from('buffered error'),
+        exitCode: 1,
+        message: 'buffer failure',
+      });
+
+      const result = await executeTypeScriptCompiler(
+        '/tmp/tsconfig.json',
+        '/test/cwd',
+        { verbose: false },
+      );
+
+      expect(result).toEqual({
+        success: false,
+        stdout: '',
+        stderr: '',
+        allOutput: '',
+        exitCode: 1,
+        errorMessage: 'buffer failure',
+      });
+    });
   });
 
   describe('executeAndParseTypeScript', () => {
@@ -747,6 +774,194 @@ describe('execution/executor', () => {
           startTime,
         ),
       ).rejects.toThrow('TypeScript compiler failed: ');
+    });
+
+    it('should not attempt fallback when disabled even if tsgo is available', async () => {
+      const { findTypeScriptCompiler } = await import('@/detectors/typescript');
+      const { parseAndSeparateOutput } = await import(
+        '@/execution/output-parser'
+      );
+
+      const mockedFindCompiler = vi.mocked(findTypeScriptCompiler);
+      const mockedParser = vi.mocked(parseAndSeparateOutput);
+
+      mockedFindCompiler
+        .mockReturnValueOnce({
+          executable: 'tsgo',
+          args: [],
+          packageManager: {
+            manager: 'npm',
+            lockFile: 'package-lock.json',
+            command: 'npm',
+            tscPath: '',
+          },
+          useShell: false,
+          isWindows: false,
+          compilerType: 'tsgo',
+          fallbackAvailable: true,
+        })
+        .mockReturnValueOnce({
+          executable: 'tsgo',
+          args: [],
+          packageManager: {
+            manager: 'npm',
+            lockFile: 'package-lock.json',
+            command: 'npm',
+            tscPath: '',
+          },
+          useShell: false,
+          isWindows: false,
+          compilerType: 'tsgo',
+          fallbackAvailable: true,
+        });
+
+      const { execa } = await import('execa');
+      const { provideFallbackEducation } = await import('@/cli/education');
+
+      const mockedExeca = vi.mocked(execa);
+      const mockedFallbackEducation = vi.mocked(provideFallbackEducation);
+
+      mockedExeca.mockRejectedValueOnce({
+        stdout: '',
+        stderr: '',
+        exitCode: 1,
+        message: 'tsgo fatal',
+      });
+
+      mockedParser.mockReturnValue({
+        errors: [],
+        warnings: [],
+        allErrors: [],
+      });
+
+      const startTime = performance.now();
+
+      await expect(
+        executeAndParseTypeScript(
+          '/tmp/tsconfig.json',
+          ['test.ts'],
+          '/test/cwd',
+          { fallback: false } as CheckOptions,
+          startTime,
+        ),
+      ).rejects.toThrow(/TypeScript compiler failed:/);
+
+      expect(mockedExeca).toHaveBeenCalledTimes(1);
+      expect(mockedFallbackEducation).not.toHaveBeenCalled();
+    });
+
+    it('should return fallback parser errors when fallback execution fails with diagnostics', async () => {
+      const { execa } = await import('execa');
+      const { findTypeScriptCompiler } = await import('@/detectors/typescript');
+      const { parseAndSeparateOutput } = await import(
+        '@/execution/output-parser'
+      );
+      const { provideFallbackEducation } = await import('@/cli/education');
+
+      const mockedExeca = vi.mocked(execa);
+      const mockedFindCompiler = vi.mocked(findTypeScriptCompiler);
+      const mockedParser = vi.mocked(parseAndSeparateOutput);
+      const mockedFallbackEducation = vi.mocked(provideFallbackEducation);
+
+      const tsError = {
+        file: 'fallback.ts',
+        line: 1,
+        column: 1,
+        message: 'Type error',
+        code: 'TS2345',
+        severity: 'error' as const,
+      };
+
+      mockedFindCompiler
+        .mockReturnValueOnce({
+          executable: 'tsgo',
+          args: [],
+          packageManager: {
+            manager: 'npm',
+            lockFile: 'package-lock.json',
+            command: 'npm',
+            tscPath: '',
+          },
+          useShell: false,
+          isWindows: false,
+          compilerType: 'tsgo',
+          fallbackAvailable: true,
+        })
+        .mockReturnValueOnce({
+          executable: 'tsgo',
+          args: [],
+          packageManager: {
+            manager: 'npm',
+            lockFile: 'package-lock.json',
+            command: 'npm',
+            tscPath: '',
+          },
+          useShell: false,
+          isWindows: false,
+          compilerType: 'tsgo',
+          fallbackAvailable: true,
+        })
+        .mockReturnValueOnce({
+          executable: 'tsc',
+          args: ['--noEmit'],
+          packageManager: {
+            manager: 'npm',
+            lockFile: 'package-lock.json',
+            command: 'npm',
+            tscPath: '',
+          },
+          useShell: false,
+          isWindows: false,
+          compilerType: 'tsc',
+          fallbackAvailable: false,
+        });
+
+      mockedExeca
+        .mockRejectedValueOnce({
+          stdout: '',
+          stderr: 'tsgo failure',
+          exitCode: 1,
+          message: 'tsgo failed',
+          shortMessage: 'tsgo failed',
+        })
+        .mockRejectedValueOnce({
+          stdout: '',
+          stderr: 'fallback diagnostics',
+          exitCode: 1,
+          message: 'fallback failed',
+        });
+
+      mockedParser
+        .mockReturnValueOnce({
+          errors: [],
+          warnings: [],
+          allErrors: [],
+        })
+        .mockReturnValueOnce({
+          errors: [tsError],
+          warnings: [],
+          allErrors: [tsError],
+        });
+
+      const startTime = performance.now();
+
+      const result = await executeAndParseTypeScript(
+        '/tmp/tsconfig.json',
+        ['fallback.ts'],
+        '/test/cwd',
+        { fallback: true } as CheckOptions,
+        startTime,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCount).toBe(1);
+      expect(result.errors).toEqual([tsError]);
+      expect(mockedFallbackEducation).toHaveBeenCalledWith(
+        'tsgo',
+        'tsc',
+        expect.stringContaining('tsgo'),
+      );
+      expect(mockedExeca).toHaveBeenCalledTimes(2);
     });
 
     it('should handle non-Error exception in catch block', async () => {

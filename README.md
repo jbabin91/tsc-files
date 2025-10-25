@@ -52,7 +52,7 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 - ✅ **Cross-platform** - Tested on Windows, macOS, and Linux
 - ✅ **Git hook friendly** - Perfect for pre-commit hooks and lint-staged
 - ✅ **CI/CD optimized** - Designed for continuous integration workflows
-- ✅ **Comprehensive testing** - 518 tests with 84%+ coverage
+- ✅ **Comprehensive testing** - 531 tests with 95%+ coverage
 
 ### Security & Quality
 
@@ -493,7 +493,7 @@ No configuration needed - it just works!
 - **Research & Analysis**: ✅ Complete (original tsc-files community solutions analyzed and implemented)
 - **Core Implementation**: ✅ Complete (1,400+ lines: CLI, type checker, package detection, cross-platform support)
 - **All Critical Features**: ✅ Complete (monorepo, package managers, JavaScript support, error handling)
-- **Testing & Quality**: ✅ Complete (518 tests passing, 84%+ coverage, comprehensive test suite)
+- **Testing & Quality**: ✅ Complete (531 tests passing, 95%+ coverage, comprehensive test suite)
 - **Status**: 🚀 **Production Ready** - Feature complete TypeScript CLI tool
 
 ## 📚 Documentation

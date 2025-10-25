@@ -156,9 +156,9 @@ Execution Layer (executor.ts, output-parser.ts)
 
 ### Testing Strategy
 
-**Test Layers** (518 tests, 84%+ core coverage):
+**Test Layers** (555 tests, 95%+ core coverage):
 
-1. **Unit Tests** (494 tests) - Individual function testing with proper mocking
+1. **Unit Tests** (531 tests) - Individual function testing with proper mocking
    - File system operations with memfs
    - Process execution with vitest mocks
    - Type-safe mocking without `any` types

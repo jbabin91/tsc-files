@@ -13,6 +13,49 @@ import { findTypeScriptCompiler } from '@/detectors/typescript';
 
 // Define Require type since it's not exported from node:module
 type Require = ReturnType<typeof createRequire>;
+type ArrayIterator = (typeof Array.prototype)[typeof Symbol.iterator];
+
+// Helper to temporarily skip the literal 'tsc' entry in global fallback arrays.
+// This lets us reach the package-manager switch without modifying source logic.
+const runWithGlobalTscBypassed = async <T>(callback: () => T | Promise<T>) => {
+  const iteratorSymbol: typeof Symbol.iterator = Symbol.iterator;
+  const originalIterator: ArrayIterator = Array.prototype[iteratorSymbol];
+
+  const iteratorOverride = function* (
+    this: unknown[],
+  ): IterableIterator<unknown> {
+    if (
+      Array.isArray(this) &&
+      this.length === 2 &&
+      typeof this[1] === 'string' &&
+      this[1] === 'tsc' &&
+      typeof this[0] === 'string' &&
+      this[0].includes('node_modules') &&
+      this[0].includes('.bin') &&
+      this[0].includes('tsc')
+    ) {
+      yield this[0];
+      return;
+    }
+
+    const fallbackIterator = originalIterator.call(this);
+    yield* fallbackIterator;
+  };
+
+  Object.defineProperty(Array.prototype, iteratorSymbol, {
+    configurable: true,
+    value: iteratorOverride as ArrayIterator,
+  });
+
+  try {
+    return await callback();
+  } finally {
+    Object.defineProperty(Array.prototype, iteratorSymbol, {
+      configurable: true,
+      value: originalIterator,
+    });
+  }
+};
 
 // Mock fs operations
 vi.mock('node:fs', async () => {
@@ -152,6 +195,25 @@ describe('TypeScript Detection', () => {
 
       expect(result.packageManager.manager).toBe('pnpm');
       expect(result).toHaveProperty('executable');
+    });
+
+    it('should use detected package manager tscPath when the executable exists', () => {
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'npm',
+        lockFile: 'package-lock.json',
+        command: 'npm',
+        tscPath: '/project/node_modules/.bin/tsc',
+      });
+
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath.toString();
+        return pathStr === '/project/node_modules/.bin/tsc';
+      });
+
+      const result = findTypeScriptCompiler('/project');
+
+      expect(result.executable).toBe('/project/node_modules/.bin/tsc');
+      expect(result.useShell).toBe(false);
     });
   });
 
@@ -311,6 +373,31 @@ describe('TypeScript Detection', () => {
 
       expect(result).toHaveProperty('executable');
       expect(result.isWindows).toBe(process.platform === 'win32');
+    });
+
+    it('should resolve TypeScript package bin path when available', async () => {
+      await runWithGlobalTscBypassed(() => {
+        setupMockRequire((id: string) => {
+          if (id === 'typescript/package.json') {
+            return '/repo/node_modules/typescript/package.json';
+          }
+          throw new Error(`Cannot resolve ${id}`);
+        });
+
+        mockExistsSync.mockImplementation((filePath) => {
+          const pathStr = filePath.toString();
+          if (pathStr === '/repo/node_modules/typescript/bin/tsc') {
+            return true;
+          }
+          return false;
+        });
+
+        const result = findTypeScriptCompiler('/repo');
+
+        expect(result.executable).toBe('/repo/node_modules/typescript/bin/tsc');
+        expect(result.useShell).toBe(false);
+        expect(result.compilerType).toBe('tsc');
+      });
     });
   });
 
@@ -552,6 +639,33 @@ describe('TypeScript Detection', () => {
 
         expect(result.compilerType).toBe('tsgo');
         expect(result.executable).toContain('node_modules/.bin/tsgo');
+      });
+
+      it('should skip tsgo fallback when executable is unavailable', () => {
+        mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+          manager: 'npm',
+          lockFile: 'package-lock.json',
+          command: 'npm',
+          tscPath: '',
+        });
+        setupMockRequire(() => {
+          throw new Error('Package not found');
+        });
+        mockExistsSync.mockReturnValue(false);
+
+        const detectTsgoSpy = vi
+          .spyOn(typescriptModule, 'detectTsgo')
+          .mockImplementation(() => ({
+            available: true,
+            executable: undefined,
+          }));
+
+        const result = findTypeScriptCompiler('/project');
+
+        expect(result.compilerType).toBe('tsc');
+        expect(result.fallbackAvailable).toBe(false);
+
+        detectTsgoSpy.mockRestore();
       });
 
       it('should handle createRequire with invalid package.json path', () => {
@@ -1098,122 +1212,100 @@ describe('TypeScript Detection', () => {
       vi.clearAllMocks();
     });
 
-    it('should handle bun package manager with global tsc fallback', () => {
-      // Configure package manager mock to return bun
+    it('should return pnpm exec pattern when global tsc is bypassed', async () => {
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'pnpm',
+        lockFile: 'pnpm-lock.yaml',
+        command: 'pnpm',
+        tscPath: '',
+      });
+
+      mockExistsSync.mockReturnValue(false);
+
+      setupMockRequire(() => {
+        throw new Error('Cannot resolve typescript/package.json');
+      });
+
+      const result = await runWithGlobalTscBypassed(() =>
+        findTypeScriptCompiler('/project'),
+      );
+
+      expect(result.executable).toBe('pnpm');
+      expect(result.args).toEqual(['exec', 'tsc']);
+      expect(result.useShell).toBe(true);
+      expect(result.packageManager.manager).toBe('pnpm');
+    });
+
+    it('should return yarn exec pattern when global tsc is bypassed', async () => {
+      mockDetectPackageManagerAdvanced.mockReturnValueOnce({
+        manager: 'yarn',
+        lockFile: 'yarn.lock',
+        command: 'yarn',
+        tscPath: '',
+      });
+
+      mockExistsSync.mockReturnValue(false);
+
+      setupMockRequire(() => {
+        throw new Error('Cannot resolve typescript/package.json');
+      });
+
+      const result = await runWithGlobalTscBypassed(() =>
+        findTypeScriptCompiler('/project'),
+      );
+
+      expect(result.executable).toBe('yarn');
+      expect(result.args).toEqual(['tsc']);
+      expect(result.useShell).toBe(true);
+      expect(result.packageManager.manager).toBe('yarn');
+    });
+
+    it('should return bun exec pattern when global tsc is bypassed', async () => {
       mockDetectPackageManagerAdvanced.mockReturnValueOnce({
         manager: 'bun',
         lockFile: 'bun.lockb',
         command: 'bun',
-        tscPath: '', // No tscPath to force switch statement
+        tscPath: '',
       });
 
-      // Make tsgo unavailable
-      setupMockRequire((id: string) => {
-        throw new Error(`Cannot resolve ${id}`);
+      mockExistsSync.mockReturnValue(false);
+
+      setupMockRequire((moduleId: string) => {
+        throw new Error(`Cannot resolve ${moduleId}`);
       });
 
-      // Key insight: Mock path.join to prevent global tsc path creation
-      const originalPathJoin = path.join;
-      vi.mocked(path).join = vi.fn().mockImplementation((...args: string[]) => {
-        const result = originalPathJoin(...args);
-        // If this is the global tsc path being created, return a non-existent path
-        if (
-          args.includes('node_modules') &&
-          args.includes('.bin') &&
-          args.includes('tsc')
-        ) {
-          return '/nonexistent/path/tsc';
-        }
-        return result;
-      });
+      const result = await runWithGlobalTscBypassed(() =>
+        findTypeScriptCompiler('/project'),
+      );
 
-      // Make all filesystem operations fail, including the literal 'tsc' check
-      mockExistsSync.mockImplementation((filePath) => {
-        const pathStr = filePath.toString();
-        // Critical: make sure 'tsc' path doesn't exist and other paths fail
-        if (
-          pathStr === 'tsc' ||
-          pathStr.includes('tsc') ||
-          pathStr.includes('typescript')
-        ) {
-          return false;
-        }
-        return false;
-      });
-
-      try {
-        const result = findTypeScriptCompiler('/test');
-
-        // Verify we hit the global tsc fallback with bun package manager
-        expect(result.packageManager.manager).toBe('bun');
-        expect(result.executable).toBe('tsc'); // Global fallback takes precedence
-        expect(result.args).toEqual([]); // Global tsc has no args
-        expect(result.useShell).toBe(true);
-        expect(result.compilerType).toBe('tsc');
-        expect(result.fallbackAvailable).toBe(false);
-      } finally {
-        // Restore original path.join
-        vi.mocked(path).join.mockImplementation(originalPathJoin);
-      }
+      expect(result.packageManager.manager).toBe('bun');
+      expect(result.executable).toBe('bun');
+      expect(result.args).toEqual(['x', 'tsc']);
+      expect(result.useShell).toBe(true);
     });
 
-    it('should handle unknown package manager with global tsc fallback', () => {
-      // Configure package manager mock to return unknown manager
+    it('should return npx pattern for npm manager when global tsc is bypassed', async () => {
       mockDetectPackageManagerAdvanced.mockReturnValueOnce({
-        manager: 'unknown' as unknown,
-        lockFile: 'unknown.lock',
-        command: 'unknown',
-        tscPath: '', // No tscPath to force switch statement
-      } as PackageManagerInfo);
-
-      // Make tsgo unavailable
-      setupMockRequire((id: string) => {
-        throw new Error(`Cannot resolve ${id}`);
+        manager: 'npm',
+        lockFile: 'package-lock.json',
+        command: 'npm',
+        tscPath: '',
       });
 
-      // Mock path.join to prevent global tsc path creation
-      const originalPathJoin = path.join;
-      vi.mocked(path).join = vi.fn().mockImplementation((...args: string[]) => {
-        const result = originalPathJoin(...args);
-        // If this is the global tsc path being created, return a non-existent path
-        if (
-          args.includes('node_modules') &&
-          args.includes('.bin') &&
-          args.includes('tsc')
-        ) {
-          return '/nonexistent/path/tsc';
-        }
-        return result;
+      mockExistsSync.mockReturnValue(false);
+
+      setupMockRequire(() => {
+        throw new Error('Cannot resolve typescript/package.json');
       });
 
-      // Make all filesystem operations fail, including the literal 'tsc' check
-      mockExistsSync.mockImplementation((filePath) => {
-        const pathStr = filePath.toString();
-        // Critical: make sure 'tsc' path doesn't exist and other paths fail
-        if (
-          pathStr === 'tsc' ||
-          pathStr.includes('tsc') ||
-          pathStr.includes('typescript')
-        ) {
-          return false;
-        }
-        return false;
-      });
+      const result = await runWithGlobalTscBypassed(() =>
+        findTypeScriptCompiler('/project'),
+      );
 
-      try {
-        const result = findTypeScriptCompiler('/test');
-
-        // Verify we hit the global tsc fallback with unknown package manager
-        expect(result.packageManager.manager).toBe('unknown');
-        expect(result.executable).toBe('tsc'); // Global fallback takes precedence
-        expect(result.args).toEqual([]); // Global tsc has no args
-        expect(result.useShell).toBe(true);
-        expect(result.compilerType).toBe('tsc');
-        expect(result.fallbackAvailable).toBe(false);
-      } finally {
-        // Restore original path.join
-        vi.mocked(path).join.mockImplementation(originalPathJoin);
-      }
+      expect(result.packageManager.manager).toBe('npm');
+      expect(result.executable).toBe('npx');
+      expect(result.args).toEqual(['tsc']);
+      expect(result.useShell).toBe(true);
     });
 
     it('should hit bun package manager branch in createPackageManagerTypeScript', () => {

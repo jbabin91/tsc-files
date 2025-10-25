@@ -3,7 +3,15 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { TempConfigHandle } from '@/config/temp-config';
+import * as tempConfigModule from '@/config/temp-config';
+import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
+import * as tsconfigResolver from '@/config/tsconfig-resolver';
+import * as tsgoCompatibility from '@/config/tsgo-compatibility';
 import { checkFiles } from '@/core/checker';
+import * as fileResolverModule from '@/core/file-resolver';
+import * as executorModule from '@/execution/executor';
+import { logger } from '@/utils/logger';
 
 const cleanupTempDir = (tempDir: string) => {
   try {
@@ -34,6 +42,15 @@ const createTestProject = (tempDir: string) => {
 
   return { tsconfig, srcDir };
 };
+
+const createMockTempConfigHandle = (
+  overrides: Partial<TempConfigHandle> = {},
+): TempConfigHandle => ({
+  path: '/tmp/mock-temp-config.json',
+  cleanup: vi.fn(),
+  includedSetupFiles: [],
+  ...overrides,
+});
 
 describe('checkFiles', () => {
   let tempDir: string;
@@ -870,6 +887,74 @@ const other: number = "not a number";`,
       expect(result.checkedFiles.length).toBe(0); // No files found, but that's OK for coverage testing
     });
 
+    it('classifies non-config execution failures as TSC_FILES_ERROR', async () => {
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      const findTsConfigSpy = vi
+        .spyOn(tsconfigResolver, 'findTsConfig')
+        .mockReturnValue(tsconfigPath);
+      const parseTsconfigSpy = vi
+        .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+        .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+      const resolveFilesSpy = vi
+        .spyOn(fileResolverModule, 'resolveFiles')
+        .mockResolvedValue(['src/runtime-error.ts']);
+      const tempConfigSpy = vi
+        .spyOn(tempConfigModule, 'createTempConfig')
+        .mockResolvedValue(
+          createMockTempConfigHandle({ path: '/tmp/runtime-error.json' }),
+        );
+      const executeSpy = vi
+        .spyOn(executorModule, 'executeAndParseTypeScript')
+        .mockRejectedValue(new Error('Execution failed during type checking'));
+
+      const result = await checkFiles(['src/runtime-error.ts'], {
+        cwd: tempDir,
+        throwOnError: false,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors[0].code).toBe('TSC_FILES_ERROR');
+      expect(result.errors[0].message).toContain('Execution failed');
+
+      findTsConfigSpy.mockRestore();
+      parseTsconfigSpy.mockRestore();
+      resolveFilesSpy.mockRestore();
+      tempConfigSpy.mockRestore();
+      executeSpy.mockRestore();
+    });
+
+    it('falls back to top-level error handling when temp config creation fails', async () => {
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      const findTsConfigSpy = vi
+        .spyOn(tsconfigResolver, 'findTsConfig')
+        .mockReturnValue(tsconfigPath);
+      const parseTsconfigSpy = vi
+        .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+        .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+      const resolveFilesSpy = vi
+        .spyOn(fileResolverModule, 'resolveFiles')
+        .mockResolvedValue(['src/tempconfig.ts']);
+      const tempConfigSpy = vi
+        .spyOn(tempConfigModule, 'createTempConfig')
+        .mockImplementation(() => {
+          throw new Error('Temp config creation failed unexpectedly');
+        });
+
+      const result = await checkFiles(['src/tempconfig.ts'], {
+        cwd: tempDir,
+        throwOnError: false,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors[0].code).toBe('TSC_FILES_ERROR');
+      expect(result.errors[0].message).toContain('Temp config creation failed');
+
+      findTsConfigSpy.mockRestore();
+      parseTsconfigSpy.mockRestore();
+      resolveFilesSpy.mockRestore();
+      tempConfigSpy.mockRestore();
+    });
+
     it('should handle fast-glob failure fallback', async () => {
       // Test lines 161-165: Fallback glob pattern matching
       writeFileSync(
@@ -1012,5 +1097,435 @@ const other: number = "not a number";`,
   // Cleanup after each test
   afterEach(() => {
     cleanupTempDir(tempDir);
+  });
+
+  it('should combine results across multiple tsconfig groups', async () => {
+    const findTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'findTsConfig')
+      .mockImplementation((searchDir: string) => {
+        if (searchDir.includes('pkg-a')) {
+          return '/virtual/pkg-a/tsconfig.json';
+        }
+        if (searchDir.includes('pkg-b')) {
+          return '/virtual/pkg-b/tsconfig.json';
+        }
+        return '/virtual/default/tsconfig.json';
+      });
+
+    const parseTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+      .mockImplementation(
+        () =>
+          ({
+            compilerOptions: {
+              moduleResolution: 'bundler',
+              noEmit: true,
+            },
+          }) as TypeScriptConfig,
+      );
+
+    const resolveFilesSpy = vi
+      .spyOn(fileResolverModule, 'resolveFiles')
+      .mockImplementation((rawFiles) => Promise.resolve(rawFiles));
+
+    const tempConfigSpy = vi
+      .spyOn(tempConfigModule, 'createTempConfig')
+      .mockImplementation((_, resolvedFiles) =>
+        Promise.resolve(
+          createMockTempConfigHandle({
+            path: `/tmp/${resolvedFiles[0].includes('pkg-a') ? 'a' : 'b'}.json`,
+            includedSetupFiles: resolvedFiles[0].includes('pkg-a')
+              ? ['pkg-a/setup.ts']
+              : [],
+          }),
+        ),
+      );
+
+    const executeSpy = vi
+      .spyOn(executorModule, 'executeAndParseTypeScript')
+      .mockImplementation((_tempPath, files) => {
+        if (files[0].includes('pkg-a')) {
+          return Promise.resolve({
+            success: true,
+            errorCount: 0,
+            warningCount: 1,
+            errors: [],
+            warnings: [
+              {
+                file: files[0],
+                line: 1,
+                column: 1,
+                message: 'Minor issue',
+                code: 'WARN',
+                severity: 'warning' as const,
+              },
+            ],
+            duration: 10,
+            checkedFiles: files,
+            includedSetupFiles: ['pkg-a/setup.ts'],
+          });
+        }
+
+        return Promise.resolve({
+          success: false,
+          errorCount: 1,
+          warningCount: 0,
+          errors: [
+            {
+              file: files[0],
+              line: 2,
+              column: 1,
+              message: 'Group failure',
+              code: 'ERROR',
+              severity: 'error' as const,
+            },
+          ],
+          warnings: [],
+          duration: 25,
+          checkedFiles: files,
+          includedSetupFiles: [],
+        });
+      });
+
+    const filesToCheck = [
+      '/workspace/pkg-a/src/a.ts',
+      '/workspace/pkg-b/src/b.ts',
+    ];
+
+    const result = await checkFiles(filesToCheck, { cwd: '/workspace' });
+
+    expect(result.success).toBe(false);
+    expect(result.errorCount).toBe(1);
+    expect(result.warningCount).toBe(1);
+    expect(result.checkedFiles).toEqual(filesToCheck);
+    expect(result.includedSetupFiles).toEqual(['pkg-a/setup.ts']);
+
+    findTsConfigSpy.mockRestore();
+    parseTsConfigSpy.mockRestore();
+    resolveFilesSpy.mockRestore();
+    tempConfigSpy.mockRestore();
+    executeSpy.mockRestore();
+  });
+
+  it('logs tsgo incompatibility tips when verbose', async () => {
+    const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+    const findTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'findTsConfig')
+      .mockReturnValue(tsconfigPath);
+    const parseTsconfigSpy = vi
+      .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+      .mockReturnValue({
+        compilerOptions: {
+          paths: { '@/*': ['src/*'] },
+          moduleResolution: 'node',
+        },
+      } as TypeScriptConfig);
+    const shouldUseTsgoSpy = vi
+      .spyOn(tsgoCompatibility, 'shouldUseTsgo')
+      .mockReturnValue({
+        useTsgo: false,
+        reason: 'Configuration incompatible with tsgo: baseUrl',
+        compatibilityResult: {
+          compatible: false,
+          incompatibleFeatures: ['baseUrl'],
+          recommendation:
+            'Using tsc due to: baseUrl. Consider using bundler moduleResolution for tsgo compatibility.',
+        },
+      });
+    const resolveFilesSpy = vi
+      .spyOn(fileResolverModule, 'resolveFiles')
+      .mockResolvedValue(['src/example.ts']);
+    const tempConfigSpy = vi
+      .spyOn(tempConfigModule, 'createTempConfig')
+      .mockResolvedValue(
+        createMockTempConfigHandle({ path: '/tmp/config.json' }),
+      );
+    const executeSpy = vi
+      .spyOn(executorModule, 'executeAndParseTypeScript')
+      .mockResolvedValue({
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 5,
+        checkedFiles: ['src/example.ts'],
+      });
+    const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+      /* noop */
+    });
+
+    const result = await checkFiles(['src/example.ts'], {
+      cwd: tempDir,
+      verbose: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Using tsc: Configuration incompatible with tsgo: baseUrl',
+      ),
+    );
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Consider using bundler moduleResolution for tsgo compatibility',
+      ),
+    );
+
+    findTsConfigSpy.mockRestore();
+    parseTsconfigSpy.mockRestore();
+    shouldUseTsgoSpy.mockRestore();
+    resolveFilesSpy.mockRestore();
+    tempConfigSpy.mockRestore();
+    executeSpy.mockRestore();
+    loggerInfoSpy.mockRestore();
+  });
+
+  it('logs tsgo usage when verbose and tsgo is selected', async () => {
+    const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+    const findTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'findTsConfig')
+      .mockReturnValue(tsconfigPath);
+    const parseTsconfigSpy = vi
+      .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+      .mockReturnValue({
+        compilerOptions: {},
+      } as TypeScriptConfig);
+    const shouldUseTsgoSpy = vi
+      .spyOn(tsgoCompatibility, 'shouldUseTsgo')
+      .mockReturnValue({
+        useTsgo: true,
+        reason: 'Configuration is compatible with tsgo for optimal performance',
+        compatibilityResult: {
+          compatible: true,
+          incompatibleFeatures: [],
+          recommendation:
+            'Configuration is compatible with tsgo for optimal performance',
+        },
+      });
+    const resolveFilesSpy = vi
+      .spyOn(fileResolverModule, 'resolveFiles')
+      .mockResolvedValue(['src/example.ts']);
+    const tempConfigSpy = vi
+      .spyOn(tempConfigModule, 'createTempConfig')
+      .mockResolvedValue(
+        createMockTempConfigHandle({ path: '/tmp/config.json' }),
+      );
+    const executeSpy = vi
+      .spyOn(executorModule, 'executeAndParseTypeScript')
+      .mockResolvedValue({
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 5,
+        checkedFiles: ['src/example.ts'],
+      });
+    const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+      /* noop */
+    });
+
+    const result = await checkFiles(['src/example.ts'], {
+      cwd: tempDir,
+      verbose: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      'Using tsgo for optimal performance',
+    );
+
+    findTsConfigSpy.mockRestore();
+    parseTsconfigSpy.mockRestore();
+    shouldUseTsgoSpy.mockRestore();
+    resolveFilesSpy.mockRestore();
+    tempConfigSpy.mockRestore();
+    executeSpy.mockRestore();
+    loggerInfoSpy.mockRestore();
+  });
+
+  it('warns when temp config cleanup fails under verbose mode', async () => {
+    const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+    const findTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'findTsConfig')
+      .mockReturnValue(tsconfigPath);
+    const parseTsconfigSpy = vi
+      .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+      .mockReturnValue({
+        compilerOptions: {},
+      } as TypeScriptConfig);
+    const shouldUseTsgoSpy = vi
+      .spyOn(tsgoCompatibility, 'shouldUseTsgo')
+      .mockReturnValue({
+        useTsgo: false,
+        reason: 'tsgo not available (not installed)',
+      });
+    const resolveFilesSpy = vi
+      .spyOn(fileResolverModule, 'resolveFiles')
+      .mockResolvedValue(['src/example.ts']);
+    const cleanupError = new Error('cleanup boom');
+    const cleanupSpy = vi.fn(() => {
+      throw cleanupError;
+    });
+    const tempConfigSpy = vi
+      .spyOn(tempConfigModule, 'createTempConfig')
+      .mockResolvedValue(
+        createMockTempConfigHandle({
+          path: '/tmp/config.json',
+          cleanup: cleanupSpy,
+        }),
+      );
+    const executeSpy = vi
+      .spyOn(executorModule, 'executeAndParseTypeScript')
+      .mockResolvedValue({
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 5,
+        checkedFiles: ['src/example.ts'],
+      });
+    const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+      /* noop */
+    });
+    const loggerWarnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {
+      /* noop */
+    });
+
+    const result = await checkFiles(['src/example.ts'], {
+      cwd: tempDir,
+      verbose: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to cleanup temp config'),
+    );
+
+    findTsConfigSpy.mockRestore();
+    parseTsconfigSpy.mockRestore();
+    shouldUseTsgoSpy.mockRestore();
+    resolveFilesSpy.mockRestore();
+    tempConfigSpy.mockRestore();
+    executeSpy.mockRestore();
+    loggerInfoSpy.mockRestore();
+    loggerWarnSpy.mockRestore();
+  });
+
+  it('logs monorepo detection when multiple tsconfig groups are processed', async () => {
+    const firstTsconfig = '/workspace/packages/pkg-a/tsconfig.json';
+    const secondTsconfig = '/workspace/packages/pkg-b/tsconfig.json';
+    let findCall = 0;
+    const findTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'findTsConfig')
+      .mockImplementation(() => {
+        findCall += 1;
+        if (findCall === 1) return firstTsconfig;
+        if (findCall === 2) return secondTsconfig;
+        return firstTsconfig;
+      });
+    const parseTsconfigSpy = vi
+      .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+      .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+    const resolveFilesSpy = vi
+      .spyOn(fileResolverModule, 'resolveFiles')
+      .mockImplementation((_files, _cwd, tsconfigPath) =>
+        Promise.resolve([
+          `${(tsconfigPath ?? 'unknown').replaceAll(':', '_')}/resolved.ts`,
+        ]),
+      );
+    const tempConfigSpy = vi
+      .spyOn(tempConfigModule, 'createTempConfig')
+      .mockImplementation(() =>
+        Promise.resolve(
+          createMockTempConfigHandle({
+            path: `/tmp/group-${Math.random().toString(36).slice(2)}.json`,
+          }),
+        ),
+      );
+    const executeSpy = vi
+      .spyOn(executorModule, 'executeAndParseTypeScript')
+      .mockResolvedValue({
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 5,
+        checkedFiles: ['resolved.ts'],
+      });
+    const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+      /* noop */
+    });
+
+    const files = ['packages/pkg-a/src/a.ts', 'packages/pkg-b/src/b.ts'];
+    const result = await checkFiles(files, {
+      cwd: '/workspace',
+      verbose: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(loggerInfoSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Monorepo detected'),
+    );
+
+    findTsConfigSpy.mockRestore();
+    parseTsconfigSpy.mockRestore();
+    resolveFilesSpy.mockRestore();
+    tempConfigSpy.mockRestore();
+    executeSpy.mockRestore();
+    loggerInfoSpy.mockRestore();
+  });
+
+  it('processes default group when tsconfig is discovered after fallback', async () => {
+    const defaultTsconfigPath = path.join(tempDir, 'tsconfig.json');
+    let findCall = 0;
+    const findTsConfigSpy = vi
+      .spyOn(tsconfigResolver, 'findTsConfig')
+      .mockImplementation(() => {
+        findCall += 1;
+        if (findCall === 1) {
+          throw new Error('tsconfig not found');
+        }
+        return defaultTsconfigPath;
+      });
+    const parseTsconfigSpy = vi
+      .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
+      .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+    const resolveFilesSpy = vi
+      .spyOn(fileResolverModule, 'resolveFiles')
+      .mockResolvedValue(['src/unmapped.ts']);
+    const tempConfigSpy = vi
+      .spyOn(tempConfigModule, 'createTempConfig')
+      .mockResolvedValue(
+        createMockTempConfigHandle({ path: '/tmp/default-group.json' }),
+      );
+    const executeSpy = vi
+      .spyOn(executorModule, 'executeAndParseTypeScript')
+      .mockResolvedValue({
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 7,
+        checkedFiles: ['src/unmapped.ts'],
+      });
+
+    const result = await checkFiles(['unmatched/file.ts'], {
+      cwd: tempDir,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.checkedFiles).toEqual(['src/unmapped.ts']);
+    expect(findTsConfigSpy).toHaveBeenCalledTimes(2);
+
+    findTsConfigSpy.mockRestore();
+    parseTsconfigSpy.mockRestore();
+    resolveFilesSpy.mockRestore();
+    tempConfigSpy.mockRestore();
+    executeSpy.mockRestore();
   });
 });

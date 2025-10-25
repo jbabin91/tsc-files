@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ALL_EXTENSIONS,
+  ALL_EXTENSIONS_WITH_DECLARATIONS,
   buildGlobPattern,
   createFileExtensionRegex,
   getFileExtensions,
   hasValidExtension,
+  hasValidFileExtension,
+  isDeclarationFile,
   JS_EXTENSIONS,
+  TS_DECLARATION_EXTENSIONS,
   TS_EXTENSIONS,
 } from '@/utils/file-patterns';
 
@@ -26,6 +30,23 @@ describe('file-patterns', () => {
         'tsx',
         'mts',
         'cts',
+        'js',
+        'jsx',
+        'mjs',
+        'cjs',
+      ]);
+    });
+
+    it('should include declaration extensions when requested', () => {
+      expect(TS_DECLARATION_EXTENSIONS).toEqual(['d.ts', 'd.mts', 'd.cts']);
+      expect(ALL_EXTENSIONS_WITH_DECLARATIONS).toEqual([
+        'ts',
+        'tsx',
+        'mts',
+        'cts',
+        'd.ts',
+        'd.mts',
+        'd.cts',
         'js',
         'jsx',
         'mjs',
@@ -190,6 +211,41 @@ describe('file-patterns', () => {
 
     it('should build pattern for all supported files', () => {
       expect(buildGlobPattern(true)).toBe('{ts,tsx,mts,cts,js,jsx,mjs,cjs}');
+    });
+  });
+
+  describe('isDeclarationFile', () => {
+    it('identifies TypeScript declaration files', () => {
+      expect(isDeclarationFile('index.d.ts')).toBe(true);
+      expect(isDeclarationFile('module.d.mts')).toBe(true);
+      expect(isDeclarationFile('legacy.d.cts')).toBe(true);
+    });
+
+    it('rejects non-declaration files', () => {
+      expect(isDeclarationFile('index.ts')).toBe(false);
+      expect(isDeclarationFile('index.js')).toBe(false);
+      expect(isDeclarationFile('types.d.ts.backup')).toBe(false);
+    });
+  });
+
+  describe('hasValidFileExtension', () => {
+    it('respects includeJs flag', () => {
+      expect(hasValidFileExtension('src/file.ts', false)).toBe(true);
+      expect(hasValidFileExtension('src/file.js', false)).toBe(false);
+      expect(hasValidFileExtension('src/file.js', true)).toBe(true);
+    });
+
+    it('handles declaration files when requested', () => {
+      expect(hasValidFileExtension('types/index.d.ts', false)).toBe(true);
+      expect(hasValidFileExtension('types/index.d.ts', false, true)).toBe(true);
+      expect(hasValidFileExtension('types/module.d.mts', true, true)).toBe(
+        true,
+      );
+    });
+
+    it('rejects unsupported extensions even with declarations enabled', () => {
+      expect(hasValidFileExtension('README.md', true, true)).toBe(false);
+      expect(hasValidFileExtension('styles.css', false, true)).toBe(false);
     });
   });
 });

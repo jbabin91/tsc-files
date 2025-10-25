@@ -60,10 +60,10 @@ Evolution of the testing system:
 
 | Area               | Target | Current |
 | ------------------ | ------ | ------- |
-| **Core Functions** | > 90%  | 90%+    |
-| **CLI Layer**      | > 80%  | 84%+    |
-| **Detectors**      | > 85%  | 90%+    |
-| **Overall**        | > 84%  | 84%+    |
+| **Core Functions** | > 90%  | 97%     |
+| **CLI Layer**      | > 80%  | 98%     |
+| **Detectors**      | > 85%  | 93%     |
+| **Overall**        | > 84%  | 96%     |
 
 ## Running Tests
 

@@ -106,6 +106,27 @@ describe('Logger', () => {
       expect(customInfo).toHaveBeenCalledWith('Test info');
       expect(console.warn).toHaveBeenCalledWith('Test warn');
     });
+
+    test('should ignore undefined logger methods gracefully', () => {
+      const originalInfo = logger.info;
+
+      const customLogger = {
+        info: undefined as unknown as Logger['info'],
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      };
+
+      setLogger(customLogger);
+
+      logger.info('info message');
+      logger.warn('warn message');
+
+      expect(logger.info).toBe(originalInfo);
+      expect(customLogger.warn).toHaveBeenCalledWith('warn message');
+
+      resetLogger();
+    });
   });
 
   describe('resetLogger', () => {

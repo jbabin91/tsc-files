@@ -135,6 +135,48 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
   });
 
   describe('getTscPath function coverage', () => {
+    it('should detect pnpm nested TypeScript binary within .pnpm store', () => {
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath.toString();
+        if (pathStr.endsWith('pnpm-lock.yaml')) {
+          return true;
+        }
+
+        return (
+          pathStr.includes('.pnpm/typescript@') && pathStr.endsWith('bin/tsc')
+        );
+      });
+
+      const result =
+        packageManagerModule.detectPackageManager('/workspace/project');
+
+      expect(result.manager).toBe('pnpm');
+      expect(result.tscPath).toContain('.pnpm');
+      expect(result.tscPath?.endsWith('bin/tsc')).toBe(true);
+    });
+
+    it('should detect pnpm tsc from parent workspace node_modules directory', () => {
+      mockExistsSync.mockImplementation((filePath) => {
+        const pathStr = filePath.toString();
+        if (pathStr.endsWith('pnpm-lock.yaml')) {
+          return true;
+        }
+
+        if (pathStr.includes('node_modules/.bin/tsc')) {
+          return true;
+        }
+
+        return false;
+      });
+
+      const result = packageManagerModule.detectPackageManager(
+        '/workspace/apps/app-one',
+      );
+
+      expect(result.manager).toBe('pnpm');
+      expect(result.tscPath?.endsWith('node_modules/.bin/tsc')).toBe(true);
+    });
+
     it('should handle Windows platform detection for pnpm paths', () => {
       const originalPlatform = process.platform;
       Object.defineProperty(process, 'platform', {

@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createProgram, parseArguments } from '@/cli/command';
 import { runTypeCheck } from '@/cli/runner';
 
+const ESC = String.fromCodePoint(27);
+const ANSI_PATTERN = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+const stripAnsi = (value: string): string => value.split(ANSI_PATTERN).join('');
+
 // Mock console methods to capture output
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {
   /* empty */
@@ -189,15 +193,16 @@ describe('CLI', () => {
       const { stdout, exitCode } = await runCli(['--help'], tempDir);
 
       expect(exitCode).toBe(0);
-      expect(stdout).toContain('Usage: tsc-files');
-      expect(stdout).toContain('Options:');
+      const plainStdout = stripAnsi(stdout);
+      expect(plainStdout).toContain('Usage: tsc-files');
+      expect(plainStdout).toContain('Options:');
     });
 
     it('should show help with -h', async () => {
       const { stdout, exitCode } = await runCli(['-h'], tempDir);
 
       expect(exitCode).toBe(0);
-      expect(stdout).toContain('Usage: tsc-files');
+      expect(stripAnsi(stdout)).toContain('Usage: tsc-files');
     });
 
     it('should show version with --version', async () => {

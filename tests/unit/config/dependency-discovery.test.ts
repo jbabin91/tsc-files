@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import * as ts from 'typescript';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   clearDependencyCache,
@@ -12,6 +12,7 @@ import {
   getSetupFilesFromConfig,
 } from '@/config/dependency-discovery';
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
+import { logger } from '@/utils/logger';
 
 describe('Dependency Discovery', () => {
   let tempDir: string;
@@ -727,6 +728,158 @@ export default defineConfig({
       expect(result.sourceFiles).toContain(otherFile);
       // Setup files should NOT be included when includeFiles is provided
       expect(result.includedSetupFiles).toHaveLength(0);
+    });
+  });
+
+  describe('Verbose logging scenarios', () => {
+    it('logs inclusion of user-specified files', async () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const value = 1;');
+      const extraFile = path.join(tempDir, 'extra.ts');
+      writeFileSync(extraFile, 'export const extra = 2;');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+        },
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* noop */
+      });
+
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, true, [
+        extraFile,
+      ]);
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Including user-specified file'),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('logs when user-specified file is already included', async () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const value = 1;');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(tsconfigPath, JSON.stringify({ compilerOptions: {} }));
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {},
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* noop */
+      });
+
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, true, [
+        mainFile,
+      ]);
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('User-specified file already included'),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('logs when no potential setup files are found for test roots', async () => {
+      const testsDir = path.join(tempDir, 'tests');
+      mkdirSync(testsDir);
+      const testFile = path.join(testsDir, 'main.ts');
+      writeFileSync(testFile, 'export const value = 1;');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(tsconfigPath, JSON.stringify({ compilerOptions: {} }));
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {},
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* noop */
+      });
+
+      await discoverDependencyClosure(ts, config, [testFile], tempDir, true);
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('No potential setup files found'),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('logs when root files have no test patterns under verbose mode', async () => {
+      const mainFile = path.join(tempDir, 'src', 'main.ts');
+      mkdirSync(path.dirname(mainFile), { recursive: true });
+      writeFileSync(mainFile, 'export const value = 1;');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(tsconfigPath, JSON.stringify({ compilerOptions: {} }));
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {},
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* noop */
+      });
+
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, true);
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('No test files detected'),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('logs warnings when discovery falls back to include patterns', async () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const value = 1;');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(tsconfigPath, '{ invalid json');
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {},
+      };
+
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {
+        /* noop */
+      });
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        true,
+      );
+
+      expect(result.discovered).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Dependency discovery failed'),
+      );
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Falling back to include patterns for type checking',
+      );
+
+      warnSpy.mockRestore();
     });
   });
 

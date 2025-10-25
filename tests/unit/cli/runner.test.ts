@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   provideCompilerEducation,
   provideGitHookOptimization,
+  provideSetupFileEducation,
 } from '@/cli/education';
 import {
   createOutputContext,
@@ -17,7 +18,10 @@ import {
   runTypeCheckWithOutput,
 } from '@/cli/runner';
 import { checkFiles } from '@/core/checker';
+import type { PackageManagerInfo } from '@/detectors/package-manager';
+import { findTypeScriptCompiler } from '@/detectors/typescript';
 import type { CheckResult } from '@/types/core';
+import { logger } from '@/utils/logger';
 
 // Mock the checkFiles function
 vi.mock('@/core/checker', () => ({
@@ -28,6 +32,7 @@ vi.mock('@/core/checker', () => ({
 vi.mock('@/cli/education', () => ({
   provideCompilerEducation: vi.fn(),
   provideGitHookOptimization: vi.fn(),
+  provideSetupFileEducation: vi.fn(),
 }));
 
 // Mock the TypeScript detector
@@ -67,10 +72,12 @@ const mockStartProgress = vi.mocked(startProgress);
 const mockUpdateProgress = vi.mocked(updateProgress);
 const mockFormatOutput = vi.mocked(formatOutput);
 const mockOutputToConsole = vi.mocked(outputToConsole);
+const mockFindTypeScriptCompiler = vi.mocked(findTypeScriptCompiler);
 
 // Education module mocks
 const mockProvideCompilerEducation = vi.mocked(provideCompilerEducation);
 const mockProvideGitHookOptimization = vi.mocked(provideGitHookOptimization);
+const mockProvideSetupFileEducation = vi.mocked(provideSetupFileEducation);
 
 describe('CLI Runner', () => {
   beforeEach(() => {
@@ -397,6 +404,124 @@ describe('CLI Runner', () => {
       expect(mockCheckFiles).toHaveBeenCalled();
     });
 
+    it('should log compiler details and fallback information when --show-compiler is enabled', async () => {
+      const mockResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 42,
+        checkedFiles: ['test.ts'],
+      };
+
+      mockFindTypeScriptCompiler.mockReturnValueOnce({
+        executable: '/usr/bin/tsgo',
+        args: [],
+        useShell: false,
+        packageManager: { manager: 'pnpm' } as unknown as PackageManagerInfo,
+        isWindows: false,
+        compilerType: 'tsgo',
+        fallbackAvailable: true,
+      });
+      mockCheckFiles.mockResolvedValueOnce(mockResult);
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+      const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* empty */
+      });
+
+      const result = await runTypeCheck(['test.ts'], {
+        showCompiler: true,
+        json: false,
+        verbose: false,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(loggerInfoSpy).toHaveBeenCalledWith(
+        'Using tsgo compiler: /usr/bin/tsgo',
+      );
+      expect(loggerInfoSpy).toHaveBeenCalledWith(
+        'Fallback compiler available: tsc',
+      );
+      expect(mockProvideGitHookOptimization).toHaveBeenCalled();
+
+      loggerInfoSpy.mockRestore();
+    });
+
+    it('should log compiler detection failures and continue execution', async () => {
+      const mockResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 10,
+        checkedFiles: ['test.ts'],
+      };
+
+      mockFindTypeScriptCompiler.mockImplementationOnce(() => {
+        throw new Error('Unable to locate compiler');
+      });
+      mockCheckFiles.mockResolvedValueOnce(mockResult);
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
+
+      const result = await runTypeCheck(['test.ts'], {
+        verbose: false,
+        json: false,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Compiler detection failed: Unable to locate compiler',
+        ),
+      );
+
+      loggerErrorSpy.mockRestore();
+    });
+
+    it('should provide setup file education when setup files are detected', async () => {
+      mockCheckFiles.mockReset();
+      const mockResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 55,
+        checkedFiles: ['test.ts'],
+        includedSetupFiles: ['tests/setup.ts'],
+      };
+
+      mockCheckFiles.mockResolvedValueOnce(mockResult);
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      await runTypeCheck(['test.ts'], {
+        tips: false,
+        json: false,
+        verbose: false,
+      });
+
+      expect(mockProvideSetupFileEducation).toHaveBeenCalledWith(
+        ['tests/setup.ts'],
+        false,
+      );
+    });
+
     it('should handle --benchmark flag and run comparison', async () => {
       const mockTscResult: CheckResult = {
         success: true,
@@ -482,6 +607,7 @@ describe('CLI Runner', () => {
     });
 
     it('should handle --benchmark flag error and fallback gracefully', async () => {
+      mockCheckFiles.mockReset();
       const mockFinalResult: CheckResult = {
         success: true,
         errorCount: 0,

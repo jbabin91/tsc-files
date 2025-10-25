@@ -13,6 +13,10 @@ import {
 import type { ValidatedCliOptions } from '@/types/cli';
 import type { CheckResult } from '@/types/core';
 
+const ESC = String.fromCodePoint(27);
+const ANSI_PATTERN = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+const stripAnsi = (value: string): string => value.split(ANSI_PATTERN).join('');
+
 // Mock logger utility
 vi.mock('@/utils/logger', () => ({
   logger: {
@@ -277,8 +281,9 @@ describe('CLI Output', () => {
 
       const { stdout, stderr } = formatOutput(context, result);
 
-      expect(stdout).toContain('Checked 2 files in 250ms');
-      expect(stdout).toContain('Type check passed');
+      const plainStdout = stripAnsi(stdout);
+      expect(plainStdout).toContain('Checked 2 files in 250ms');
+      expect(plainStdout).toContain('Type check passed');
       expect(stderr).toBe('');
     });
 

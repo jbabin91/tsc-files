@@ -81,7 +81,7 @@ src/components/Button.tsx(25,10): error TS2304: Cannot find name 'React'.
     });
 
     it('should handle Windows-style file paths', () => {
-      const output = `C:\\Users\\test\\project\\src\\index.ts(10,5): error TS2322: Type error.`;
+      const output = String.raw`C:\Users\test\project\src\index.ts(10,5): error TS2322: Type error.`;
 
       const result = parseTypeScriptOutput(output);
 

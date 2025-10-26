@@ -118,10 +118,8 @@ function getSetupFilesFromConfig(configDir: string): string[] {
  * Get potential setup files by searching common locations and patterns
  */
 function getPotentialSetupFiles(configDir: string): string[] {
-  const foundFiles: string[] = [];
-
   // First, try to get setup files from test framework config
-  foundFiles.push(...getSetupFilesFromConfig(configDir));
+  const foundFiles: string[] = getSetupFilesFromConfig(configDir);
 
   // Common test directories
   const testDirs = [

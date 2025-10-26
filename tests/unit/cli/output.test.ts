@@ -14,7 +14,7 @@ import type { ValidatedCliOptions } from '@/types/cli';
 import type { CheckResult } from '@/types/core';
 
 const ESC = String.fromCodePoint(27);
-const ANSI_PATTERN = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+const ANSI_PATTERN = new RegExp(String.raw`${ESC}\[[0-9;]*m`, 'g');
 const stripAnsi = (value: string): string => value.split(ANSI_PATTERN).join('');
 
 // Mock logger utility

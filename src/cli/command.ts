@@ -122,7 +122,7 @@ export function createProgram(
  * Create detailed help text with examples and patterns
  */
 function createHelpText(): string {
-  return `
+  return String.raw`
 ${kleur.bold('Examples:')}
   ${kleur.dim('# Check specific files')}
   tsc-files src/index.ts src/utils.ts
@@ -137,7 +137,7 @@ ${kleur.bold('Examples:')}
   TSC_PROJECT=tsconfig.build.json tsc-files "src/**/*.ts"
 
   ${kleur.dim('# Git hook usage (lint-staged)')}
-  tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$')
+  tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')
 
   ${kleur.dim('# Compiler selection')}
   tsc-files --use-tsgo "src/**/*.ts"     # Force use tsgo for speed

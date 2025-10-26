@@ -129,7 +129,7 @@ function isBreakingChange(commit: string): boolean {
     commit.includes('BREAKING CHANGE:') ||
     // Detect ! suffix in commit type (e.g., feat!: or fix(scope)!:)
     defaultCommitTypes.some((commitType) =>
-      new RegExp(`^${commitType.type}(?:\\(.*\\))?!:`).exec(commit),
+      new RegExp(String.raw`^${commitType.type}(?:\(.*\))?!:`).exec(commit),
     )
   );
 }
@@ -137,7 +137,7 @@ function isBreakingChange(commit: string): boolean {
 // Professional conventional commit validation
 function isConventionalCommit(commit: string): boolean {
   return defaultCommitTypes.some((commitType) =>
-    new RegExp(`^${commitType.type}(?:\\(.*\\))?!?:`).exec(commit),
+    new RegExp(String.raw`^${commitType.type}(?:\(.*\))?!?:`).exec(commit),
   );
 }
 
@@ -221,7 +221,7 @@ function parseCommit({ sha, message }: Commit): ParsedCommit | null {
   // Build dynamic regex from all supported commit types
   const typePattern = defaultCommitTypes.map((ct) => ct.type).join('|');
   const conventionalRegex = new RegExp(
-    `^(${typePattern})(\\([^)]+\\))?(!?)?: (.+)`,
+    String.raw`^(${typePattern})(\([^)]+\))?(!?)?: (.+)`,
   );
 
   const lines = message.split('\n');

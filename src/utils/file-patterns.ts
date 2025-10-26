@@ -56,7 +56,7 @@ export function getFileExtensions(includeJs: boolean): {
     : [...TS_EXTENSIONS];
 
   const globPattern = `{${extensions.join(',')}}`;
-  const regexPattern = new RegExp(`\\.(${extensions.join('|')})$`);
+  const regexPattern = new RegExp(String.raw`\.(${extensions.join('|')})$`);
 
   return { extensions, globPattern, regexPattern };
 }
@@ -119,7 +119,7 @@ export function hasValidExtension(
  */
 export function createFileExtensionRegex(includeJs: boolean): RegExp {
   const extensions = includeJs ? ALL_EXTENSIONS : TS_EXTENSIONS;
-  return new RegExp(`\\.(${extensions.join('|')})$`);
+  return new RegExp(String.raw`\.(${extensions.join('|')})$`);
 }
 
 /**

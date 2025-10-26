@@ -7,7 +7,7 @@ import { createProgram, parseArguments } from '@/cli/command';
 import { runTypeCheck } from '@/cli/runner';
 
 const ESC = String.fromCodePoint(27);
-const ANSI_PATTERN = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+const ANSI_PATTERN = new RegExp(String.raw`${ESC}\[[0-9;]*m`, 'g');
 const stripAnsi = (value: string): string => value.split(ANSI_PATTERN).join('');
 
 // Mock console methods to capture output

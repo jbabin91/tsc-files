@@ -1,5 +1,34 @@
 # @jbabin91/tsc-files
 
+## 0.7.0
+
+### Minor Changes
+
+- [`59a850d`](https://github.com/jbabin91/tsc-files/commit/59a850db49aa7f3dd4adfb7452a0232c8838b88d) Thanks [@jbabin91](https://github.com/jbabin91)! - ### 🔧 Miscellaneous Chores
+  - **repo**: :hammer: bump dependencies
+  - **repo**: :hammer: bump dependencies
+  - **deps**: update all non-major dependencies (#43)
+  - **repo**: :hammer: bump dependencies
+  - **deps**: update actions/setup-node action to v6 (#44)
+  - **repo**: :hammer: bump dependencies
+
+  ### 🐛 Bug Fixes
+
+  - **tests**: update test counts and improve coverage metrics
+
+  ### ✅ Tests
+
+  - **vitest**: :white_check_mark: fix tests for vitest v4 migration
+
+  ### 📝 Documentation
+
+  - **openspec**: :memo: add refactor-test-infrastructure proposal
+
+  ### ✨ Features
+
+  - **core**: :sparkles: add ambient declaration discovery and modern module support
+  - **agents**: add new agents for code refactoring, reliability review, git workflow management, and testing strategies
+
 ## 0.6.1
 
 ### Patch Changes

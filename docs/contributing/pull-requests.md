@@ -216,6 +216,86 @@ Your PR must pass:
 
 > Good catch! I added documentation explaining why this is needed.
 
+### Managing Review Comments via CLI
+
+**Replying to Review Comments:**
+
+To create a **line-specific reply** (not a standalone review comment):
+
+```bash
+# Get the comment ID from the review thread
+gh pr view <PR_NUMBER> --json reviewThreads
+
+# Reply to the specific comment (creates line-specific reply)
+gh api \
+  --method POST \
+  repos/jbabin91/tsc-files/pulls/<PR_NUMBER>/comments \
+  -f body="Your reply message here" \
+  -f path="path/to/file.ts" \
+  -f commit_id="<COMMIT_SHA>" \
+  -f subject_type="line" \
+  -F in_reply_to=<COMMENT_ID>
+```
+
+**Important:** Use `-F in_reply_to=<NUMBER>` (uppercase F) to pass the comment ID as a number, not a string.
+
+**Resolving Review Threads:**
+
+```bash
+# Step 1: Get thread IDs
+gh api graphql -f query='
+query {
+  repository(owner: "jbabin91", name: "tsc-files") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 10) {
+        nodes {
+          id
+          isResolved
+          comments(first: 1) {
+            nodes {
+              body
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+
+# Step 2: Resolve the thread
+gh api graphql -f query='
+mutation {
+  resolveReviewThread(input: {threadId: "<THREAD_ID>"}) {
+    thread {
+      id
+      isResolved
+    }
+  }
+}'
+```
+
+**Example Workflow:**
+
+```bash
+# 1. Reply to Copilot comment
+COMMENT_ID=2464200977
+gh api --method POST repos/jbabin91/tsc-files/pulls/47/comments \
+  -f body="Thanks for the suggestion! Fixed in commit abc123." \
+  -f path="src/core/file-resolver.ts" \
+  -f commit_id="ca4cc896094d96a42bf24842a4ee9487fba1feb0" \
+  -f subject_type="line" \
+  -F in_reply_to=$COMMENT_ID
+
+# 2. Get thread ID and resolve
+THREAD_ID="PRRT_kwDOP1frcc5fYmg1"
+gh api graphql -f query="
+mutation {
+  resolveReviewThread(input: {threadId: \"$THREAD_ID\"}) {
+    thread { id isResolved }
+  }
+}"
+```
+
 ## After PR is Merged
 
 ### Version Bump

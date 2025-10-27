@@ -23,12 +23,14 @@ function isDirectFile(pattern: string): boolean {
  * @param pattern - Direct file pattern
  * @param cwd - Current working directory
  * @param regexPattern - File extension regex pattern
+ * @param tsconfigPath - Optional path to tsconfig.json for JavaScript inclusion
  * @returns Object with optional absolutePath or globPattern
  */
 async function handleDirectFile(
   pattern: string,
   cwd: string,
   regexPattern: RegExp,
+  tsconfigPath?: string,
 ): Promise<{ absolutePath?: string; globPattern?: string }> {
   const absolutePath = path.resolve(cwd, pattern);
 
@@ -39,7 +41,7 @@ async function handleDirectFile(
   if (existsSync(absolutePath)) {
     // Generate directory glob pattern (used in both try and catch)
     const { globPattern: extPattern } = getFileExtensions(
-      shouldIncludeJavaScriptFiles(),
+      shouldIncludeJavaScriptFiles(tsconfigPath),
     );
     const directoryGlobPattern = `${pattern}/**/*.${extPattern}`;
 
@@ -100,7 +102,12 @@ export async function resolveFiles(
 
   for (const pattern of patterns) {
     if (isDirectFile(pattern)) {
-      const result = await handleDirectFile(pattern, cwd, regexPattern);
+      const result = await handleDirectFile(
+        pattern,
+        cwd,
+        regexPattern,
+        tsconfigPath,
+      );
 
       if (result.absolutePath) {
         directFiles.push(result.absolutePath);

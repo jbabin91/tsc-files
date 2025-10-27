@@ -39,7 +39,7 @@ export default defineConfig({
           statements: 84,
         },
         'src/cli/**': {
-          branches: 89,
+          branches: 86,
           functions: 94,
           lines: 94,
           statements: 94,

@@ -225,13 +225,13 @@ To create a **line-specific reply** (not a standalone review comment):
 ```bash
 # Get the comment ID from the review thread
 # Note: Use REST API to get numeric comment IDs
-gh api repos/jbabin91/tsc-files/pulls/<PR_NUMBER>/comments \
+gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments \
   --jq '.[] | {id: .id, body: .body, path: .path, line: .line}'
 
 # Reply to the specific comment (creates line-specific reply)
 gh api \
   --method POST \
-  repos/jbabin91/tsc-files/pulls/<PR_NUMBER>/comments \
+  repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments \
   -f body="Your reply message here" \
   -f path="path/to/file.ts" \
   -f commit_id="<COMMIT_SHA>" \
@@ -247,7 +247,7 @@ gh api \
 # Step 1: Get all review threads with their status
 gh api graphql -f query='
 query {
-  repository(owner: "jbabin91", name: "tsc-files") {
+  repository(owner: "<OWNER>", name: "<REPO>") {
     pullRequest(number: <PR_NUMBER>) {
       reviewThreads(last: 10) {
         nodes {
@@ -269,7 +269,7 @@ query {
 # Step 2: Find unresolved threads (using jq)
 gh api graphql -f query='
 query {
-  repository(owner: "jbabin91", name: "tsc-files") {
+  repository(owner: "<OWNER>", name: "<REPO>") {
     pullRequest(number: <PR_NUMBER>) {
       reviewThreads(last: 10) {
         nodes {
@@ -312,12 +312,14 @@ done
 
 ```bash
 # Full workflow: Reply to comment and resolve thread
+OWNER="jbabin91"
+REPO="tsc-files"
 PR_NUMBER=47
 COMMENT_ID=2464200977
 COMMIT_SHA="ca4cc896094d96a42bf24842a4ee9487fba1feb0"
 
 # 1. Reply to the review comment
-gh api --method POST repos/jbabin91/tsc-files/pulls/$PR_NUMBER/comments \
+gh api --method POST repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments \
   -f body="Thanks for the suggestion! Fixed in commit $COMMIT_SHA." \
   -f path="src/core/file-resolver.ts" \
   -f commit_id="$COMMIT_SHA" \
@@ -327,7 +329,7 @@ gh api --method POST repos/jbabin91/tsc-files/pulls/$PR_NUMBER/comments \
 # 2. Get the thread ID for this comment
 THREAD_ID=$(gh api graphql -f query="
 query {
-  repository(owner: \"jbabin91\", name: \"tsc-files\") {
+  repository(owner: \"$OWNER\", name: \"$REPO\") {
     pullRequest(number: $PR_NUMBER) {
       reviewThreads(last: 20) {
         nodes {
@@ -342,7 +344,7 @@ query {
       }
     }
   }
-}" --jq ".data.repository.pullRequest.reviewThreads.nodes[] | select(.comments.nodes[0].id == \"$COMMENT_ID\") | .id")
+}" --jq ".data.repository.pullRequest.reviewThreads.nodes[] | select(any(.comments.nodes[]; .id == \"$COMMENT_ID\")) | .id")
 
 # 3. Resolve the thread
 gh api graphql -f query="
@@ -359,7 +361,7 @@ mutation {
 # List all unresolved review comments
 gh api graphql -f query='
 query {
-  repository(owner: "jbabin91", name: "tsc-files") {
+  repository(owner: "<OWNER>", name: "<REPO>") {
     pullRequest(number: <PR_NUMBER>) {
       reviewThreads(last: 20) {
         nodes {
@@ -381,7 +383,7 @@ query {
 # Count unresolved threads
 gh api graphql -f query='
 query {
-  repository(owner: "jbabin91", name: "tsc-files") {
+  repository(owner: "<OWNER>", name: "<REPO>") {
     pullRequest(number: <PR_NUMBER>) {
       reviewThreads(last: 20) {
         nodes {
@@ -396,7 +398,7 @@ query {
 set -e  # Exit on error
 gh api graphql -f query='
 query {
-  repository(owner: "jbabin91", name: "tsc-files") {
+  repository(owner: "<OWNER>", name: "<REPO>") {
     pullRequest(number: <PR_NUMBER>) {
       reviewThreads(last: 20) {
         nodes {

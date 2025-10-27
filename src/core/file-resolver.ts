@@ -19,20 +19,21 @@ function isDirectFile(pattern: string): boolean {
 
 /**
  * Handle direct file resolution
+ * Returns either a validated absolute path or a glob pattern for directories
  * @param pattern - Direct file pattern
  * @param cwd - Current working directory
  * @param regexPattern - File extension regex pattern
- * @returns Array of resolved file patterns for globbing
+ * @returns Object with optional absolutePath or globPattern
  */
 async function handleDirectFile(
   pattern: string,
   cwd: string,
   regexPattern: RegExp,
-): Promise<string[]> {
+): Promise<{ absolutePath?: string; globPattern?: string }> {
   const absolutePath = path.resolve(cwd, pattern);
 
   if (existsSync(absolutePath) && regexPattern.test(pattern)) {
-    return [pattern];
+    return { absolutePath };
   }
 
   if (existsSync(absolutePath)) {
@@ -40,19 +41,20 @@ async function handleDirectFile(
       const fs = await import('node:fs/promises');
       const stat = await fs.stat(absolutePath);
       if (stat.isDirectory()) {
-        const { globPattern } = getFileExtensions(
+        const { globPattern: extPattern } = getFileExtensions(
           shouldIncludeJavaScriptFiles(),
         );
-        return [`${pattern}/**/*.${globPattern}`];
+        return { globPattern: `${pattern}/**/*.${extPattern}` };
       }
     } catch {
-      // If stat fails, treat as directory pattern
-      const { globPattern } = getFileExtensions(shouldIncludeJavaScriptFiles());
-      return [`${pattern}/**/*.${globPattern}`];
+      const { globPattern: extPattern } = getFileExtensions(
+        shouldIncludeJavaScriptFiles(),
+      );
+      return { globPattern: `${pattern}/**/*.${extPattern}` };
     }
   }
 
-  return [];
+  return {};
 }
 
 /**
@@ -77,6 +79,7 @@ function handleGlobPattern(pattern: string, includeJs: boolean): string[] {
 
 /**
  * Resolve files using fast-glob with TypeScript and optionally JavaScript patterns
+ * Handles files with special characters by bypassing glob for validated direct files
  * @param patterns - Array of file patterns to resolve
  * @param cwd - Current working directory
  * @param tsconfigPath - Optional path to tsconfig.json for JavaScript inclusion
@@ -90,40 +93,46 @@ export async function resolveFiles(
   const includeJs = shouldIncludeJavaScriptFiles(tsconfigPath);
   const { regexPattern } = getFileExtensions(includeJs);
 
+  const directFiles: string[] = [];
   const globPatterns: string[] = [];
 
   for (const pattern of patterns) {
     if (isDirectFile(pattern)) {
-      const directFilePatterns = await handleDirectFile(
-        pattern,
-        cwd,
-        regexPattern,
-      );
-      globPatterns.push(...directFilePatterns);
+      const result = await handleDirectFile(pattern, cwd, regexPattern);
+
+      if (result.absolutePath) {
+        directFiles.push(result.absolutePath);
+      } else if (result.globPattern) {
+        globPatterns.push(result.globPattern);
+      }
     } else {
       const globFilePatterns = handleGlobPattern(pattern, includeJs);
       globPatterns.push(...globFilePatterns);
     }
   }
 
-  if (globPatterns.length === 0) {
-    return [];
+  const results = [...directFiles];
+
+  if (globPatterns.length > 0) {
+    try {
+      const files = await glob(globPatterns, {
+        cwd,
+        absolute: true,
+        onlyFiles: true,
+        ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+      });
+
+      results.push(...files.filter((file) => regexPattern.test(file)));
+    } catch {
+      // Fallback: filter patterns that match our regex and resolve them
+      const fallbackFiles = patterns
+        .filter((pattern) => regexPattern.test(pattern))
+        .map((file) => path.resolve(cwd, file))
+        .filter((file) => existsSync(file));
+
+      results.push(...fallbackFiles);
+    }
   }
 
-  try {
-    const files = await glob(globPatterns, {
-      cwd,
-      absolute: true,
-      onlyFiles: true,
-      ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
-    });
-
-    return files.filter((file) => regexPattern.test(file));
-  } catch {
-    // Fallback: filter patterns that match our regex and resolve them
-    return patterns
-      .filter((pattern) => regexPattern.test(pattern))
-      .map((file) => path.resolve(cwd, file))
-      .filter((file) => existsSync(file));
-  }
+  return results;
 }

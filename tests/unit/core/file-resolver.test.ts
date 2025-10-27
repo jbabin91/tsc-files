@@ -1,5 +1,6 @@
 import { existsSync, type Stats } from 'node:fs';
 import { stat } from 'node:fs/promises';
+import path from 'node:path';
 
 import { glob } from 'tinyglobby';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -31,10 +32,11 @@ vi.mock('@/utils/file-patterns', () => ({
 
 describe('resolveFiles', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
-  it('resolves direct file patterns via glob', async () => {
+  it('resolves direct file patterns without using glob', async () => {
     vi.mocked(shouldIncludeJavaScriptFiles).mockReturnValue(false);
     vi.mocked(getFileExtensions).mockReturnValue({
       extensions: ['ts'],
@@ -46,15 +48,13 @@ describe('resolveFiles', () => {
     vi.mocked(existsSync).mockImplementation((filePath) =>
       filePath.toString().includes('src/file.ts'),
     );
-    vi.mocked(glob).mockResolvedValue(['/workspace/src/file.ts']);
+    const globSpy = vi.mocked(glob).mockResolvedValue([]);
 
     const files = await resolveFiles(['src/file.ts'], '/workspace');
 
     expect(files).toEqual(['/workspace/src/file.ts']);
-    expect(glob).toHaveBeenCalledWith(
-      ['src/file.ts'],
-      expect.objectContaining({ cwd: '/workspace' }),
-    );
+    // Direct files should NOT go through glob to avoid special character issues
+    expect(globSpy).not.toHaveBeenCalled();
   });
 
   it('expands directory patterns when resolving direct directories', async () => {
@@ -96,5 +96,90 @@ describe('resolveFiles', () => {
     const files = await resolveFiles(['src/fallback.ts'], '/workspace');
 
     expect(files).toEqual(['/workspace/src/fallback.ts']);
+  });
+
+  it('handles files with parentheses in filename', async () => {
+    const fileWithParens = 'src/file.(test).ts';
+    const absolutePath = '/workspace/src/file.(test).ts';
+
+    vi.mocked(shouldIncludeJavaScriptFiles).mockReturnValue(false);
+    vi.mocked(getFileExtensions).mockReturnValue({
+      extensions: ['ts'],
+      regexPattern: /\.ts$/i,
+      globPattern: 'ts',
+    });
+
+    vi.mocked(existsSync).mockImplementation(
+      (filePath) => filePath.toString() === absolutePath,
+    );
+    // Glob should NOT be called for direct files with special characters
+    const globSpy = vi.mocked(glob).mockResolvedValue([]);
+
+    const files = await resolveFiles([fileWithParens], '/workspace');
+
+    expect(files).toEqual([absolutePath]);
+    // Verify glob was not called with the file containing special characters
+    expect(globSpy).not.toHaveBeenCalledWith(
+      expect.arrayContaining([expect.stringContaining('(')]),
+      expect.any(Object),
+    );
+  });
+
+  it('handles files with dollar signs in filename', async () => {
+    const fileWithDollar = 'src/file.($test).ts';
+    const absolutePath = '/workspace/src/file.($test).ts';
+
+    vi.mocked(shouldIncludeJavaScriptFiles).mockReturnValue(false);
+    vi.mocked(getFileExtensions).mockReturnValue({
+      extensions: ['ts'],
+      regexPattern: /\.ts$/i,
+      globPattern: 'ts',
+    });
+
+    vi.mocked(existsSync).mockImplementation(
+      (filePath) => filePath.toString() === absolutePath,
+    );
+    const globSpy = vi.mocked(glob).mockResolvedValue([]);
+
+    const files = await resolveFiles([fileWithDollar], '/workspace');
+
+    expect(files).toEqual([absolutePath]);
+    expect(globSpy).not.toHaveBeenCalledWith(
+      expect.arrayContaining([expect.stringContaining('$')]),
+      expect.any(Object),
+    );
+  });
+
+  it('handles complex filenames with multiple special characters', async () => {
+    const complexFile =
+      'app/___whatever/is.(fuoritono).($this).(this).($command).(command).($doing).tsx';
+    const absolutePath = `/workspace/${complexFile}`;
+
+    vi.mocked(shouldIncludeJavaScriptFiles).mockReturnValue(false);
+    vi.mocked(getFileExtensions).mockReturnValue({
+      extensions: ['ts', 'tsx'],
+      regexPattern: /\.(ts|tsx)$/i,
+      globPattern: '{ts,tsx}',
+    });
+
+    vi.mocked(existsSync).mockImplementation((filePath) => {
+      const normalized = path.normalize(filePath.toString());
+      const expectedNormalized = path.normalize(absolutePath);
+      return normalized === expectedNormalized;
+    });
+
+    // Important: Mock stat to NOT be called (file should be resolved before stat)
+    const statSpy = vi
+      .mocked(stat)
+      .mockRejectedValue(new Error('Should not call stat for direct files'));
+    const globSpy = vi.mocked(glob).mockResolvedValue([]);
+
+    const files = await resolveFiles([complexFile], '/workspace');
+
+    expect(files).toEqual([absolutePath]);
+    // Ensure stat was not called (direct file should be resolved immediately)
+    expect(statSpy).not.toHaveBeenCalled();
+    // Ensure glob was not called for direct files with special characters
+    expect(globSpy).not.toHaveBeenCalled();
   });
 });

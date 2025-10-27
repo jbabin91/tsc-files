@@ -1,9 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-<!-- AUTO-GENERATED SECTIONS: Certain sections of this file are maintained by Claude Code -->
-<!-- Manual edits to auto-generated sections may be overwritten during development sessions -->
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding assistants (Claude Code, GitHub Copilot, etc.) when working with code in this repository.
 
 ## 📋 Core Project Context
 

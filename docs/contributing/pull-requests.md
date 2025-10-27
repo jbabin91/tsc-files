@@ -242,7 +242,29 @@ gh api \
 **Resolving Review Threads:**
 
 ```bash
-# Step 1: Get thread IDs
+# Step 1: Get all review threads with their status
+gh api graphql -f query='
+query {
+  repository(owner: "jbabin91", name: "tsc-files") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 10) {
+        nodes {
+          id
+          isResolved
+          comments(first: 1) {
+            nodes {
+              body
+              path
+              line
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+
+# Step 2: Find unresolved threads (using jq)
 gh api graphql -f query='
 query {
   repository(owner: "jbabin91", name: "tsc-files") {
@@ -260,9 +282,9 @@ query {
       }
     }
   }
-}'
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {id: .id, body: .comments.nodes[0].body}'
 
-# Step 2: Resolve the thread
+# Step 3: Resolve a specific thread
 gh api graphql -f query='
 mutation {
   resolveReviewThread(input: {threadId: "<THREAD_ID>"}) {
@@ -272,28 +294,124 @@ mutation {
     }
   }
 }'
+
+# Step 4: Resolve multiple threads at once (bash loop)
+for thread_id in "PRRT_id1" "PRRT_id2" "PRRT_id3"; do
+  gh api graphql -f query="
+  mutation {
+    resolveReviewThread(input: {threadId: \"$thread_id\"}) {
+      thread { id isResolved }
+    }
+  }"
+done
 ```
 
-**Example Workflow:**
+**Complete Example Workflow:**
 
 ```bash
-# 1. Reply to Copilot comment
+# Full workflow: Reply to comment and resolve thread
+PR_NUMBER=47
 COMMENT_ID=2464200977
-gh api --method POST repos/jbabin91/tsc-files/pulls/47/comments \
-  -f body="Thanks for the suggestion! Fixed in commit abc123." \
+COMMIT_SHA="ca4cc896094d96a42bf24842a4ee9487fba1feb0"
+
+# 1. Reply to the review comment
+gh api --method POST repos/jbabin91/tsc-files/pulls/$PR_NUMBER/comments \
+  -f body="Thanks for the suggestion! Fixed in commit $COMMIT_SHA." \
   -f path="src/core/file-resolver.ts" \
-  -f commit_id="ca4cc896094d96a42bf24842a4ee9487fba1feb0" \
+  -f commit_id="$COMMIT_SHA" \
   -f subject_type="line" \
   -F in_reply_to=$COMMENT_ID
 
-# 2. Get thread ID and resolve
-THREAD_ID="PRRT_kwDOP1frcc5fYmg1"
+# 2. Get the thread ID for this comment
+THREAD_ID=$(gh api graphql -f query="
+query {
+  repository(owner: \"jbabin91\", name: \"tsc-files\") {
+    pullRequest(number: $PR_NUMBER) {
+      reviewThreads(last: 20) {
+        nodes {
+          id
+          isResolved
+          comments(first: 1) {
+            nodes {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}" --jq ".data.repository.pullRequest.reviewThreads.nodes[] | select(.comments.nodes[0].id == \"$COMMENT_ID\") | .id")
+
+# 3. Resolve the thread
 gh api graphql -f query="
 mutation {
   resolveReviewThread(input: {threadId: \"$THREAD_ID\"}) {
     thread { id isResolved }
   }
 }"
+```
+
+**Quick Reference for Common Tasks:**
+
+```bash
+# List all unresolved review comments
+gh api graphql -f query='
+query {
+  repository(owner: "jbabin91", name: "tsc-files") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 20) {
+        nodes {
+          id
+          isResolved
+          comments(first: 1) {
+            nodes {
+              body
+              path
+              line
+            }
+          }
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+
+# Count unresolved threads
+gh api graphql -f query='
+query {
+  repository(owner: "jbabin91", name: "tsc-files") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 20) {
+        nodes {
+          isResolved
+        }
+      }
+    }
+  }
+}' --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'
+
+# Resolve all unresolved threads (use with caution!)
+gh api graphql -f query='
+query {
+  repository(owner: "jbabin91", name: "tsc-files") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 20) {
+        nodes {
+          id
+          isResolved
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id' | while read thread_id; do
+  gh api graphql -f query="
+  mutation {
+    resolveReviewThread(input: {threadId: \"$thread_id\"}) {
+      thread { id }
+    }
+  }"
+  echo "Resolved thread: $thread_id"
+done
 ```
 
 ## After PR is Merged

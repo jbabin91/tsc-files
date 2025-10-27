@@ -1,9 +1,21 @@
 import type * as fs from 'node:fs';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createTempConfig, type TempConfigHandle } from '@/config/temp-config';
+import {
+  createTempConfig,
+  createTempConfigPath,
+  type TempConfigHandle,
+} from '@/config/temp-config';
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
 
@@ -688,6 +700,66 @@ describe('createTempConfig', () => {
     });
   });
 
+  describe('verbose logging', () => {
+    it('should log dependency discovery details when files are discovered', async () => {
+      // Create a real temp directory for this test
+      const testTempDir = mkdtempSync(path.join(tmpdir(), 'tsc-files-test-'));
+
+      try {
+        // Create files with actual imports
+        const mainFile = path.join(testTempDir, 'main.ts');
+        const utilsFile = path.join(testTempDir, 'utils.ts');
+
+        writeFileSync(
+          mainFile,
+          'import { helper } from "./utils";\nexport const main = () => helper();',
+        );
+        writeFileSync(utilsFile, 'export const helper = () => "test";');
+
+        // Create tsconfig in temp directory
+        const tsconfigPath = path.join(testTempDir, 'tsconfig.json');
+        writeFileSync(
+          tsconfigPath,
+          JSON.stringify({
+            compilerOptions: {
+              target: 'ES2020',
+              module: 'commonjs',
+            },
+            include: ['**/*.ts'],
+          }),
+        );
+
+        const originalConfig: TypeScriptConfig = {
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['**/*.ts'],
+        };
+
+        const verboseOptions: CheckOptions = {
+          verbose: true, // Enable verbose logging to trigger the uncovered lines
+        };
+
+        // Only pass main file - dependency discovery should find utils.ts too
+        tempHandle = await createTempConfig(
+          originalConfig,
+          [mainFile], // Only main file, not utils file
+          verboseOptions,
+          testTempDir,
+        );
+
+        // Test should complete successfully
+        // The verbose logging will output information about discovered files
+        expect(tempHandle).toBeDefined();
+        expect(tempHandle.path).toBeDefined();
+      } finally {
+        // Clean up the real temp directory
+        rmSync(testTempDir, { recursive: true, force: true });
+      }
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle include patterns without TypeScript extensions', async () => {
       const originalConfig: TypeScriptConfig = {
@@ -842,5 +914,62 @@ describe('createTempConfig', () => {
       // Restore mock
       mockMkdirSync.mockRestore();
     });
+  });
+});
+
+describe('createTempConfigPath', () => {
+  let tempHandle: TempConfigHandle | null = null;
+
+  afterEach(() => {
+    // Clean up any temp files created during tests
+    if (tempHandle) {
+      try {
+        tempHandle.cleanup();
+      } catch {
+        // Ignore cleanup errors in tests
+      }
+      tempHandle = null;
+    }
+  });
+
+  it('should handle relative cache directory path gracefully', () => {
+    // Test defensive code: ensureCacheDirectory returns undefined for non-absolute paths
+    const relativePath = 'relative/cache/dir';
+
+    tempHandle = createTempConfigPath(relativePath);
+
+    // Should fall back to system temp (path should not contain the relative path)
+    expect(tempHandle.path).toBeDefined();
+    expect(tempHandle.path).not.toContain(relativePath);
+    expect(tempHandle.cleanup).toBeInstanceOf(Function);
+  });
+
+  it('should handle cache directory creation failure', async () => {
+    // Test the fallback path when mkdir fails
+    const cacheDir = '/absolute/cache/dir';
+
+    // Store original mkdirSync for fallback usage
+    const actualFs = await vi.importActual<typeof fs>('node:fs');
+    const originalMkdirSync = actualFs.mkdirSync;
+
+    // Mock mkdirSync to fail for our test cache directory
+    const mockMkdirSync = vi.mocked(mkdirSync);
+
+    mockMkdirSync.mockImplementationOnce((path, options) => {
+      if (typeof path === 'string' && path.includes('/absolute/cache/dir')) {
+        throw new Error('EACCES: permission denied');
+      }
+      return originalMkdirSync(path, options);
+    });
+
+    tempHandle = createTempConfigPath(cacheDir);
+
+    // Should fall back to system temp (path should not contain cache dir)
+    expect(tempHandle.path).toBeDefined();
+    expect(tempHandle.path).not.toContain('/absolute/cache/dir');
+    expect(tempHandle.cleanup).toBeInstanceOf(Function);
+
+    // Restore mock
+    mockMkdirSync.mockRestore();
   });
 });

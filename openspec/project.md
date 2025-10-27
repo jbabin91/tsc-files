@@ -87,6 +87,8 @@
 - Explain non-obvious algorithms, edge cases, or business context
 - Remove redundant comments that restate obvious code
 - **NEVER include specific line numbers** - they become stale immediately
+  - Exception: Archived OpenSpec tasks (historical records, never modified)
+- **NEVER include specific metrics that change frequently** - test counts, coverage percentages, file counts
 - **NEVER include implementation details that change frequently** - reference function/variable names instead
 - Comments should remain accurate without updates when code changes nearby
 
@@ -98,6 +100,12 @@
 
 // ✅ GOOD: Reference the function name instead
 // Note: This function is async because it awaits writeChangeset()
+
+// ❌ BAD: Specific metrics that require constant updates
+// We have 538 tests with 93.75% coverage
+
+// ✅ GOOD: General statements
+// We have comprehensive test coverage (>90%)
 
 // ❌ BAD: Brittle implementation details
 // Loop runs 5 times to process each item in the array

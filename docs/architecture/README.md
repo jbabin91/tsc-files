@@ -603,20 +603,20 @@ interface Detector<T> {
 
 ### Current Test Coverage
 
-- **531 passing tests** across 27 test files
-- **84%+ core coverage** with strict thresholds
+- **Comprehensive test suite** (500+ tests)
+- **High core coverage** (>85%) with strict thresholds
 - **Vitest framework** with comprehensive mocking
 - **Cross-platform testing** via GitHub Actions
 
 ### Test Layers (Implemented)
 
-1. **Unit Tests** (494 tests)
+1. **Unit Tests** (majority of test suite)
    - Individual function testing with proper mocking
    - File system operations with memfs
    - Process execution with vitest mocks
    - Type-safe mocking without `any` types
 
-2. **Integration Tests** (24 tests)
+2. **Integration Tests**
    - Real TypeScript projects
    - Actual file system operations
    - Cross-platform compatibility testing

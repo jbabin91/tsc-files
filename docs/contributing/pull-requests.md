@@ -224,7 +224,9 @@ To create a **line-specific reply** (not a standalone review comment):
 
 ```bash
 # Get the comment ID from the review thread
-gh pr view <PR_NUMBER> --json reviewThreads
+# Note: Use REST API to get numeric comment IDs
+gh api repos/jbabin91/tsc-files/pulls/<PR_NUMBER>/comments \
+  --jq '.[] | {id: .id, body: .body, path: .path, line: .line}'
 
 # Reply to the specific comment (creates line-specific reply)
 gh api \
@@ -237,7 +239,7 @@ gh api \
   -F in_reply_to=<COMMENT_ID>
 ```
 
-**Important:** Use `-F in_reply_to=<NUMBER>` (uppercase F) to pass the comment ID as a number, not a string.
+**Important:** Use `-F in_reply_to=<NUMBER>` (uppercase F) instead of `-f` because the GitHub API requires `in_reply_to` to be a numeric field, not a string. Lowercase `-f` sends the value as a string which causes API errors.
 
 **Resolving Review Threads:**
 
@@ -251,7 +253,7 @@ query {
         nodes {
           id
           isResolved
-          comments(first: 1) {
+          comments(first: 10) {
             nodes {
               body
               path
@@ -273,7 +275,7 @@ query {
         nodes {
           id
           isResolved
-          comments(first: 1) {
+          comments(first: 10) {
             nodes {
               body
             }
@@ -331,7 +333,7 @@ query {
         nodes {
           id
           isResolved
-          comments(first: 1) {
+          comments(first: 10) {
             nodes {
               id
             }
@@ -363,7 +365,7 @@ query {
         nodes {
           id
           isResolved
-          comments(first: 1) {
+          comments(first: 10) {
             nodes {
               body
               path
@@ -391,6 +393,7 @@ query {
 }' --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'
 
 # Resolve all unresolved threads (use with caution!)
+set -e  # Exit on error
 gh api graphql -f query='
 query {
   repository(owner: "jbabin91", name: "tsc-files") {
@@ -409,7 +412,7 @@ query {
     resolveReviewThread(input: {threadId: \"$thread_id\"}) {
       thread { id }
     }
-  }"
+  }" || { echo "Error resolving thread: $thread_id"; exit 1; }
   echo "Resolved thread: $thread_id"
 done
 ```

@@ -104,12 +104,24 @@ async function processFileGroup(
   // Create temporary config
   const originalConfigDir = path.dirname(tsconfigPath);
 
-  // Set default cacheDir to project directory for better type resolution compatibility
-  // This allows both tsc and tsgo to use default TypeScript type resolution
-  // tsgo specifically does NOT support custom typeRoots, so temp configs must be in project dir
+  // Set default cacheDir to node_modules/.cache/tsc-files/ following industry conventions:
+  // - ESLint: node_modules/.cache/eslint/
+  // - Babel: node_modules/.cache/babel/
+  // - Webpack: node_modules/.cache/webpack/
+  //
+  // Benefits:
+  // - All temp files (tsconfig.-random-.json, tsconfig.tsbuildinfo) in one clean location
+  // - Already gitignored via node_modules/
+  // - Automatic cleanup when node_modules is removed
+  // - Consistent with other build tools
+  const defaultCacheDir = path.join(
+    originalConfigDir,
+    'node_modules/.cache/tsc-files',
+  );
+
   const effectiveOptions = {
     ...options,
-    cacheDir: options.cacheDir ?? originalConfigDir,
+    cacheDir: options.cacheDir ?? defaultCacheDir,
   };
 
   const tempHandle = await createTempConfig(

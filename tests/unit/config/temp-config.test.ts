@@ -62,7 +62,7 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
     });
 
-    it('should add typeRoots only when explicitly using tsc', async () => {
+    it('should add typeRoots only when using tsc with cache disabled', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
@@ -71,7 +71,8 @@ describe('createTempConfig', () => {
         },
       };
 
-      const optionsWithTsc = { ...defaultOptions, useTsc: true };
+      // Test 1: With cache enabled (default), no typeRoots added
+      const optionsWithTsc = { ...defaultOptions, useTsc: true, cache: true };
       tempHandle = await createTempConfig(
         originalConfig,
         testFiles,
@@ -79,14 +80,36 @@ describe('createTempConfig', () => {
         testConfigDir,
       );
 
-      const tempConfigContent = JSON.parse(
+      let tempConfigContent = JSON.parse(
         readFileSync(tempHandle.path, 'utf8'),
       ) as TempConfigContent;
 
-      // When using tsc explicitly, typeRoots should be added
+      // With cache enabled, typeRoots should NOT be added (uses default resolution)
+      expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
+
+      // Cleanup for next test
+      tempHandle.cleanup();
+
+      // Test 2: With cache disabled (--no-cache), typeRoots added
+      const optionsNoCacheWithTsc = {
+        ...defaultOptions,
+        useTsc: true,
+        cache: false,
+      };
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        optionsNoCacheWithTsc,
+        testConfigDir,
+      );
+
+      tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // With cache disabled (system temp), typeRoots should be added (only @types, not bare node_modules)
       expect(tempConfigContent.compilerOptions.typeRoots).toEqual([
         '/test/project/node_modules/@types',
-        '/test/project/node_modules',
       ]);
     });
 
@@ -494,6 +517,159 @@ describe('createTempConfig', () => {
       // Should NOT add typeRoots by default (for tsgo compatibility)
       expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
       expect(tempConfigContent.compilerOptions.paths).toBeUndefined();
+    });
+  });
+
+  describe('tsBuildInfoFile handling', () => {
+    it('should automatically set tsBuildInfoFile when composite is true', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          composite: true,
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBe(
+        '/test/project/node_modules/.cache/tsc-files/tsconfig.tsbuildinfo',
+      );
+    });
+
+    it('should preserve existing tsBuildInfoFile when set by user', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          composite: true,
+          tsBuildInfoFile: '/custom/path/buildinfo.tsbuildinfo',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // User's explicit tsBuildInfoFile should be preserved
+      expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBe(
+        '/custom/path/buildinfo.tsbuildinfo',
+      );
+    });
+
+    it('should NOT add tsBuildInfoFile when composite is false', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          composite: false,
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBeUndefined();
+    });
+
+    it('should NOT add tsBuildInfoFile when composite is undefined', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          // composite not set
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBeUndefined();
+    });
+
+    it('should use correct cache directory path for tsBuildInfoFile', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          composite: true,
+          target: 'ES2020',
+        },
+      };
+
+      const customConfigDir = '/custom/project/path';
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        customConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBe(
+        '/custom/project/path/node_modules/.cache/tsc-files/tsconfig.tsbuildinfo',
+      );
+    });
+
+    it('should log tsBuildInfoFile configuration in verbose mode', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          composite: true,
+        },
+      };
+
+      const verboseOptions: CheckOptions = {
+        ...defaultOptions,
+        verbose: true,
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        verboseOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // Verify tsBuildInfoFile is set correctly
+      expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBe(
+        '/test/project/node_modules/.cache/tsc-files/tsconfig.tsbuildinfo',
+      );
+      // Note: We can't easily test console output in unit tests,
+      // but we verify the functionality works correctly
     });
   });
 });

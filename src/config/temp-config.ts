@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import tmp from 'tmp';
@@ -31,18 +31,31 @@ export type TempConfigHandle = {
  * @returns Temporary config file handle
  */
 export function createTempConfigPath(cacheDir?: string): TempConfigHandle {
-  // When cacheDir is an absolute path, tmp library requires it to be relative to OS temp dir
-  // So we only use tmp.fileSync when cacheDir is undefined or already in a temp location
-  // For project directories, we use tmp's default behavior (no dir option)
-  const isAbsolutePath = cacheDir && path.isAbsolute(cacheDir);
-  const shouldUseDefaultTmpDir = !cacheDir || isAbsolutePath;
+  // Ensure cache directory exists before creating temp file
+  // This is needed when using node_modules/.cache/tsc-files/ as the default cache location
+  if (cacheDir && path.isAbsolute(cacheDir)) {
+    try {
+      mkdirSync(cacheDir, { recursive: true });
+    } catch (error) {
+      // If we can't create the cache directory, fall back to system temp directory
+      // This can happen if node_modules doesn't exist or isn't writable
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn(
+        `⚠ Failed to create cache directory (${cacheDir}): ${message}`,
+      );
+      logger.warn('  Falling back to system temp directory');
+      // Reset cacheDir to undefined to use system temp
+      cacheDir = undefined;
+    }
+  }
 
+  // When cacheDir is provided and is absolute, use it as tmpdir
+  // Otherwise use the system default temp directory
   const tmpFile = tmp.fileSync({
     prefix: 'tsconfig.',
     postfix: '.json',
     mode: 0o600,
-    dir: shouldUseDefaultTmpDir ? undefined : cacheDir,
-    tmpdir: isAbsolutePath ? cacheDir : undefined,
+    tmpdir: cacheDir,
     discardDescriptor: false,
     keep: false,
   });
@@ -113,30 +126,27 @@ export async function createTempConfig(
   let adjustedCompilerOptions = { ...sanitizedCompilerOptions };
 
   // TypeScript type resolution strategy:
-  // - tsgo does NOT support custom typeRoots (relies on default resolution)
-  // - tsc works better with temp configs in project dir (not /tmp) for default resolution
-  // - Solution: Create temp configs in project dir using options.cache Dir
-  // - This allows both compilers to use default type resolution successfully
+  // - Default cache location: node_modules/.cache/tsc-files/ (within project)
+  // - TypeScript walks up from cache dir and finds project's node_modules automatically
+  // - This allows both tsc and tsgo to use default type resolution (no explicit typeRoots needed)
   //
-  // We only add explicit typeRoots if:
-  // 1. User explicitly set useTsc (forcing tsc usage), AND
-  // 2. User hasn't already defined typeRoots, AND
-  // 3. Temp config is in a different directory (cache not in project)
-  const isCacheInProjectDir = options.cacheDir === originalConfigDir;
+  // We only add explicit typeRoots when:
+  // 1. User forces tsc (--use-tsc), AND
+  // 2. User hasn't defined typeRoots, AND
+  // 3. Cache is disabled (--no-cache, forcing system temp outside project)
   const shouldAddTypeRoots =
     options.useTsc &&
     !sanitizedCompilerOptions.typeRoots &&
-    !isCacheInProjectDir;
+    options.cache === false;
 
   if (shouldAddTypeRoots) {
-    // When using tsc with temp config in /tmp, add explicit typeRoots
-    // to find both @types/* packages and package-provided types (like vitest/globals)
+    // System temp (/tmp): add explicit typeRoots to find @types packages in project
+    // Only include node_modules/@types to avoid scanning scoped packages as type libraries
     adjustedCompilerOptions.typeRoots = [
       path.resolve(originalConfigDir, 'node_modules/@types'),
-      path.resolve(originalConfigDir, 'node_modules'),
     ];
   }
-  // Otherwise: rely on default TypeScript type resolution (works for both tsc and tsgo)
+  // Otherwise: rely on default TypeScript type resolution from cache directory
 
   if (sanitizedCompilerOptions.paths) {
     const absolutePaths: Record<string, string[]> = {};
@@ -170,6 +180,58 @@ export async function createTempConfig(
         baseUrl: originalConfigDir,
       }),
     };
+  }
+
+  // Handle tsBuildInfoFile for composite projects
+  // When composite: true, TypeScript creates .tsbuildinfo files for incremental compilation
+  // Without explicit tsBuildInfoFile, TypeScript uses the config filename with .tsbuildinfo extension
+  // Since we use temp configs with random suffixes (tsconfig.-random-.json),
+  // this creates random-suffixed .tsbuildinfo files in the project root (tsconfig.-random-.tsbuildinfo)
+  //
+  // Solution: Automatically set tsBuildInfoFile to a clean cache location when:
+  // 1. composite is enabled, AND
+  // 2. User hasn't explicitly set tsBuildInfoFile
+  if (
+    adjustedCompilerOptions.composite === true &&
+    !adjustedCompilerOptions.tsBuildInfoFile
+  ) {
+    // Use node_modules/.cache/tsc-files/ following industry conventions:
+    // - ESLint: node_modules/.cache/eslint/
+    // - Babel: node_modules/.cache/babel/
+    // - Webpack: node_modules/.cache/webpack/
+    const cacheDir = path.resolve(
+      originalConfigDir,
+      'node_modules/.cache/tsc-files',
+    );
+
+    // Ensure cache directory exists
+    try {
+      mkdirSync(cacheDir, { recursive: true });
+    } catch (error) {
+      // Log warning but continue - TypeScript will fall back to default behavior
+      if (options.verbose) {
+        logger.warn(
+          `⚠ Failed to create cache directory for tsBuildInfoFile: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    // Set tsBuildInfoFile to cache location
+    // This ensures:
+    // - Build info files are in a clean, gitignored location (node_modules)
+    // - No random suffixes cluttering the project root
+    // - Automatic cleanup when node_modules is removed
+    // - Persistence for incremental compilation benefits
+    adjustedCompilerOptions = {
+      ...adjustedCompilerOptions,
+      tsBuildInfoFile: path.join(cacheDir, 'tsconfig.tsbuildinfo'),
+    };
+
+    if (options.verbose) {
+      logger.info(
+        `✓ Configured tsBuildInfoFile for composite project: ${adjustedCompilerOptions.tsBuildInfoFile}`,
+      );
+    }
   }
 
   // Extract base config without dependency-related fields

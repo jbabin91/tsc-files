@@ -10,6 +10,8 @@ export type TypeScriptCompilerOptions = {
   checkJs?: boolean;
   skipLibCheck?: boolean;
   noEmit?: boolean;
+  composite?: boolean;
+  tsBuildInfoFile?: string;
   [key: string]: unknown;
 };
 

@@ -86,6 +86,31 @@
 - JSDoc for exported functions, types, and interfaces
 - Explain non-obvious algorithms, edge cases, or business context
 - Remove redundant comments that restate obvious code
+- **NEVER include specific line numbers** - they become stale immediately
+- **NEVER include implementation details that change frequently** - reference function/variable names instead
+- Comments should remain accurate without updates when code changes nearby
+
+**Comment Examples**:
+
+```typescript
+// ❌ BAD: Specific line numbers become stale
+// Note: This function is async because it awaits writeChangeset() (line 326)
+
+// ✅ GOOD: Reference the function name instead
+// Note: This function is async because it awaits writeChangeset()
+
+// ❌ BAD: Brittle implementation details
+// Loop runs 5 times to process each item in the array
+
+// ✅ GOOD: Explain the WHY, not the WHAT
+// Process items in small batches to avoid memory pressure
+
+// ❌ BAD: Version-specific details that will become outdated
+// Vitest v4: 'all' option was removed, use 'include' instead
+
+// ✅ GOOD: Timeless explanation
+// Use include pattern to specify files for coverage
+```
 
 **Import Guidelines**:
 

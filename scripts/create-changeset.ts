@@ -28,8 +28,17 @@ function getPackageName(): string {
       throw new Error('package.json not found');
     }
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
-      name: string;
+      name?: string;
     };
+
+    if (
+      !packageJson.name ||
+      typeof packageJson.name !== 'string' ||
+      packageJson.name.trim().length === 0
+    ) {
+      throw new Error('package.json missing valid name field');
+    }
+
     return packageJson.name;
   } catch (error) {
     console.error('❌ Error reading package.json:', error);

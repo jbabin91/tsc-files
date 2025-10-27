@@ -75,6 +75,7 @@ describe('CLI Package Integration', () => {
           'typescript',
           '--no-audit',
           '--no-fund',
+          '--ignore-scripts',
         ],
         {
           cwd: testDir,
@@ -103,7 +104,7 @@ describe('CLI Package Integration', () => {
         2,
       ),
     );
-  }, 60_000); // 60s timeout for installation
+  }, 120_000); // 120s timeout for installation (Windows can be slower with prepare scripts)
 
   beforeEach((ctx) => {
     if (packFailed) {

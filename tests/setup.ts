@@ -4,13 +4,8 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { Command } from 'commander';
-import kleur from 'kleur';
 import tmp from 'tmp';
 import { afterEach, expect, test as baseTest } from 'vitest';
-import { z } from 'zod';
-
-import type { CheckOptions } from '@/types/core';
 
 const execFileAsync = promisify(execFile);
 
@@ -112,119 +107,7 @@ export const writeTestFiles = (
 // ================================
 // CLI TESTING UTILITIES
 // ================================
-
-const CliOptionsSchema = z.object({
-  project: z.string().optional(),
-  noEmit: z.boolean().default(true),
-  skipLibCheck: z.boolean().default(false),
-  verbose: z.boolean().default(false),
-  cache: z.boolean().default(true),
-  json: z.boolean().default(false),
-});
-
-export async function runCliDirect(
-  args: string[],
-  cwd: string,
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const program = new Command();
-
-  let stdout = '';
-  let stderr = '';
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-
-  console.log = (...args: unknown[]) => {
-    stdout += args.join(' ') + '\n';
-  };
-
-  console.error = (...args: unknown[]) => {
-    stderr += args.join(' ') + '\n';
-  };
-
-  try {
-    program
-      .name('tsc-files')
-      .description(
-        'Run TypeScript compiler on specific files while respecting tsconfig.json',
-      )
-      .argument('<files...>', 'TypeScript files to check')
-      .option('-p, --project <path>', 'path to tsconfig.json')
-      .option('--verbose', 'enable detailed output')
-      .option('--json', 'output results as JSON')
-      .option('--no-cache', 'disable temporary file caching')
-      .option('--skip-lib-check', 'skip type checking of declaration files')
-      .configureOutput({
-        writeOut: (str) => {
-          stdout += str;
-        },
-        writeErr: (str) => {
-          stderr += str;
-        },
-      })
-      .exitOverride();
-
-    const parsedArgs = program.parse(args, { from: 'user' });
-    const files = parsedArgs.args;
-    const rawOptions = parsedArgs.opts();
-
-    if (rawOptions.help || rawOptions.version) {
-      return { stdout, stderr, exitCode: 0 };
-    }
-
-    const validatedOptions = CliOptionsSchema.parse(rawOptions);
-
-    const checkOptions: CheckOptions = {
-      project: validatedOptions.project,
-      noEmit: validatedOptions.noEmit,
-      skipLibCheck: validatedOptions.skipLibCheck,
-      verbose: validatedOptions.verbose,
-      cache: validatedOptions.cache,
-      cwd,
-    };
-
-    // Import dynamically to ensure mocks are applied
-    const { checkFiles } = await import('@/core/checker');
-    const result = await checkFiles(files, checkOptions);
-
-    if (validatedOptions.json) {
-      stdout += JSON.stringify(result, null, 2) + '\n';
-    } else {
-      if (result.errors.length > 0) {
-        stderr += '\n';
-        for (const error of result.errors) {
-          const fileLocation = kleur.cyan(
-            `${error.file}:${error.line}:${error.column}`,
-          );
-          const errorMessage = kleur.red(error.message);
-          stderr += `${fileLocation} - ${errorMessage}\n`;
-        }
-      }
-
-      if (validatedOptions.verbose) {
-        const duration = kleur.dim(`${result.duration}ms`);
-        const fileCount = kleur.bold(result.checkedFiles.length.toString());
-        stdout += `\nChecked ${fileCount} files in ${duration}\n`;
-      }
-
-      if (result.success) {
-        stdout += kleur.green('✓ Type check passed') + '\n';
-      }
-    }
-
-    return {
-      stdout,
-      stderr,
-      exitCode: result.success ? 0 : 1,
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    stderr += kleur.red('Error: ') + kleur.dim(message) + '\n';
-    return { stdout, stderr, exitCode: 99 };
-  } finally {
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-  }
-}
+// Tests use globalThis.runCli which executes the actual built CLI
 
 // ================================
 // GLOBAL SETUP AND CLEANUP
@@ -282,7 +165,6 @@ globalThis.createTestProject = (tempDir: string, customTsconfig?: object) => {
   };
 };
 
-globalThis.runCli = runCliDirect;
 globalThis.writeTestFile = writeTestFile;
 globalThis.writeTestFiles = writeTestFiles;
 

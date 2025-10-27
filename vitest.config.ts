@@ -118,9 +118,7 @@ export default defineConfig({
         },
       },
     ],
-    reporters: process.env.CI
-      ? ['github-actions']
-      : ['default', 'github-actions', 'junit'],
+    reporters: ['default', 'github-actions', 'junit'],
     restoreMocks: true,
     setupFiles: ['./tests/setup.ts'],
     testTimeout: process.env.CI ? 10_000 : 5000,

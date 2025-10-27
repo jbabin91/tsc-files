@@ -6,7 +6,7 @@ export default defineConfig({
   entry: ['src/index.ts', 'src/cli.ts'],
   exports: true,
   external: ['typescript'],
-  format: ['esm', 'cjs'],
+  format: ['esm'],
   minify: true,
   publint: true,
   shims: true,

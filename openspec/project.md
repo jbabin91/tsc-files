@@ -196,6 +196,64 @@ Execution Layer (executor.ts, output-parser.ts)
 - Feature branches for development
 - No direct commits to main (PR required)
 
+**Pull Request Format**:
+
+ALWAYS follow `.github/PULL_REQUEST_TEMPLATE.md` for consistency. Use narrative format with these required sections:
+
+```markdown
+## Summary
+
+Brief description with issue reference (Closes #X)
+
+## Problem
+
+Why this change matters - explain context and motivation
+
+## Changes
+
+Detailed breakdown with subsections for complex PRs:
+
+- ### Core Changes
+- ### Additional Changes (if applicable)
+
+## Benefits
+
+List advantages with ✅ checkmarks for readability
+
+## Testing
+
+Quality gates passed + test coverage results:
+
+- ✅ pnpm lint - zero errors/warnings
+- ✅ pnpm typecheck - zero TypeScript errors
+- ✅ pnpm test - all tests passing
+- ✅ pnpm build - clean build success
+- ✅ pnpm lint:md - markdown compliance
+
+## Breaking Changes
+
+**NONE** or list breaking changes with migration guidance
+
+## Documentation (if applicable)
+
+List doc updates with ✅ checkmarks
+
+## Changeset (if affecting public API)
+
+- [ ] Changeset added and categorized correctly
+```
+
+**PR Format Principles**:
+
+- Use narrative format (not excessive checkboxes)
+- Include issue reference in Summary section
+- Explain WHY in Problem section (context, motivation)
+- Detail WHAT in Changes section (implementation specifics)
+- Show benefits with ✅ checkmarks for visual clarity
+- Always specify if breaking changes exist
+- Document all quality gates passed
+- Add OpenSpec reference if change was tracked with OpenSpec
+
 **Commit Conventions** (Conventional Commits + Gitmojis):
 
 ```bash

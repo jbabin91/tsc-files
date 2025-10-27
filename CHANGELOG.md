@@ -1,5 +1,25 @@
 # @jbabin91/tsc-files
 
+## 0.8.1
+
+### Patch Changes
+
+- [#53](https://github.com/jbabin91/tsc-files/pull/53) [`22d3908`](https://github.com/jbabin91/tsc-files/commit/22d39083e14e6f2e6ebfdcf85a8c827f33753ceb) Thanks [@jbabin91](https://github.com/jbabin91)! - fix(config): fix tsBuildInfo clutter and cache directory management
+
+  Automatically configures tsBuildInfoFile to prevent `.tsbuildinfo` files with random suffixes from cluttering your project root when using TypeScript Project References (`composite: true`).
+
+  **What changed:**
+  - tsBuildInfoFile auto-configured to `node_modules/.cache/tsc-files/tsconfig.tsbuildinfo` when composite: true
+  - Cache directory standardized to `node_modules/.cache/tsc-files/` (auto-gitignored)
+  - Fixed typeRoots logic that incorrectly scanned scoped packages
+
+  **Benefits:**
+  - Clean project root - no more random `.tsbuildinfo` files
+  - Faster incremental builds with persistent cache
+  - Backwards compatible - respects explicit tsBuildInfoFile configuration
+
+  Closes user-reported issue about tsBuildInfo file accumulation.
+
 ## 0.8.0
 
 ### Minor Changes

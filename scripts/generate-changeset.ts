@@ -2,8 +2,9 @@
 /* eslint-disable no-console */
 
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
+
+import type { Changeset } from '@changesets/types';
+import writeChangeset from '@changesets/write';
 
 // TypeScript types for type safety
 type Commit = {
@@ -52,76 +53,6 @@ const defaultCommitTypes: CommitTypeConfig[] = [
   { type: 'build', section: 'Build System', bump: null },
   { type: 'ci', section: 'Continuous Integration', bump: null },
 ];
-
-// Adjectives and nouns for generating human-friendly changeset names
-const adjectives = [
-  'brave',
-  'calm',
-  'clever',
-  'cool',
-  'eager',
-  'fancy',
-  'gentle',
-  'happy',
-  'jolly',
-  'kind',
-  'lively',
-  'nice',
-  'proud',
-  'quiet',
-  'smart',
-  'swift',
-  'warm',
-  'wise',
-  'young',
-  'zealous',
-];
-
-const nouns = [
-  'bear',
-  'cat',
-  'deer',
-  'eagle',
-  'falcon',
-  'fox',
-  'hawk',
-  'lion',
-  'owl',
-  'panda',
-  'rabbit',
-  'tiger',
-  'wolf',
-  'zebra',
-  'dolphin',
-  'elephant',
-  'giraffe',
-  'koala',
-  'leopard',
-  'penguin',
-];
-
-// Generate unique changeset filename
-function generateChangesetFilename(basePath: string): string {
-  let attempts = 0;
-  const maxAttempts = 100;
-
-  while (attempts < maxAttempts) {
-    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    const filename = `${adjective}-${noun}.md`;
-    const fullPath = path.join(basePath, filename);
-
-    // Check if file already exists
-    if (!existsSync(fullPath)) {
-      return filename;
-    }
-
-    attempts++;
-  }
-
-  // Fallback to timestamp if all random combinations fail (extremely unlikely)
-  return `changeset-${Date.now()}.md`;
-}
 
 // Advanced breaking change detection from changeset-conventional-commits
 function isBreakingChange(commit: string): boolean {
@@ -266,14 +197,9 @@ function getVersionBump(
   return hasBreaking ? 'major' : hasMinor ? 'minor' : hasPatch ? 'patch' : null;
 }
 
-// Generate changeset content with enhanced formatting
-function generateChangesetContent(
-  commits: ParsedCommit[],
-  versionBump: 'major' | 'minor' | 'patch',
-): { content: string } {
-  const packageName = '@jbabin91/tsc-files';
-
-  let content = `---\n"${packageName}": ${versionBump}\n---\n\n`;
+// Generate changeset summary with enhanced formatting
+function generateChangesetSummary(commits: ParsedCommit[]): string {
+  let summary = '';
 
   // Group commits by type
   const grouped: Record<string, ParsedCommit[]> = {};
@@ -300,21 +226,21 @@ function generateChangesetContent(
 
   for (const [type, typeCommits] of Object.entries(grouped)) {
     if (typeLabels[type]) {
-      content += `${typeLabels[type]}\n\n`;
+      summary += `${typeLabels[type]}\n\n`;
       for (const commit of typeCommits) {
         const scope = commit.scope ? `**${commit.scope}**: ` : '';
         const breakingIndicator = commit.isBreakingChange ? ' ⚠️ BREAKING' : '';
-        content += `- ${scope}${commit.subject}${breakingIndicator}\n`;
+        summary += `- ${scope}${commit.subject}${breakingIndicator}\n`;
       }
-      content += '\n';
+      summary += '\n';
     }
   }
 
-  return { content };
+  return summary.trim();
 }
 
 // Main function
-function main(): void {
+async function main(): Promise<void> {
   console.log('🔍 Analyzing commits for changeset generation...');
 
   const lastTag = getLastVersionTag();
@@ -382,19 +308,24 @@ function main(): void {
   }
 
   // Generate changeset with ALL commits (including non-version-bumping ones)
-  const { content } = generateChangesetContent(parsedCommits, versionBump);
+  const summary = generateChangesetSummary(parsedCommits);
 
-  // Ensure .changeset directory exists
-  const changesetDir = '.changeset';
-  mkdirSync(changesetDir, { recursive: true });
-
-  // Generate unique human-friendly filename
-  const changesetFilename = generateChangesetFilename(changesetDir);
-  const filename = path.join(changesetDir, changesetFilename);
+  // Create changeset object using @changesets/types format
+  const changeset: Changeset = {
+    summary,
+    releases: [
+      {
+        name: '@jbabin91/tsc-files',
+        type: versionBump,
+      },
+    ],
+  };
 
   try {
-    writeFileSync(filename, content);
-    console.log(`🎉 Generated changeset: ${filename}`);
+    // Use official @changesets/write API
+    const changesetId = await writeChangeset(changeset, process.cwd());
+
+    console.log(`🎉 Generated changeset: .changeset/${changesetId}.md`);
     console.log(`📦 Version bump: ${versionBump}`);
     console.log(`📋 Commits included: ${parsedCommits.length}`);
 
@@ -417,4 +348,4 @@ function main(): void {
   }
 }
 
-main();
+void main();

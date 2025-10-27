@@ -254,6 +254,25 @@ List doc updates with ✅ checkmarks
 - Document all quality gates passed
 - Add OpenSpec reference if change was tracked with OpenSpec
 
+**PR vs Changeset Content**:
+
+**PR Description (comprehensive, internal details):**
+
+- Full implementation details
+- Test coverage improvements
+- Internal refactoring rationale
+- Developer tooling changes
+- Architectural decisions
+- All quality gates with detailed results
+
+**Changeset (concise, user-focused):**
+
+- User-facing behavior changes ONLY
+- Brief (1-3 paragraphs for patch releases)
+- Focus on "what changed" and "why users care"
+- Exclude internal details (tests, tooling, refactoring)
+- See `docs/contributing/release-process.md` for detailed guidelines
+
 **Commit Conventions** (Conventional Commits + Gitmojis):
 
 ```bash

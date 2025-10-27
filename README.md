@@ -418,6 +418,73 @@ const homePath: string = routes.home.path;
 
 No configuration needed - it just works!
 
+## 🏗️ Clean Temporary File Management
+
+`tsc-files` follows industry conventions by storing all temporary files in `node_modules/.cache/tsc-files/`, just like ESLint, Babel, and Webpack.
+
+### What Goes in the Cache Directory
+
+All temporary files are automatically stored in a clean location:
+
+```txt
+node_modules/.cache/tsc-files/
+├── tsconfig.-12345-RandomID-.json     # Temporary TypeScript configs
+└── tsconfig.tsbuildinfo               # Incremental compilation cache (composite projects)
+```
+
+**Before** (cluttered project root):
+
+```txt
+./tsconfig.-13004-EnSa1Zt7Fgvi-.json
+./tsconfig.-13004-EnSa1Zt7Fgvi-.tsbuildinfo
+./tsconfig.-14245-IW0W1oRJy8js-.json
+./tsconfig.-14245-IW0W1oRJy8js-.tsbuildinfo
+./tsconfig.-17938-eMSfOCleqr2M-.json
+./tsconfig.-17938-eMSfOCleqr2M-.tsbuildinfo
+```
+
+**After** (clean project root):
+
+```txt
+# All temp files in node_modules/.cache/tsc-files/ ✨
+```
+
+### Benefits
+
+- ✅ **No project root clutter** - All temp files in one clean location
+- ✅ **Already gitignored** - `node_modules/` is standard in `.gitignore`
+- ✅ **Automatic cleanup** - Removed when you delete `node_modules`
+- ✅ **Incremental builds** - Build info persists for faster type checking
+- ✅ **Industry convention** - Follows ESLint, Babel, Webpack patterns
+
+### TypeScript Project References Support
+
+For projects using [TypeScript Project References](https://www.typescriptlang.org/docs/handbook/project-references.html) (`composite: true`), `tsc-files` automatically sets `tsBuildInfoFile` to enable incremental compilation without cluttering your project root.
+
+**Manual override (optional):**
+
+```json
+{
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./build/tsconfig.tsbuildinfo"
+  }
+}
+```
+
+When you provide an explicit `tsBuildInfoFile`, `tsc-files` respects your configuration.
+
+### Recommended .gitignore Pattern
+
+While `node_modules/` is already gitignored, you may want to add a catch-all pattern:
+
+```gitignore
+# TypeScript temporary files
+*.tsbuildinfo
+```
+
+This ensures any build info files are ignored, regardless of location.
+
 ## 🎯 Best Practices
 
 ### Performance Tips

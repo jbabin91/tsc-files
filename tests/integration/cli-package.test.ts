@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { execaCommand } from 'execa';
+import { execa, execaCommand } from 'execa';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 describe('CLI Package Integration', () => {
@@ -66,11 +66,18 @@ describe('CLI Package Integration', () => {
     });
 
     try {
-      await execaCommand(
-        `npm install ${path.join(projectRoot, tarball)} typescript --no-audit --no-fund`,
+      // Use array arguments to prevent shell injection
+      await execa(
+        'npm',
+        [
+          'install',
+          path.join(projectRoot, tarball),
+          'typescript',
+          '--no-audit',
+          '--no-fund',
+        ],
         {
           cwd: testDir,
-          shell: true,
         },
       );
     } catch (error) {

@@ -1,6 +1,7 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+import tmp from 'tmp';
 import * as ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,16 +15,43 @@ import {
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import { logger } from '@/utils/logger';
 
+// Ensure graceful cleanup of temp files
+tmp.setGracefulCleanup();
+
 describe('Dependency Discovery', () => {
   let tempDir: string;
+  let tempDirCleanup: (() => void) | undefined;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(path.join(process.cwd(), 'test-temp-'));
+    // Use tmp library for temp directory creation (same as other tests)
+    // This creates temp dirs in system temp directory, not project root
+    const tmpDir = tmp.dirSync({
+      prefix: 'tsc-files-test-dep-discovery-',
+      unsafeCleanup: true,
+    });
+    tempDir = tmpDir.name;
+    tempDirCleanup = tmpDir.removeCallback;
     clearDependencyCache();
   });
 
   afterEach(() => {
-    rmSync(tempDir, { recursive: true, force: true });
+    // Clean up temp directory
+    if (tempDirCleanup) {
+      try {
+        tempDirCleanup();
+      } catch (error) {
+        logger.debug?.(
+          `Temp dir cleanup error (removeCallback): ${String(error)}`,
+        );
+      }
+      tempDirCleanup = undefined;
+    }
+    // Fallback cleanup
+    try {
+      rmSync(tempDir, { recursive: true, force: true });
+    } catch (error) {
+      logger.debug?.(`Temp dir cleanup error (rmSync): ${String(error)}`);
+    }
     clearDependencyCache();
   });
 

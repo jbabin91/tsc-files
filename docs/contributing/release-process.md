@@ -38,30 +38,201 @@ We follow [Semantic Versioning (SemVer)](https://semver.org/) strictly:
 
 We use [Changesets](https://github.com/changesets/changesets) for version management and changelog generation.
 
-#### **Adding Changesets**
+#### **Three Ways to Create Changesets**
+
+##### **1. Interactive CLI (Official Changesets)**
+
+Best for manual, thoughtful changelog creation:
 
 ```bash
-# Add a changeset for your changes
+# Interactive changeset creation (official changesets CLI)
 pnpm changeset
 
 # Check current changeset status
 pnpm changeset status
-
-# Preview what the next release will look like
-pnpm changeset:version --dry-run
 ```
 
-#### **Changeset Types**
+**When to use**: Manual PR work where you want to carefully craft the changelog message interactively.
+
+##### **2. Non-Interactive Manual Creation (AI-Friendly)**
+
+Best for scripted workflows and AI assistants:
 
 ```bash
 # Patch release (bug fixes)
-pnpm changeset add --type patch
+pnpm changeset:create patch "fix(core): handle missing tsconfig gracefully"
 
 # Minor release (new features)
-pnpm changeset add --type minor
+pnpm changeset:create minor "feat(cli): add --verbose flag" "Adds detailed logging output"
 
 # Major release (breaking changes)
-pnpm changeset add --type major
+pnpm changeset:create major "feat!: breaking API change" "Complete redesign of configuration API"
+```
+
+**When to use**:
+
+- Non-interactive environments (CI/CD, AI assistants)
+- Quick changeset creation with known scope
+- Scripted release processes
+
+##### **3. Auto-Generate from Conventional Commits**
+
+Best for post-merge changelog generation:
+
+```bash
+# Auto-generate changeset from all conventional commits since last version
+pnpm changeset:auto
+```
+
+**When to use**:
+
+- After merging a feature branch to main
+- Generating comprehensive changelog from commit history
+- Transparency into all changes (includes docs, chore, test commits)
+
+**Note**: Includes all conventional commits for transparency, but only `feat`, `fix`, and `perf` trigger version bumps.
+
+#### **Changeset Content Guidelines**
+
+**What goes in a changeset (public changelog for end users):**
+
+- ✅ User-facing behavior changes
+- ✅ Bug fixes that affect users
+- ✅ Breaking changes with migration guidance
+- ✅ New features users will use
+- ✅ Performance improvements users will notice
+- ✅ Brief and focused (1-3 paragraphs for patch, more for major)
+
+**What does NOT go in a changeset:**
+
+- ❌ Internal refactoring (unless it affects performance/behavior)
+- ❌ Test coverage improvements
+- ❌ Documentation updates (unless user-facing like README)
+- ❌ Developer tooling changes (build scripts, CI/CD)
+- ❌ Code quality improvements
+- ❌ Dependency updates (unless they affect users)
+
+**Where internal details belong:**
+
+Put comprehensive internal details in the **PR description**, not the changeset:
+
+- Full implementation details
+- Test coverage improvements
+- Internal refactoring rationale
+- Developer tooling changes
+- Architectural decisions
+- All the nitty-gritty technical context
+
+**Example:**
+
+**Changeset (20 lines, user-focused):**
+
+```markdown
+fix(config): fix tsBuildInfo clutter
+
+Prevents .tsbuildinfo files from cluttering your project root.
+
+**What changed:**
+
+- Auto-configured when using TypeScript Project References
+- Cache moved to node_modules/.cache/
+
+**Benefits:**
+
+- Clean project root
+- Faster builds
+```
+
+**PR Description (comprehensive):**
+
+```markdown
+## Summary
+
+Fixes tsBuildInfo clutter and improves changeset workflow
+
+## Problem
+
+[Detailed context about the issue]
+
+## Changes
+
+### tsBuildInfo Fix
+
+[Implementation details]
+
+### Changeset Workflow
+
+[Internal tooling improvements]
+
+### Test Coverage
+
+[Coverage improvements from 85% to 88%]
+
+## Testing
+
+[All quality gates with detailed results]
+```
+
+#### **Recommended Workflows**
+
+##### **Feature Branch Workflow**
+
+When working on a feature branch with multiple commits:
+
+```bash
+# 1. Complete your feature work
+git add .
+git commit -m "feat(cli): add new feature"
+
+# 2. Before creating PR, add changeset
+pnpm changeset:create minor "feat(cli): add new feature" "Detailed description of the feature"
+
+# 3. Create PR with changeset included
+git push origin feature/my-feature
+
+# 4. After PR merged to main, CI automatically handles versioning and publishing
+```
+
+##### **Post-Merge Workflow**
+
+When you want to generate changelog after merging to main:
+
+```bash
+# 1. Merge feature branch to main (squashed commits)
+git checkout main
+git pull origin main
+
+# 2. Auto-generate changeset from commit history
+pnpm changeset:auto
+
+# 3. Review generated changeset, edit if needed
+cat .changeset/*.md
+
+# 4. Commit changeset
+git add .changeset
+git commit -m "chore: add changeset for release"
+git push origin main
+
+# 5. CI handles the rest (version bump, publish)
+```
+
+##### **Hotfix Workflow**
+
+For urgent production fixes:
+
+```bash
+# 1. Create hotfix branch
+git checkout -b hotfix/critical-bug
+
+# 2. Fix the issue
+git commit -m "fix(core): resolve critical bug"
+
+# 3. Create changeset quickly (non-interactive)
+pnpm changeset:create patch "fix(core): resolve critical bug"
+
+# 4. Push and merge immediately
+git push origin hotfix/critical-bug
+# Merge PR to trigger release
 ```
 
 ### **Automated Release Pipeline**
@@ -234,8 +405,12 @@ When a PR with changeset version bumps is merged to main:
 git checkout main
 git pull origin main
 
-# Create hotfix changeset
-pnpm changeset add --type patch
+# Create hotfix changeset (choose one method):
+# Option 1: Interactive
+pnpm changeset
+
+# Option 2: Non-interactive (faster for hotfixes)
+pnpm changeset:create patch "fix(security): patch CVE-YYYY-XXXXX"
 
 # Version bump
 pnpm changeset:version
@@ -344,8 +519,8 @@ git checkout -b security/CVE-YYYY-XXXXX
 # Write regression test
 # Verify fix
 
-# Emergency release
-pnpm changeset add --type patch
+# Emergency release (non-interactive for speed)
+pnpm changeset:create patch "fix(security): patch CVE-YYYY-XXXXX" "Critical security fix"
 pnpm changeset:version
 pnpm build && pnpm test
 pnpm changeset:release
@@ -415,7 +590,7 @@ pnpm changeset:release
 
 # Or republish previous version with patch increment
 git checkout vX.Y.Z-1
-pnpm changeset add --type patch
+pnpm changeset:create patch "fix: revert to stable version"
 pnpm changeset:version
 pnpm changeset:release
 ```

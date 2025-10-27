@@ -86,6 +86,39 @@
 - JSDoc for exported functions, types, and interfaces
 - Explain non-obvious algorithms, edge cases, or business context
 - Remove redundant comments that restate obvious code
+- **NEVER include specific line numbers** - they become stale immediately
+  - Exception: Archived OpenSpec tasks (historical records, never modified)
+- **NEVER include specific metrics that change frequently** - test counts, coverage percentages, file counts
+- **NEVER include implementation details that change frequently** - reference function/variable names instead
+- Comments should remain accurate without updates when code changes nearby
+
+**Comment Examples**:
+
+```typescript
+// ❌ BAD: Specific line numbers become stale
+// Note: This function is async because it awaits writeChangeset() (line 326)
+
+// ✅ GOOD: Reference the function name instead
+// Note: This function is async because it awaits writeChangeset()
+
+// ❌ BAD: Specific metrics that require constant updates
+// We have 538 tests with 93.75% coverage
+
+// ✅ GOOD: General statements
+// We have comprehensive test coverage (>90%)
+
+// ❌ BAD: Brittle implementation details
+// Loop runs 5 times to process each item in the array
+
+// ✅ GOOD: Explain the WHY, not the WHAT
+// Process items in small batches to avoid memory pressure
+
+// ❌ BAD: Version-specific details that will become outdated
+// Vitest v4: 'all' option was removed, use 'include' instead
+
+// ✅ GOOD: Timeless explanation
+// Use include pattern to specify files for coverage
+```
 
 **Import Guidelines**:
 
@@ -195,6 +228,83 @@ Execution Layer (executor.ts, output-parser.ts)
 - `main` - Production-ready code
 - Feature branches for development
 - No direct commits to main (PR required)
+
+**Pull Request Format**:
+
+ALWAYS follow `.github/PULL_REQUEST_TEMPLATE.md` for consistency. Use narrative format with these required sections:
+
+```markdown
+## Summary
+
+Brief description with issue reference (Closes #X)
+
+## Problem
+
+Why this change matters - explain context and motivation
+
+## Changes
+
+Detailed breakdown with subsections for complex PRs:
+
+- ### Core Changes
+- ### Additional Changes (if applicable)
+
+## Benefits
+
+List advantages with ✅ checkmarks for readability
+
+## Testing
+
+Quality gates passed + test coverage results:
+
+- ✅ pnpm lint - zero errors/warnings
+- ✅ pnpm typecheck - zero TypeScript errors
+- ✅ pnpm test - all tests passing
+- ✅ pnpm build - clean build success
+- ✅ pnpm lint:md - markdown compliance
+
+## Breaking Changes
+
+**NONE** or list breaking changes with migration guidance
+
+## Documentation (if applicable)
+
+List doc updates with ✅ checkmarks
+
+## Changeset (if affecting public API)
+
+- [ ] Changeset added and categorized correctly
+```
+
+**PR Format Principles**:
+
+- Use narrative format (not excessive checkboxes)
+- Include issue reference in Summary section
+- Explain WHY in Problem section (context, motivation)
+- Detail WHAT in Changes section (implementation specifics)
+- Show benefits with ✅ checkmarks for visual clarity
+- Always specify if breaking changes exist
+- Document all quality gates passed
+- Add OpenSpec reference if change was tracked with OpenSpec
+
+**PR vs Changeset Content**:
+
+**PR Description (comprehensive, internal details):**
+
+- Full implementation details
+- Test coverage improvements
+- Internal refactoring rationale
+- Developer tooling changes
+- Architectural decisions
+- All quality gates with detailed results
+
+**Changeset (concise, user-focused):**
+
+- User-facing behavior changes ONLY
+- Brief (1-3 paragraphs for patch releases)
+- Focus on "what changed" and "why users care"
+- Exclude internal details (tests, tooling, refactoring)
+- See `docs/contributing/release-process.md` for detailed guidelines
 
 **Commit Conventions** (Conventional Commits + Gitmojis):
 

@@ -239,7 +239,10 @@ function generateChangesetSummary(commits: ParsedCommit[]): string {
   return summary.trim();
 }
 
-// Main function
+/**
+ * Main function to generate changeset from conventional commits
+ * Note: This function is async because it awaits writeChangeset() (line 326)
+ */
 async function main(): Promise<void> {
   console.log('🔍 Analyzing commits for changeset generation...');
 

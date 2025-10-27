@@ -7,10 +7,6 @@ import { createTempConfig, type TempConfigHandle } from '@/config/temp-config';
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
 
-// Store original mkdirSync before mocking
-const actualFs = await vi.importActual<typeof fs>('node:fs');
-const originalMkdirSync = actualFs.mkdirSync;
-
 // Mock fs module
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof fs>();
@@ -755,6 +751,10 @@ describe('createTempConfig', () => {
         ...defaultOptions,
         cache: true,
       };
+
+      // Store original mkdirSync for fallback usage in mock
+      const actualFs = await vi.importActual<typeof fs>('node:fs');
+      const originalMkdirSync = actualFs.mkdirSync;
 
       // Mock mkdirSync to fail when creating cache directory
       const mockMkdirSync = vi.mocked(mkdirSync);

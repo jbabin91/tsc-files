@@ -7,6 +7,10 @@ import { createTempConfig, type TempConfigHandle } from '@/config/temp-config';
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
 
+// Store original mkdirSync before mocking
+const actualFs = await vi.importActual<typeof fs>('node:fs');
+const originalMkdirSync = actualFs.mkdirSync;
+
 // Mock fs module
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof fs>();
@@ -754,7 +758,6 @@ describe('createTempConfig', () => {
 
       // Mock mkdirSync to fail when creating cache directory
       const mockMkdirSync = vi.mocked(mkdirSync);
-      const originalImpl = mockMkdirSync.getMockImplementation();
 
       mockMkdirSync.mockImplementationOnce((path, options) => {
         // Fail only for cache directory creation
@@ -765,7 +768,7 @@ describe('createTempConfig', () => {
           throw new Error('EACCES: permission denied');
         }
         // Call original for other paths (like tmp directory)
-        return originalImpl?.(path, options);
+        return originalMkdirSync(path, options);
       });
 
       // Should not throw - should fallback to system temp

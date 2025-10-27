@@ -14,6 +14,34 @@ import { logger } from '@/utils/logger';
 tmp.setGracefulCleanup();
 
 /**
+ * Ensure cache directory exists
+ * @param cacheDir - Cache directory path (must be absolute)
+ * @param options - Options for error handling
+ * @returns Cache directory path, or undefined if creation failed
+ */
+function ensureCacheDirectory(
+  cacheDir: string,
+  options: { verbose?: boolean; warnMessage?: string } = {},
+): string | undefined {
+  if (!path.isAbsolute(cacheDir)) {
+    return undefined;
+  }
+
+  try {
+    mkdirSync(cacheDir, { recursive: true });
+    return cacheDir;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (options.verbose) {
+      const warnMsg =
+        options.warnMessage ?? `Failed to create cache directory (${cacheDir})`;
+      logger.warn(`⚠ ${warnMsg}: ${message}`);
+    }
+    return undefined;
+  }
+}
+
+/**
  * Temporary configuration file handle
  */
 export type TempConfigHandle = {
@@ -33,18 +61,16 @@ export type TempConfigHandle = {
 export function createTempConfigPath(cacheDir?: string): TempConfigHandle {
   // Ensure cache directory exists before creating temp file
   // This is needed when using node_modules/.cache/tsc-files/ as the default cache location
-  if (cacheDir && path.isAbsolute(cacheDir)) {
-    try {
-      mkdirSync(cacheDir, { recursive: true });
-    } catch (error) {
+  if (cacheDir) {
+    const result = ensureCacheDirectory(cacheDir, {
+      verbose: true,
+      warnMessage: 'Failed to create cache directory',
+    });
+
+    if (!result) {
       // If we can't create the cache directory, fall back to system temp directory
       // This can happen if node_modules doesn't exist or isn't writable
-      const message = error instanceof Error ? error.message : String(error);
-      logger.warn(
-        `⚠ Failed to create cache directory (${cacheDir}): ${message}`,
-      );
       logger.warn('  Falling back to system temp directory');
-      // Reset cacheDir to undefined to use system temp
       cacheDir = undefined;
     }
   }
@@ -204,17 +230,11 @@ export async function createTempConfig(
       'node_modules/.cache/tsc-files',
     );
 
-    // Ensure cache directory exists
-    try {
-      mkdirSync(cacheDir, { recursive: true });
-    } catch (error) {
-      // Log warning but continue - TypeScript will fall back to default behavior
-      if (options.verbose) {
-        logger.warn(
-          `⚠ Failed to create cache directory for tsBuildInfoFile: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
+    // Ensure cache directory exists (log warning but continue if it fails)
+    ensureCacheDirectory(cacheDir, {
+      verbose: options.verbose,
+      warnMessage: 'Failed to create cache directory for tsBuildInfoFile',
+    });
 
     // Set tsBuildInfoFile to cache location
     // This ensures:

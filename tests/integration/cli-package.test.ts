@@ -65,14 +65,19 @@ describe('CLI Package Integration', () => {
       stdio: 'ignore',
     });
 
-    await execaCommand(
-      `npm install ${path.join(projectRoot, tarball)} typescript --no-audit --no-fund --silent`,
-      {
-        cwd: testDir,
-        shell: true,
-        stdio: 'ignore',
-      },
-    );
+    try {
+      await execaCommand(
+        `npm install ${path.join(projectRoot, tarball)} typescript --no-audit --no-fund`,
+        {
+          cwd: testDir,
+          shell: true,
+        },
+      );
+    } catch (error) {
+      console.error('[integration] npm install failed');
+      console.error('Error:', error);
+      throw error;
+    }
 
     // Create basic tsconfig
     writeFileSync(

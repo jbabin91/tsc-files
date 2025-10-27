@@ -51,7 +51,7 @@ const runCli = async (
     // Handle help and version commands - simulate cleye's behavior
     if (args.includes('--help') || args.includes('-h')) {
       // Simulate cleye's help output
-      const helpOutput = `tsc-files v0.6.1
+      const helpOutput = String.raw`tsc-files v0.6.1
 
 Run TypeScript compiler on specific files while respecting tsconfig.json
 
@@ -88,7 +88,7 @@ EXAMPLES:
   TSC_PROJECT=tsconfig.build.json tsc-files "src/**/*.ts"
 
   # Git hook usage (lint-staged)
-  tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.(ts|tsx)$')
+  tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$')
 
   # Compiler selection
   tsc-files --use-tsgo "src/**/*.ts"     # Force use tsgo for speed
@@ -278,7 +278,7 @@ describe('CLI Integration', () => {
     const result = await runCli(['--json', validFile], tempDir);
     expect(result).toHaveSuccessfulExit();
     expect(result).toHaveValidJson();
-    const jsonOutput = JSON.parse(result.stdout) as unknown;
+    const jsonOutput = JSON.parse(result.stdout);
     expect(jsonOutput).toHaveProperty('success', true);
     expect(jsonOutput).toHaveProperty('checkedFiles');
   });
@@ -425,7 +425,7 @@ describe('CLI Integration', () => {
 
     expect(result.exitCode).toBe(0);
     expect(result).toHaveValidJson();
-    const jsonOutput = JSON.parse(result.stdout) as unknown;
+    const jsonOutput = JSON.parse(result.stdout);
     expect(jsonOutput).toHaveProperty('success', true);
     expect(jsonOutput).toHaveProperty('checkedFiles');
     // When using --json, verbose output is not shown in stdout

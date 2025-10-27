@@ -2,15 +2,23 @@ import { createProgram } from '@/cli/command';
 import { runTypeCheckWithOutput } from '@/cli/runner';
 
 /**
+ * Action handler that runs type checking
+ */
+async function actionHandler(
+  files: string[],
+  options: unknown,
+): Promise<number> {
+  return await runTypeCheckWithOutput(files, options, process.cwd());
+}
+
+/**
  * Create action handler for CLI program
  */
 export function createActionHandler(): (
   files: string[],
   options: unknown,
 ) => Promise<number> {
-  return async (files: string[], options: unknown): Promise<number> => {
-    return await runTypeCheckWithOutput(files, options, process.cwd());
-  };
+  return actionHandler;
 }
 
 /**

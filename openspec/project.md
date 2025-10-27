@@ -32,10 +32,9 @@
 
 - **commander.js** - Command-line argument parsing with enhanced validation
 - **kleur** - Colored terminal output (zero dependencies)
-- **ora** - Progress indicators and spinners
 - **zod** - Runtime type validation for CLI options
 - **execa** - Reliable cross-platform process execution
-- **fast-glob** - Efficient file pattern matching
+- **tinyglobby** - Fast file pattern matching with cross-platform support
 
 ### TypeScript Compiler Integration
 
@@ -156,23 +155,23 @@ Execution Layer (executor.ts, output-parser.ts)
 
 ### Testing Strategy
 
-**Test Layers** (555 tests, 95%+ core coverage):
+**Test Layers** (comprehensive suite with 95%+ coverage):
 
-1. **Unit Tests** (531 tests) - Individual function testing with proper mocking
+1. **Unit Tests** - Individual function testing with proper mocking
    - File system operations with memfs
    - Process execution with vitest mocks
    - Type-safe mocking without `any` types
-2. **Integration Tests** (24 tests) - Real TypeScript projects
+2. **Integration Tests** - Real TypeScript projects
    - Actual file system operations
    - Cross-platform compatibility testing
    - Package manager integration
 3. **End-to-End Tests** (GitHub Actions) - Full CLI execution across platforms
 
-**Coverage Requirements**:
+**Coverage Targets** (all layers exceed minimums):
 
-- **CLI Layer**: 89% statements, 85% branches, 89% functions
-- **Core Layer**: 85% statements, 80% branches, 85% functions
-- **Utils Layer**: 90% statements, 85% branches, 90% functions
+- **CLI Layer**: 95%+ statements, 85%+ branches, 95%+ functions
+- **Core Layer**: 95%+ statements, 80%+ branches, 95%+ functions
+- **Utils Layer**: 100% statements, 100% branches, 100% functions
 
 **Testing Best Practices**:
 

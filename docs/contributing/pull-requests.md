@@ -216,6 +216,209 @@ Your PR must pass:
 
 > Good catch! I added documentation explaining why this is needed.
 
+### Managing Review Comments via CLI
+
+**Replying to Review Comments:**
+
+To create a **line-specific reply** (not a standalone review comment):
+
+```bash
+# Get the comment ID from the review thread
+# Note: Use REST API to get numeric comment IDs
+gh api repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments \
+  --jq '.[] | {id: .id, body: .body, path: .path, line: .line}'
+
+# Reply to the specific comment (creates line-specific reply)
+gh api \
+  --method POST \
+  repos/<OWNER>/<REPO>/pulls/<PR_NUMBER>/comments \
+  -f body="Your reply message here" \
+  -f path="path/to/file.ts" \
+  -f commit_id="<COMMIT_SHA>" \
+  -f subject_type="line" \
+  -F in_reply_to=<COMMENT_ID>
+```
+
+**Important:** Use `-F in_reply_to=<NUMBER>` (uppercase F) instead of `-f` because the GitHub API requires `in_reply_to` to be a numeric field, not a string. Lowercase `-f` sends the value as a string which causes API errors.
+
+**Resolving Review Threads:**
+
+```bash
+# Step 1: Get all review threads with their status
+gh api graphql -f query='
+query {
+  repository(owner: "<OWNER>", name: "<REPO>") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 10) {
+        nodes {
+          id
+          isResolved
+          comments(first: 10) {
+            nodes {
+              body
+              path
+              line
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+
+# Step 2: Find unresolved threads (using jq)
+gh api graphql -f query='
+query {
+  repository(owner: "<OWNER>", name: "<REPO>") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 10) {
+        nodes {
+          id
+          isResolved
+          comments(first: 10) {
+            nodes {
+              body
+            }
+          }
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | {id: .id, body: .comments.nodes[0].body}'
+
+# Step 3: Resolve a specific thread
+gh api graphql -f query='
+mutation {
+  resolveReviewThread(input: {threadId: "<THREAD_ID>"}) {
+    thread {
+      id
+      isResolved
+    }
+  }
+}'
+
+# Step 4: Resolve multiple threads at once (bash loop)
+for thread_id in "PRRT_id1" "PRRT_id2" "PRRT_id3"; do
+  gh api graphql -f query="
+  mutation {
+    resolveReviewThread(input: {threadId: \"$thread_id\"}) {
+      thread { id isResolved }
+    }
+  }"
+done
+```
+
+**Complete Example Workflow:**
+
+```bash
+# Full workflow: Reply to comment and resolve thread
+OWNER="jbabin91"
+REPO="tsc-files"
+PR_NUMBER=47
+COMMENT_ID=2464200977
+COMMIT_SHA="ca4cc896094d96a42bf24842a4ee9487fba1feb0"
+
+# 1. Reply to the review comment
+gh api --method POST repos/$OWNER/$REPO/pulls/$PR_NUMBER/comments \
+  -f body="Thanks for the suggestion! Fixed in commit $COMMIT_SHA." \
+  -f path="src/core/file-resolver.ts" \
+  -f commit_id="$COMMIT_SHA" \
+  -f subject_type="line" \
+  -F in_reply_to=$COMMENT_ID
+
+# 2. Get the thread ID for this comment
+THREAD_ID=$(gh api graphql -f query="
+query {
+  repository(owner: \"$OWNER\", name: \"$REPO\") {
+    pullRequest(number: $PR_NUMBER) {
+      reviewThreads(last: 20) {
+        nodes {
+          id
+          isResolved
+          comments(first: 10) {
+            nodes {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+}" --jq ".data.repository.pullRequest.reviewThreads.nodes[] | select(any(.comments.nodes[]; .id == \"$COMMENT_ID\")) | .id")
+
+# 3. Resolve the thread
+gh api graphql -f query="
+mutation {
+  resolveReviewThread(input: {threadId: \"$THREAD_ID\"}) {
+    thread { id isResolved }
+  }
+}"
+```
+
+**Quick Reference for Common Tasks:**
+
+```bash
+# List all unresolved review comments
+gh api graphql -f query='
+query {
+  repository(owner: "<OWNER>", name: "<REPO>") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 20) {
+        nodes {
+          id
+          isResolved
+          comments(first: 10) {
+            nodes {
+              body
+              path
+              line
+            }
+          }
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+
+# Count unresolved threads
+gh api graphql -f query='
+query {
+  repository(owner: "<OWNER>", name: "<REPO>") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 20) {
+        nodes {
+          isResolved
+        }
+      }
+    }
+  }
+}' --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'
+
+# Resolve all unresolved threads (use with caution!)
+set -e  # Exit on error
+gh api graphql -f query='
+query {
+  repository(owner: "<OWNER>", name: "<REPO>") {
+    pullRequest(number: <PR_NUMBER>) {
+      reviewThreads(last: 20) {
+        nodes {
+          id
+          isResolved
+        }
+      }
+    }
+  }
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | .id' | while read thread_id; do
+  gh api graphql -f query="
+  mutation {
+    resolveReviewThread(input: {threadId: \"$thread_id\"}) {
+      thread { id }
+    }
+  }" || { echo "Error resolving thread: $thread_id"; exit 1; }
+  echo "Resolved thread: $thread_id"
+done
+```
+
 ## After PR is Merged
 
 ### Version Bump

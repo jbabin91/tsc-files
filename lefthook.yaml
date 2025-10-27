@@ -5,10 +5,6 @@ output:
 pre-commit:
   parallel: true
   commands:
-    sync-docs:
-      glob: 'AGENTS.md'
-      run: cp AGENTS.md CLAUDE.md && git add CLAUDE.md
-      priority: 1
     format:
       glob: '*.{ts,js,cjs,mjs,json,yaml,yml,md,mdx}'
       run: pnpm prettier -uw {staged_files}

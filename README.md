@@ -49,10 +49,13 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 ### Performance & Reliability
 
 - ✅ **Fast & lightweight** - Optimized file resolution and execution
+- ✅ **tsgo compiler support** - Optional 10x performance boost with native TypeScript compiler
+- ✅ **Compiler selection** - Force tsc/tsgo or automatic selection with intelligent fallback
+- ✅ **Performance benchmarking** - Compare compiler speeds with `--benchmark` flag
 - ✅ **Cross-platform** - Tested on Windows, macOS, and Linux
 - ✅ **Git hook friendly** - Perfect for pre-commit hooks and lint-staged
 - ✅ **CI/CD optimized** - Designed for continuous integration workflows
-- ✅ **Comprehensive testing** - 531 tests with 95%+ coverage
+- ✅ **Comprehensive testing** - Full test suite (unit + integration) with 95%+ coverage
 
 ### Security & Quality
 
@@ -483,7 +486,7 @@ TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
 
 No configuration needed - it just works!
 
-> **⚡ Performance Tip:** For 10x faster type checking, see the [tsgo compiler guide](./docs/usage/tsgo-compiler.md) (experimental).
+> **⚡ Performance Tip:** For 10x faster type checking, see the [tsgo compiler guide](./docs/usage/tsgo-compiler.md) using the native TypeScript compiler.
 
 ## 🏗️ Development Status
 
@@ -491,16 +494,17 @@ No configuration needed - it just works!
 - **Security**: ✅ Complete (signed commits, npm provenance, automated vulnerability scanning)
 - **Release Pipeline**: ✅ Complete (automated versioning, publishing, GitHub releases)
 - **Research & Analysis**: ✅ Complete (original tsc-files community solutions analyzed and implemented)
-- **Core Implementation**: ✅ Complete (1,400+ lines: CLI, type checker, package detection, cross-platform support)
+- **Core Implementation**: ✅ Complete (4,000+ lines: CLI, type checker, config, detectors, execution, utils)
 - **All Critical Features**: ✅ Complete (monorepo, package managers, JavaScript support, error handling)
-- **Testing & Quality**: ✅ Complete (531 tests passing, 95%+ coverage, comprehensive test suite)
-- **Status**: 🚀 **Production Ready** - Feature complete TypeScript CLI tool
+- **Advanced Features**: ✅ Complete (tsgo integration, enhanced errors, Bun support, dependency discovery)
+- **Testing & Quality**: ✅ Complete (comprehensive test suite with 95%+ coverage)
+- **Status**: 🚀 **Production Ready** - Mature TypeScript CLI tool with advanced performance optimization
 
 ## 📚 Documentation
 
 - [API Reference](./docs/api.md) - Complete CLI and programmatic API documentation
 - [Usage Examples](./docs/usage-examples.md) - Real-world usage scenarios and patterns
-- [tsgo Compiler Guide](./docs/usage/tsgo-compiler.md) - 10x faster type checking (experimental)
+- [tsgo Compiler Guide](./docs/usage/tsgo-compiler.md) - 10x faster type checking with native compiler
 - [Troubleshooting Guide](./docs/troubleshooting-guide.md) - Common issues and solutions
 - [Architecture](./docs/architecture/README.md) - How tsc-files works internally
 - [Contributing](./docs/CONTRIBUTING.md) - Development setup and contribution guidelines

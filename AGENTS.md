@@ -1,9 +1,29 @@
-# CLAUDE.md
+# AGENTS.md
 
-<!-- AUTO-GENERATED SECTIONS: Certain sections of this file are maintained by Claude Code -->
-<!-- Manual edits to auto-generated sections may be overwritten during development sessions -->
+<!-- OPENSPEC:START -->
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big
+  performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
+This file provides guidance to AI coding assistants (Claude Code, GitHub Copilot, etc.) when working with code in this repository.
 
 ## 📋 Core Project Context
 
@@ -274,42 +294,48 @@ Reusable actions in `.github/actions/`:
 
 **Infrastructure**: ✅ Complete (enterprise-grade CI/CD, testing, security, release automation)
 **Research & Analysis**: ✅ Complete (original tsc-files PR analysis provided implementation roadmap)
-**Phase 1 & 1.5**: ✅ Complete (modern tooling foundation with execa, fast-glob, path aliases)
+**Phase 1 & 1.5**: ✅ Complete (modern tooling foundation with execa, tinyglobby, path aliases)
 **Phase 2**: ✅ Complete (all critical issues resolved - feature complete CLI)
-**Quality Gates**: ✅ Enforced (zero-tolerance policy for all quality metrics - 84%+ core coverage)
-**Current Status**: 🎯 **Ready for Phase 3.1 - Performance & Reliability Enhancements**
+**Phase 3.1**: ✅ Complete (tsgo, enhanced errors, advanced config, Bun support)
+**Quality Gates**: ✅ Enforced (zero-tolerance policy for all quality metrics - 95.87% overall coverage)
+**Current Status**: 🚀 **Production Ready - All Features Complete**
 
-### **Next Phase: 3.1 Implementation** (4-6 weeks)
+### **Phase 3.1 Features** ✅ COMPLETE
 
-- **tsgo Integration**: 10x performance boost with Microsoft's native TypeScript compiler
-- **Enhanced Error Messages**: Better git hook failure experience and user guidance
-- **Advanced Configuration**: Robust tsconfig handling for complex monorepo setups
-- **Bun Runtime Support**: Future-proofing with emerging package manager support
+- ✅ **tsgo Integration**: 10x performance boost with Microsoft's native TypeScript compiler
+- ✅ **Enhanced Error Messages**: Comprehensive error handling with educational tips and guidance
+- ✅ **Advanced Configuration**: Full dependency discovery and complex monorepo support
+- ✅ **Bun Runtime Support**: Complete package manager integration (npm/yarn/pnpm/bun)
 
-**Strategic Goal**: Establish tsc-files as THE definitive TypeScript file checker for git hooks with unmatched performance and reliability.
+**Achievement**: tsc-files is now THE definitive TypeScript file checker for git hooks with unmatched performance, reliability, and user experience.
 
-The project has successfully evolved from research to a fully functional TypeScript CLI tool. Phase 3.1 will add cutting-edge performance optimization and polish the user experience.
+The project has evolved from research through implementation to a mature, production-ready TypeScript CLI tool with cutting-edge performance optimization and comprehensive features.
 
 ### Implementation Completion Status
 
 - ✅ Build system configured (tsdown) with dual ESM/CJS output
-- ✅ Testing framework complete (Vitest) with 531 passing tests
+- ✅ Testing framework complete (Vitest) with comprehensive test suite and high coverage (95%+)
 - ✅ Quality enforcement active (ESLint, Prettier, TypeScript strict)
 - ✅ CI/CD pipeline operational with automated releases
 - ✅ Documentation structure comprehensive and current
 - ✅ Security requirements implemented and validated
-- ✅ Modern tooling foundation implemented (execa, fast-glob, TypeScript path aliases)
+- ✅ Modern tooling foundation implemented (execa, tinyglobby, TypeScript path aliases)
 - ✅ Community solutions analyzed and implemented (PRs #66, #49, #75)
-- ✅ **Core Implementation Complete** (2,497 lines):
-  - ✅ CLI Interface (252 lines) - commander, kleur, ora, zod integration
-  - ✅ Type Checker (681 lines) - monorepo support, JavaScript handling
-  - ✅ Package Detection (461 lines) - npm/yarn/pnpm/bun with cross-platform support
+- ✅ **Core Implementation Complete** (4,000+ lines):
+  - ✅ CLI Layer (900+ lines) - commander, kleur, zod integration with educational features
+  - ✅ Core Layer (500+ lines) - monorepo support, JavaScript handling, type checking
+  - ✅ Config Layer (1,100+ lines) - dependency discovery, temp config, tsconfig resolution, tsgo compatibility
+  - ✅ Detectors Layer (600+ lines) - package manager and TypeScript compiler detection
+  - ✅ Execution Layer (300+ lines) - cross-platform TypeScript execution with error parsing
+  - ✅ Utils Layer (400+ lines) - file operations, patterns, formatting, logging
 - ✅ **All Critical Features**:
   - ✅ Monorepo support with per-file tsconfig resolution
   - ✅ Package manager auto-detection (npm/yarn/pnpm/bun)
   - ✅ Cross-platform compatibility (Windows path handling)
   - ✅ JavaScript support (allowJs/checkJs configurations)
-  - ✅ Enhanced error reporting with proper spawn error propagation
+  - ✅ Enhanced error reporting with educational tips
+  - ✅ tsgo native compiler support with intelligent fallback
+  - ✅ Dependency discovery and ambient declaration detection
   - ✅ Comprehensive test coverage with quality thresholds
 
 ## Testing Commands

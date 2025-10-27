@@ -1,10 +1,21 @@
-import { readFileSync } from 'node:fs';
+import type * as fs from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createTempConfig, type TempConfigHandle } from '@/config/temp-config';
 import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
+
+// Mock fs module
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof fs>();
+  return {
+    ...actual,
+    mkdirSync: vi.fn(actual.mkdirSync),
+    writeFileSync: vi.fn(actual.writeFileSync),
+  };
+});
 
 type TempConfigContent = {
   compilerOptions: Record<string, unknown>;
@@ -72,45 +83,49 @@ describe('createTempConfig', () => {
       };
 
       // Test 1: With cache enabled (default), no typeRoots added
-      const optionsWithTsc = { ...defaultOptions, useTsc: true, cache: true };
-      tempHandle = await createTempConfig(
-        originalConfig,
-        testFiles,
-        optionsWithTsc,
-        testConfigDir,
-      );
+      {
+        const optionsWithTsc = { ...defaultOptions, useTsc: true, cache: true };
+        tempHandle = await createTempConfig(
+          originalConfig,
+          testFiles,
+          optionsWithTsc,
+          testConfigDir,
+        );
 
-      let tempConfigContent = JSON.parse(
-        readFileSync(tempHandle.path, 'utf8'),
-      ) as TempConfigContent;
+        const tempConfigContent = JSON.parse(
+          readFileSync(tempHandle.path, 'utf8'),
+        ) as TempConfigContent;
 
-      // With cache enabled, typeRoots should NOT be added (uses default resolution)
-      expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
+        // With cache enabled, typeRoots should NOT be added (uses default resolution)
+        expect(tempConfigContent.compilerOptions.typeRoots).toBeUndefined();
 
-      // Cleanup for next test
-      tempHandle.cleanup();
+        // Cleanup for next test
+        tempHandle.cleanup();
+      }
 
       // Test 2: With cache disabled (--no-cache), typeRoots added
-      const optionsNoCacheWithTsc = {
-        ...defaultOptions,
-        useTsc: true,
-        cache: false,
-      };
-      tempHandle = await createTempConfig(
-        originalConfig,
-        testFiles,
-        optionsNoCacheWithTsc,
-        testConfigDir,
-      );
+      {
+        const optionsNoCacheWithTsc = {
+          ...defaultOptions,
+          useTsc: true,
+          cache: false,
+        };
+        tempHandle = await createTempConfig(
+          originalConfig,
+          testFiles,
+          optionsNoCacheWithTsc,
+          testConfigDir,
+        );
 
-      tempConfigContent = JSON.parse(
-        readFileSync(tempHandle.path, 'utf8'),
-      ) as TempConfigContent;
+        const tempConfigContent = JSON.parse(
+          readFileSync(tempHandle.path, 'utf8'),
+        ) as TempConfigContent;
 
-      // With cache disabled (system temp), typeRoots should be added (only @types, not bare node_modules)
-      expect(tempConfigContent.compilerOptions.typeRoots).toEqual([
-        '/test/project/node_modules/@types',
-      ]);
+        // With cache disabled (system temp), typeRoots should be added (only @types, not bare node_modules)
+        expect(tempConfigContent.compilerOptions.typeRoots).toEqual([
+          '/test/project/node_modules/@types',
+        ]);
+      }
     });
 
     it('should preserve existing typeRoots when present', async () => {
@@ -670,6 +685,107 @@ describe('createTempConfig', () => {
       );
       // Note: We can't easily test console output in unit tests,
       // but we verify the functionality works correctly
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle include patterns without TypeScript extensions', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+        },
+        include: ['src/**/*', 'lib/**/*.js', 'config/*.json'],
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // Should still create valid config even with non-TS patterns
+      expect(tempConfigContent.files).toEqual(testFiles);
+      expect(tempConfigContent.compilerOptions.target).toBe('ES2020');
+    });
+
+    it('should cleanup and throw error when writeFileSync fails', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+        },
+      };
+
+      // Mock writeFileSync to fail
+      const mockWriteFileSync = vi.mocked(writeFileSync);
+      mockWriteFileSync.mockImplementationOnce(() => {
+        throw new Error('Permission denied');
+      });
+
+      // Should throw error and cleanup
+      await expect(
+        createTempConfig(
+          originalConfig,
+          testFiles,
+          defaultOptions,
+          testConfigDir,
+        ),
+      ).rejects.toThrow('Failed to create temporary config: Permission denied');
+
+      // Restore mock
+      mockWriteFileSync.mockRestore();
+    });
+
+    it('should fallback to system temp when cache directory creation fails', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+        },
+      };
+
+      const cacheOptions: CheckOptions = {
+        ...defaultOptions,
+        cache: true,
+      };
+
+      // Mock mkdirSync to fail when creating cache directory
+      const mockMkdirSync = vi.mocked(mkdirSync);
+      const originalImpl = mockMkdirSync.getMockImplementation();
+
+      mockMkdirSync.mockImplementationOnce((path, options) => {
+        // Fail only for cache directory creation
+        if (
+          typeof path === 'string' &&
+          path.includes('node_modules/.cache/tsc-files')
+        ) {
+          throw new Error('EACCES: permission denied');
+        }
+        // Call original for other paths (like tmp directory)
+        return originalImpl?.(path, options);
+      });
+
+      // Should not throw - should fallback to system temp
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        cacheOptions,
+        testConfigDir,
+      );
+
+      // Verify temp config was created (in system temp directory)
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.files).toEqual(testFiles);
+      expect(tempHandle.path).not.toContain('node_modules/.cache');
+
+      // Restore mock
+      mockMkdirSync.mockRestore();
     });
   });
 });

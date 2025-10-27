@@ -39,16 +39,18 @@ describe('Dependency Discovery', () => {
     if (tempDirCleanup) {
       try {
         tempDirCleanup();
-      } catch {
-        // Ignore cleanup errors
+      } catch (error) {
+        logger.debug?.(
+          `Temp dir cleanup error (removeCallback): ${String(error)}`,
+        );
       }
       tempDirCleanup = undefined;
     }
     // Fallback cleanup
     try {
       rmSync(tempDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
+    } catch (error) {
+      logger.debug?.(`Temp dir cleanup error (rmSync): ${String(error)}`);
     }
     clearDependencyCache();
   });

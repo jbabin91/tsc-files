@@ -790,5 +790,57 @@ describe('createTempConfig', () => {
       // Restore mock
       mockMkdirSync.mockRestore();
     });
+
+    it('should log verbose warnings when cache directory creation fails', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+        },
+      };
+
+      const verboseCacheOptions: CheckOptions = {
+        ...defaultOptions,
+        cache: true,
+        verbose: true, // Enable verbose logging
+      };
+
+      // Store original mkdirSync for fallback usage in mock
+      const actualFs = await vi.importActual<typeof fs>('node:fs');
+      const originalMkdirSync = actualFs.mkdirSync;
+
+      // Mock mkdirSync to fail when creating cache directory
+      const mockMkdirSync = vi.mocked(mkdirSync);
+
+      mockMkdirSync.mockImplementationOnce((path, options) => {
+        // Fail only for cache directory creation
+        if (
+          typeof path === 'string' &&
+          path.includes('node_modules/.cache/tsc-files')
+        ) {
+          throw new Error('EACCES: permission denied');
+        }
+        // Call original for other paths (like tmp directory)
+        return originalMkdirSync(path, options);
+      });
+
+      // Should not throw - should fallback to system temp
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        verboseCacheOptions,
+        testConfigDir,
+      );
+
+      // Verify temp config was created (in system temp directory)
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.files).toEqual(testFiles);
+      expect(tempHandle.path).not.toContain('node_modules/.cache');
+
+      // Restore mock
+      mockMkdirSync.mockRestore();
+    });
   });
 });

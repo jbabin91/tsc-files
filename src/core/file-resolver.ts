@@ -37,20 +37,21 @@ async function handleDirectFile(
   }
 
   if (existsSync(absolutePath)) {
+    // Generate directory glob pattern (used in both try and catch)
+    const { globPattern: extPattern } = getFileExtensions(
+      shouldIncludeJavaScriptFiles(),
+    );
+    const directoryGlobPattern = `${pattern}/**/*.${extPattern}`;
+
     try {
       const fs = await import('node:fs/promises');
       const stat = await fs.stat(absolutePath);
       if (stat.isDirectory()) {
-        const { globPattern: extPattern } = getFileExtensions(
-          shouldIncludeJavaScriptFiles(),
-        );
-        return { globPattern: `${pattern}/**/*.${extPattern}` };
+        return { globPattern: directoryGlobPattern };
       }
     } catch {
-      const { globPattern: extPattern } = getFileExtensions(
-        shouldIncludeJavaScriptFiles(),
-      );
-      return { globPattern: `${pattern}/**/*.${extPattern}` };
+      // If stat fails, treat as directory pattern
+      return { globPattern: directoryGlobPattern };
     }
   }
 
@@ -95,6 +96,7 @@ export async function resolveFiles(
 
   const directFiles: string[] = [];
   const globPatterns: string[] = [];
+  const processedDirectPatterns = new Set<string>();
 
   for (const pattern of patterns) {
     if (isDirectFile(pattern)) {
@@ -102,6 +104,7 @@ export async function resolveFiles(
 
       if (result.absolutePath) {
         directFiles.push(result.absolutePath);
+        processedDirectPatterns.add(pattern);
       } else if (result.globPattern) {
         globPatterns.push(result.globPattern);
       }
@@ -124,8 +127,9 @@ export async function resolveFiles(
 
       results.push(...files.filter((file) => regexPattern.test(file)));
     } catch {
-      // Fallback: filter patterns that match our regex and resolve them
+      // Fallback: only process patterns that weren't already handled as direct files
       const fallbackFiles = patterns
+        .filter((pattern) => !processedDirectPatterns.has(pattern))
         .filter((pattern) => regexPattern.test(pattern))
         .map((file) => path.resolve(cwd, file))
         .filter((file) => existsSync(file));

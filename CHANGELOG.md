@@ -1,5 +1,22 @@
 # @jbabin91/tsc-files
 
+## 0.7.1
+
+### Patch Changes
+
+- [#47](https://github.com/jbabin91/tsc-files/pull/47) [`d4a9ec5`](https://github.com/jbabin91/tsc-files/commit/d4a9ec5866c3f842e9cc84ab49ffa1b59c793790) Thanks [@jbabin91](https://github.com/jbabin91)! - fix: handle files with special characters in filenames
+
+  Files containing special characters like parentheses `()` and dollar signs `$` are now properly type-checked instead of being silently skipped. This fixes an issue where the glob library was interpreting these characters as pattern syntax.
+
+  **Changes:**
+  - Direct files bypass glob processing to avoid special character interpretation
+  - Improved fallback logic to prevent duplicate file processing
+  - Refactored directory pattern generation to reduce code duplication
+  - Added comprehensive test coverage for error paths (100% function coverage)
+  - Fixed tsconfigPath parameter propagation for consistent JavaScript file inclusion
+
+  **Fixes:** #45
+
 ## 0.7.0
 
 ### Minor Changes

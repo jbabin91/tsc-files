@@ -215,12 +215,20 @@ const result = await checkFiles(['src/**/*.ts'], {
 
 // Error handling with throwOnError
 try {
-  await checkFiles(['src/index.ts'], {
+  const result = await checkFiles(['src/index.ts'], {
     throwOnError: true,
   });
-  console.log('✓ No type errors');
+
+  if (result.success) {
+    console.log('✓ No type errors');
+  } else {
+    console.error(`✗ Found ${result.errorCount} errors`);
+  }
 } catch (error) {
-  console.error('Type checking failed:', error.message);
+  console.error(
+    'Type checking aborted:',
+    error instanceof Error ? error.message : String(error),
+  );
 }
 
 // Working with specific directory

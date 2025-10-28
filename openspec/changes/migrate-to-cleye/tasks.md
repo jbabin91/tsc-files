@@ -90,7 +90,7 @@
 ## 8. Documentation Updates
 
 - [ ] 8.1 Update `openspec/project.md` tech stack (commander → cleye)
-- [ ] 8.2 Review `docs/api.md` for CLI examples (should be unchanged)
+- [ ] 8.2 Review `docs/reference/api.md` for CLI examples (should be unchanged)
 - [ ] 8.3 Review `docs/architecture/README.md` for CLI layer description
 - [ ] 8.4 Update inline code comments for clarity
 - [ ] 8.5 Verify all doc links still work

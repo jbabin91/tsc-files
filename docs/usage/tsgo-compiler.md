@@ -342,7 +342,7 @@ As tsgo matures:
 - [TypeScript Native Preview](https://github.com/microsoft/TypeScript/tree/main/packages/native-preview)
 - [Performance Comparison](../architecture/performance.md)
 - [Architecture Details](../architecture/details.md)
-- [Troubleshooting Guide](../troubleshooting-guide.md)
+- [Troubleshooting Guide](../guides/troubleshooting-guide.md)
 
 ---
 

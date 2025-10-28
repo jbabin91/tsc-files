@@ -7,9 +7,9 @@ Welcome to the comprehensive documentation for tsc-files. This guide is organize
 Start here if you're using tsc-files in your project:
 
 - **[Quick Start](../README.md)** - Installation, basic usage, and first steps (see main README)
-- **[API Reference](./api.md)** - CLI options and programmatic API
-- **[Usage Examples](./usage-examples.md)** - Real-world usage scenarios
-- **[Troubleshooting Guide](./troubleshooting-guide.md)** - Common issues and solutions
+- **[API Reference](./reference/api.md)** - CLI options and programmatic API
+- **[Usage Examples](./guides/usage-examples.md)** - Real-world usage scenarios
+- **[Troubleshooting Guide](./guides/troubleshooting-guide.md)** - Common issues and solutions
 
 ### Advanced Usage
 
@@ -81,9 +81,11 @@ docs/
 │   └── SECURITY.md                # ✅ Displayed on GitHub
 │
 ├── 🚀 User Guides
-│   ├── api.md
-│   ├── usage-examples.md
-│   ├── troubleshooting-guide.md
+│   ├── guides/
+│   │   ├── usage-examples.md
+│   │   └── troubleshooting-guide.md
+│   ├── reference/
+│   │   └── api.md
 │   └── usage/
 │       └── tsgo-compiler.md         # Advanced: 10x faster type checking
 │
@@ -121,8 +123,8 @@ docs/
 
 - **Use tsc-files** → [Quick Start (README)](../README.md)
 - **Speed up type checking** → [tsgo Compiler Guide](./usage/tsgo-compiler.md)
-- **Fix an issue** → [Troubleshooting Guide](./troubleshooting-guide.md)
-- **Learn the API** → [API Reference](./api.md)
+- **Fix an issue** → [Troubleshooting Guide](./guides/troubleshooting-guide.md)
+- **Learn the API** → [API Reference](./reference/api.md)
 - **Contribute code** → [Contributing Guide](./CONTRIBUTING.md)
 - **Write tests** → [Testing Guide](./testing/README.md)
 - **Understand design** → [Architecture](./architecture/README.md)
@@ -133,7 +135,7 @@ docs/
 
 When contributing documentation:
 
-1. **User docs** (README, api, usage-examples, usage/\*) - Focus on clarity and examples
+1. **User docs** (README, reference/api, guides/\*, usage/\*) - Focus on clarity and examples
 2. **Contributor docs** (contributing/\*) - Include setup steps and code examples
 3. **Architecture docs** (architecture/\*) - Use diagrams and explain "why"
 4. **ADRs** (decisions/\*) - Follow [ADR format](./decisions/README.md)

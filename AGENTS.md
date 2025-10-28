@@ -56,8 +56,8 @@ Read these files on-demand when you need specific guidance:
 
 **For Troubleshooting:**
 
-- [docs/troubleshooting-guide.md](docs/troubleshooting-guide.md) - Common issues and solutions
-- [docs/api.md](docs/api.md) - CLI options and programmatic API reference
+- [docs/guides/troubleshooting-guide.md](docs/guides/troubleshooting-guide.md) - Common issues and solutions
+- [docs/reference/api.md](docs/reference/api.md) - CLI options and programmatic API reference
 
 **For Deep Dives:**
 
@@ -284,8 +284,8 @@ Reusable actions in `.github/actions/`:
 ## Documentation Structure
 
 - `docs/` - Comprehensive documentation following Epic Stack patterns
-- `docs/api.md` - CLI and programmatic API reference
-- `docs/usage-examples.md` - Real-world usage scenarios and patterns
+- `docs/reference/api.md` - CLI and programmatic API reference
+- `docs/guides/usage-examples.md` - Real-world usage scenarios and patterns
 - `docs/usage/tsgo-compiler.md` - Advanced: 10x faster type checking guide
 - `docs/architecture/` - Detailed system design and implementation
 - `docs/decisions/` - Architectural Decision Records (ADRs) explaining key technical choices
@@ -569,8 +569,8 @@ tests/
 └── fixtures/           # Test fixtures and sample projects
 
 docs/
-├── api.md              # CLI and programmatic API reference
-├── usage-examples.md   # Real-world usage scenarios
+├── guides/             # How-to content (usage examples, troubleshooting)
+├── reference/          # API reference and supporting docs
 ├── usage/              # Deep dives (e.g., tsgo compiler guide)
 ├── architecture/       # System design, performance, security
 ├── testing/            # Strategy, framework, best practices

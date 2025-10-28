@@ -46,9 +46,9 @@ pnpm changeset
 If your PR includes:
 
 - New features → Update `README.md` and relevant docs
-- CLI changes → Update `docs/api.md`
+- CLI changes → Update `docs/reference/api.md`
 - Breaking changes → Add migration guide
-- Configuration changes → Update `README.md` and `docs/api.md`
+- Configuration changes → Update `README.md` and `docs/reference/api.md`
 
 ## Creating the PR
 

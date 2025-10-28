@@ -295,12 +295,18 @@ const result = await checkFiles(['src/**/*.ts'], {
 
 // Error handling with throwOnError
 try {
-  await checkFiles(['src/index.ts'], {
+  const result = await checkFiles(['src/index.ts'], {
     throwOnError: true,
   });
-  console.log('✓ No type errors');
+
+  if (result.success) {
+    console.log('✓ No type errors');
+  } else {
+    console.error(`✗ Found ${result.errorCount} errors`);
+  }
 } catch (error) {
-  console.error('Type checking failed:', error.message);
+  // Exceptions occur when configuration or compiler execution fails
+  console.error('Type checking aborted:', (error as Error).message);
 }
 ```
 
@@ -573,10 +579,10 @@ No configuration needed - it just works!
 
 ## 📚 Documentation
 
-- [API Reference](./docs/api.md) - Complete CLI and programmatic API documentation
-- [Usage Examples](./docs/usage-examples.md) - Real-world usage scenarios and patterns
+- [API Reference](./docs/reference/api.md) - Complete CLI and programmatic API documentation
+- [Usage Examples](./docs/guides/usage-examples.md) - Real-world usage scenarios and patterns
 - [tsgo Compiler Guide](./docs/usage/tsgo-compiler.md) - 10x faster type checking with native compiler
-- [Troubleshooting Guide](./docs/troubleshooting-guide.md) - Common issues and solutions
+- [Troubleshooting Guide](./docs/guides/troubleshooting-guide.md) - Common issues and solutions
 - [Architecture](./docs/architecture/README.md) - How tsc-files works internally
 - [Contributing](./docs/CONTRIBUTING.md) - Development setup and contribution guidelines
 

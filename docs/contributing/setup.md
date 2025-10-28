@@ -233,7 +233,7 @@ pnpm prepare
 ## Getting Help
 
 - **Questions?** Open a [GitHub Discussion](https://github.com/jbabin91/tsc-files/discussions)
-- **Bug?** Check [troubleshooting guide](../troubleshooting-guide.md)
+- **Bug?** Check [troubleshooting guide](../guides/troubleshooting-guide.md)
 - **Documentation:** Browse [docs/](../README.md)
 
 ## Next Steps

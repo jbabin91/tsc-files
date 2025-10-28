@@ -553,20 +553,20 @@ These examples demonstrate the flexibility and power of tsc-files across various
 
 ### Implementation Guides
 
-- [Contributing Guide](./contributing.md) - Development setup and quality requirements
-- [Architecture Overview](./architecture/README.md) - Layered system design and component structure
-- [Architecture Details](./architecture/details.md) - Deep dive into configuration, detection, and execution flows
+- [Contributing Guide](../CONTRIBUTING.md) - Development setup and quality requirements
+- [Architecture Overview](../architecture/README.md) - Layered system design and component structure
+- [Architecture Details](../architecture/details.md) - Deep dive into configuration, detection, and execution flows
 
 ### Operational Guides
 
-- [Security Requirements](./architecture/security.md) - Security protocols and validation
-- [Testing Strategy](./testing/strategy.md) - Testing framework and patterns
-- [Troubleshooting Guide](../CLAUDE.md#-troubleshooting-guide) - Common issues and solutions
+- [Security Requirements](../architecture/security.md) - Security protocols and validation
+- [Testing Strategy](../testing/strategy.md) - Testing framework and patterns
+- [Troubleshooting Guide](./troubleshooting-guide.md) - Common issues and solutions
 
 ### Development Resources
 
-- [CLAUDE.md](../CLAUDE.md) - Core project guidance and commands
-- [Claude Code Workflows](../.claude/claude-code-workflows.md) - Development workflow patterns
+- [CLAUDE.md](../../CLAUDE.md) - Core project guidance and commands
+- [Claude Code Workflows](../../.claude/claude-code-workflows.md) - Development workflow patterns
 
 ### External References
 

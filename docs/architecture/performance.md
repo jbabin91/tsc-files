@@ -546,8 +546,8 @@ export TSC_FILES_CACHE_ENV=true
 #### **Large TypeScript Project Slowdown**
 
 ```bash
-# Use skipLibCheck for development
-tsc-files --skipLibCheck "src/**/*.ts"
+# Skip lib checking for development
+tsc-files --skip-lib-check "src/**/*.ts"
 
 # Profile with verbose output
 tsc-files --verbose --project tsconfig.json "src/**/*.ts" 2>&1 | head -20

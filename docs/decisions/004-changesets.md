@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-23
+
 ## Context
 
 We needed a reliable, automated release strategy that handles versioning, changelogs, and npm publishing while following semantic versioning.

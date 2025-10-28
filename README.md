@@ -62,7 +62,7 @@ tsc-files $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx
 - ✅ **Supply chain security** - npm provenance and trusted publishing enabled
 - ✅ **Signed commits** - GitHub App automation with verified commit signatures
 - ✅ **Automated security scanning** - Dependency audits, secrets scanning, CodeQL analysis
-- ✅ **Dual package** - Supports both ESM and CommonJS
+- ✅ **ESM distribution** - Optimized ESM bundle with CLI binary entry point
 
 ## 🎯 Why tsc-files?
 
@@ -493,8 +493,8 @@ This ensures any build info files are ignored, regardless of location.
 # Use --skip-lib-check for faster execution in CI
 tsc-files --skip-lib-check "src/**/*.ts"
 
-# Enable caching for repeated runs (default)
-tsc-files --cache "src/**/*.ts"
+# Caching is enabled by default; disable it for debugging temp config issues
+tsc-files --no-cache "src/**/*.ts"
 
 # Use JSON output for programmatic processing
 tsc-files --json "src/**/*.ts" | jq '.errorCount'
@@ -529,18 +529,22 @@ TSC_PROJECT=tsconfig.build.json tsc-files "packages/*/src/**/*.ts"
 
 ## ⚙️ CLI Options
 
-| Option           | Short | Description                             | Default       |
-| ---------------- | ----- | --------------------------------------- | ------------- |
-| `--help`         | `-h`  | Show help information                   |               |
-| `--version`      | `-v`  | Show version number                     |               |
-| `--project`      | `-p`  | Path to tsconfig.json                   | Auto-detected |
-| `--noEmit`       |       | Don't emit files                        | `true`        |
-| `--skipLibCheck` |       | Skip type checking of declaration files |               |
-| `--verbose`      |       | Enable verbose output                   |               |
-| `--cache`        |       | Use cache directory for temp files      | `true`        |
-| `--no-cache`     |       | Disable caching                         |               |
-| `--json`         |       | Output results as JSON                  |               |
-| `--include`      |       | Additional files to include             |               |
+| Option              | Short | Description                                                           | Default            |
+| ------------------- | ----- | --------------------------------------------------------------------- | ------------------ |
+| `--help`            | `-h`  | Show help information                                                 |                    |
+| `--version`         | `-v`  | Show version number                                                   |                    |
+| `--project <path>`  | `-p`  | Path to tsconfig.json                                                 | Auto-detected      |
+| `--verbose`         |       | Enable detailed output                                                | `false`            |
+| `--json`            |       | Output results as JSON                                                | `false`            |
+| `--skip-lib-check`  |       | Skip type checking of declaration files                               | `true`             |
+| `--no-cache`        |       | Disable cached temporary configs (caching is enabled by default)      | `false` (cache on) |
+| `--use-tsc`         |       | Force the classic `tsc` compiler                                      | Auto select        |
+| `--use-tsgo`        |       | Force the native `tsgo` compiler (fails if not available)             | Auto select        |
+| `--show-compiler`   |       | Print which compiler is being used                                    | `false`            |
+| `--benchmark`       |       | Compare compiler performance (runs both compilers when possible)      | `false`            |
+| `--no-fallback`     |       | Disable automatic fallback from tsgo to tsc                           | `fallback on`      |
+| `--tips`            |       | Show performance tips for git hooks and TypeScript compilation        | `false`            |
+| `--include <files>` |       | Additional files to include (comma-separated, useful for setup files) | None               |
 
 ## 🔄 Package Manager Support
 

@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-23
+
 ## Context
 
 We needed a build tool that could generate dual ESM/CJS packages with TypeScript declarations efficiently.

@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-25
+
 ## Context
 
 The TypeScript CLI tool needs to execute the TypeScript compiler (`tsc`) in a way that respects the user's package manager choice and project setup. Different package managers (npm, yarn, pnpm, bun) have different installation patterns, execution methods, and performance characteristics. We needed a reliable way to auto-detect the package manager and execute TypeScript accordingly.

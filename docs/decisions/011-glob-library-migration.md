@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-10-11
+
 ## Context
 
 The CLI tool requires efficient file pattern matching to resolve TypeScript files from user-provided glob patterns. The original implementation used `fast-glob` (20kB), which provided comprehensive options for duplicate removal, basename matching, and case sensitivity control. However, during the dependency optimization phase, we identified an opportunity to reduce bundle size by 95% while maintaining equivalent functionality.

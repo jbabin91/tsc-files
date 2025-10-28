@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-25
+
 ## Context
 
 TypeScript projects often include JavaScript files alongside TypeScript files, especially during migration or when using external libraries. The TypeScript compiler has `allowJs` and `checkJs` options that control whether JavaScript files are included in compilation and type-checking. Our CLI tool needed to respect these settings while providing intuitive behavior for users who might specify JavaScript files explicitly.

@@ -382,7 +382,7 @@ async function detectPackageManager(
 
 ### **Test Structure**
 
-Follow the testing strategy outlined in `docs/testing-strategy.md`:
+Follow the testing strategy outlined in `docs/testing/strategy.md`:
 
 #### **Unit Tests**
 

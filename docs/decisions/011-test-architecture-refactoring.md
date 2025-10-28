@@ -4,6 +4,10 @@
 
 **ACCEPTED** - Coverage-First Hybrid Approach
 
+## Date
+
+2025-09-27
+
 ## Context
 
 Our test suite has evolved to include 306 passing tests across 22 test files, but analysis revealed significant architectural issues:
@@ -211,6 +215,6 @@ describe('TypeScript Detection - Hybrid Approach', () => {
 
 ## References
 
-- [Testing Strategy Documentation](../testing-strategy.md)
+- [Testing Strategy Documentation](../testing/strategy.md)
 - [Coverage Configuration](../../vitest.config.ts)
 - [Existing Component Test Example](../../tests/unit/core/checker.test.ts)

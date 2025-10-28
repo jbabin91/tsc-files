@@ -123,7 +123,7 @@ This project enforces a strict zero-tolerance quality policy. All quality gates 
 #### Always Required
 
 - ALWAYS run quality hooks after file changes (formatting, linting, type checking)
-- ALWAYS maintain dual package (ESM/CJS) compatibility
+- ALWAYS maintain ESM build integrity (tsdown output is ESM-only)
 - USE small, focused files organized by logical boundaries
 - ALWAYS use Plan Mode (Shift+Tab twice) for architectural decisions and TypeScript integration research
 - ALWAYS maintain human approval for major changes (Main Thread Control)
@@ -225,7 +225,7 @@ The project follows a layered architecture designed around the planned CLI imple
 
 ### Build System
 
-- **tsdown** builds dual ESM/CJS packages with TypeScript declarations
+- **tsdown** emits optimized ESM packages with TypeScript declarations
 - **publint** validation integrated into build process
 - Entry points: `src/index.ts` (library API) and `src/cli.ts` (CLI binary)
 - External dependency: TypeScript (peer dependency)
@@ -276,10 +276,10 @@ Reusable actions in `.github/actions/`:
 
 ## Key Configuration Files
 
-- `tsdown.config.ts` - Build configuration with dual package output
+- `tsdown.config.ts` - Build configuration for ESM bundle output
 - `vitest.config.ts` - Test configuration with coverage and CI reporting
 - `.changeset/config.json` - Release management with GitHub changelog integration
-- `package.json` - Dual package exports with CLI binary configuration
+- `package.json` - Package exports with ESM bundle and CLI binary configuration
 
 ## Documentation Structure
 
@@ -313,7 +313,7 @@ The project has evolved from research through implementation to a mature, produc
 
 ### Implementation Completion Status
 
-- ✅ Build system configured (tsdown) with dual ESM/CJS output
+- ✅ Build system configured (tsdown) with production-ready ESM output
 - ✅ Testing framework complete (Vitest) with comprehensive test suite and high coverage (95%+)
 - ✅ Quality enforcement active (ESLint, Prettier, TypeScript strict)
 - ✅ CI/CD pipeline operational with automated releases
@@ -377,12 +377,17 @@ tsc-files --project tsconfig.build.json src/*.ts
 - `--help, -h` - Show help information
 - `--version, -v` - Show version number
 - `--project, -p <path>` - Path to tsconfig.json (default: auto-detected)
-- `--noEmit` - Only check types, don't emit files (default: true)
-- `--skipLibCheck` - Skip type checking of declaration files
-- `--verbose` - Enable verbose output
-- `--cache` - Use cache directory for temp files (default: true)
-- `--no-cache` - Disable caching
+- `--verbose` - Enable detailed logging
 - `--json` - Output results as JSON
+- `--skip-lib-check` - Skip type checking of declaration files (default: enabled)
+- `--no-cache` - Disable cached temporary configs (caching is enabled by default)
+- `--use-tsc` - Force the classic `tsc` compiler
+- `--use-tsgo` - Force the native `tsgo` compiler (fails if unavailable)
+- `--show-compiler` - Print which compiler is in use
+- `--benchmark` - Compare compiler performance when both are available
+- `--no-fallback` - Disable automatic fallback from tsgo to tsc
+- `--tips` - Show performance tips for git hooks and TypeScript compilation
+- `--include <files>` - Additional files to include (comma-separated, useful for setup files)
 
 ### Exit Codes
 
@@ -548,11 +553,15 @@ fi
 
 ```sh
 src/
-├── cli.ts              # CLI entry point with argument parsing
+├── cli/                # Commander setup, CLI runner, output helpers
+├── config/             # Temp config generation, dependency discovery, tsconfig resolution
+├── core/               # Orchestration (checker + file grouping)
+├── detectors/          # Package manager & TypeScript compiler detection
+├── execution/          # Process execution and result parsing
+├── utils/              # Shared logging and helpers
+├── cli.ts              # CLI entry point wiring the command to the runner
 ├── index.ts            # Public API exports
-├── types.ts            # TypeScript type definitions
-└── core/
-    └── checker.ts      # Main type checking logic (placeholder)
+└── types/              # Shared TypeScript types for CLI/core layers
 
 tests/
 ├── unit/               # Unit tests for individual functions
@@ -560,12 +569,12 @@ tests/
 └── fixtures/           # Test fixtures and sample projects
 
 docs/
-├── api.md             # CLI and programmatic API reference
-├── usage-examples.md  # Real-world usage scenarios
-├── usage/
-│   └── tsgo-compiler.md  # Advanced: 10x faster type checking
-├── architecture/      # Detailed system design
-└── decisions/         # Architectural Decision Records (ADRs)
+├── api.md              # CLI and programmatic API reference
+├── usage-examples.md   # Real-world usage scenarios
+├── usage/              # Deep dives (e.g., tsgo compiler guide)
+├── architecture/       # System design, performance, security
+├── testing/            # Strategy, framework, best practices
+└── decisions/          # Architectural Decision Records (ADRs)
 
 .github/
 ├── workflows/         # CI/CD workflows
@@ -580,7 +589,7 @@ Key architectural decisions documented:
 
 - **001**: TypeScript CLI Implementation approach
 - **002**: tsdown vs tsc for build tooling
-- **003**: Dual Package (ESM/CJS) support
+- **003**: Distribution format strategy (dual-package evaluation; current build ships ESM-only)
 - **004**: Changesets for release management
 - **005**: Vitest vs Jest for testing
 
@@ -660,13 +669,13 @@ TMPDIR=/path/to/writable/dir tsc-files src/**/*.ts
 
 ```bash
 # Skip library checking for speed
-tsc-files --skipLibCheck src/**/*.ts
+tsc-files --skip-lib-check src/**/*.ts
 
 # Check specific slow files
 time tsc-files src/slow-file.ts
 
-# Use caching
-tsc-files --cache src/**/*.ts
+# Caching is enabled by default; disable it temporarily when debugging config issues
+tsc-files --no-cache src/**/*.ts
 ```
 
 ### 🐛 Git Hook Failures
@@ -855,18 +864,18 @@ Sub-agents return focused reports that consume minimal context in main session, 
 When working on implementation:
 
 1. **Use Plan Mode first** for TypeScript integration research
-2. **Read [Implementation Strategy](docs/implementation-strategy.md)** for detailed development phases
+2. **Read [Architecture Overview](docs/architecture/README.md)** for implementation phases and component boundaries
 3. **Apply sub-agent delegation** for parallel component development
-4. **Follow [Security Requirements](docs/security-requirements.md)** for all security validations
-5. **Reference [Architecture Details](docs/architecture-details.md)** for system design
+4. **Follow [Security Requirements](docs/architecture/security.md)** for all security validations
+5. **Reference [Architecture Details](docs/architecture/details.md)** for system design
 
 ### **Testing Tasks**
 
 When adding or fixing tests:
 
-1. **Read [Testing Strategy](docs/testing-strategy.md)** for framework and patterns
+1. **Read [Testing Strategy](docs/testing/strategy.md)** for framework and patterns
 2. **Use test subagent** for comprehensive test implementation
-3. **Follow security testing protocols** from [Security Requirements](docs/security-requirements.md)
+3. **Follow security testing protocols** from [Security Requirements](docs/architecture/security.md)
 4. **Ensure coverage requirements** are met (>90%)
 5. **Reference [Contributing Guide](docs/contributing.md)** for quality standards
 
@@ -874,19 +883,19 @@ When adding or fixing tests:
 
 When implementing security features:
 
-1. **Read [Security Requirements](docs/security-requirements.md)** for complete requirements
+1. **Read [Security Requirements](docs/architecture/security.md)** for complete requirements
 2. **Use security-expert subagent** for validation
 3. **Apply sanity check protocols** before implementation
 4. **Test against penetration test scenarios**
-5. **Reference [Testing Strategy](docs/testing-strategy.md)** for security test patterns
+5. **Reference [Testing Strategy](docs/testing/strategy.md)** for security test patterns
 
 ### **Architecture Tasks**
 
 When making architectural decisions:
 
 1. **Use Plan Mode** for analysis and research
-2. **Read [Architecture Details](docs/architecture-details.md)** for system design
-3. **Consider [Implementation Strategy](docs/implementation-strategy.md)** for component organization
+2. **Read [Architecture Details](docs/architecture/details.md)** for system design
+3. **Review [Architecture Overview](docs/architecture/README.md)** when organizing components
 4. **Use architecture subagent** for complex design decisions
 5. **Review [ADR Documentation](docs/decisions/)** for previous architectural decisions
 

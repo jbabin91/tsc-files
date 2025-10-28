@@ -245,10 +245,10 @@ du -sh node_modules/@types
 
 #### **Solutions:**
 
-**Use skipLibCheck for development:**
+**Skip lib checking during development:**
 
 ```bash
-tsc-files --skipLibCheck "src/**/*.ts"
+tsc-files --skip-lib-check "src/**/*.ts"
 ```
 
 **Exclude unnecessary files:**

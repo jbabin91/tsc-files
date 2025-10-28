@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-25
+
 ## Context
 
 Modern TypeScript projects often use monorepo structures with multiple `tsconfig.json` files - one per package or workspace. The original `tsc` command doesn't handle this scenario well when checking specific files, as it assumes a single configuration. Users needed a way to type-check files across different parts of a monorepo while respecting each area's specific TypeScript configuration.

@@ -30,7 +30,7 @@ tsc-files --project tsconfig.strict.json "src/core/**/*.ts"
 tsc-files --project tsconfig.lib.json "src/utils/**/*.ts"
 
 # Skip library type checking for faster execution
-tsc-files --skipLibCheck "src/**/*.ts"
+tsc-files --skip-lib-check "src/**/*.ts"
 ```
 
 ### **Output Formats**
@@ -381,14 +381,14 @@ fi
 ### **Performance Optimization**
 
 ```bash
-# Use skipLibCheck for faster checking during development
-alias tsc-dev='tsc-files --skipLibCheck'
+# Skip lib checking for faster development runs
+alias tsc-dev='tsc-files --skip-lib-check'
 
 # Parallel checking for large projects (be careful with resource usage)
 find src -name "*.ts" -print0 | xargs -0 -P 4 -I {} tsc-files {}
 
-# Cache-optimized checking
-tsc-files --cache "src/**/*.ts"
+# Cache control (enabled by default; disable when debugging temp configs)
+tsc-files --no-cache "src/**/*.ts"
 ```
 
 ## Error Handling Examples
@@ -526,8 +526,8 @@ tsc-files --project tsconfig.json "src/**/*.ts" 2>&1 | grep "Cannot find module"
 # Profile type checking performance
 time tsc-files "src/**/*.ts"
 
-# Use skipLibCheck for development
-tsc-files --skipLibCheck "src/**/*.ts"
+# Skip lib checking for development
+tsc-files --skip-lib-check "src/**/*.ts"
 
 # Check specific files causing slowdown
 tsc-files --verbose src/slow-file.ts
@@ -554,13 +554,13 @@ These examples demonstrate the flexibility and power of tsc-files across various
 ### Implementation Guides
 
 - [Contributing Guide](./contributing.md) - Development setup and quality requirements
-- [Architecture Details](./architecture-details.md) - System design and component structure
-- [Implementation Strategy](./implementation-strategy.md) - Development phases and patterns
+- [Architecture Overview](./architecture/README.md) - Layered system design and component structure
+- [Architecture Details](./architecture/details.md) - Deep dive into configuration, detection, and execution flows
 
 ### Operational Guides
 
-- [Security Requirements](./security-requirements.md) - Security protocols and validation
-- [Testing Strategy](./testing-strategy.md) - Testing framework and patterns
+- [Security Requirements](./architecture/security.md) - Security protocols and validation
+- [Testing Strategy](./testing/strategy.md) - Testing framework and patterns
 - [Troubleshooting Guide](../CLAUDE.md#-troubleshooting-guide) - Common issues and solutions
 
 ### Development Resources

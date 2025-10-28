@@ -338,7 +338,7 @@ tsc-files --benchmark "packages/*/src/**/*.ts"
 ### General Performance
 
 - Use `--skip-lib-check` for faster execution in CI environments
-- Enable `--cache` (default) for repeated runs
+- Caching is enabled by default; use `--no-cache` only when debugging temp configs
 - Use `--json` output for programmatic processing
 - Set `TSC_PROJECT` environment variable to avoid repetitive `--project` flags
 - Use `--tips` flag to get personalized optimization suggestions

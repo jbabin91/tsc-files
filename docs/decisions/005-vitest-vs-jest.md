@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-23
+
 ## Context
 
 We needed a testing framework that works well with TypeScript, ESM, and modern tooling while providing good developer experience.

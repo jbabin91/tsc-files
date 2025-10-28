@@ -24,9 +24,9 @@
 
 ### Build & Distribution
 
-- **tsdown** - Dual ESM/CJS package builds with TypeScript declarations
+- **tsdown** - ESM bundling with TypeScript declaration output and minification
 - **publint** - Package export validation
-- **Dual Package Support** - Full ESM + CommonJS compatibility
+- **ESM Distribution** - Single-format ESM package with CLI binary entry point
 
 ### CLI & Dependencies
 
@@ -40,9 +40,8 @@
 
 - **tsc** - Standard TypeScript compiler (peer dependency)
 - **tsgo** - Native TypeScript compiler (optional, 10x performance boost)
-- **cosmiconfig** - Enhanced tsconfig resolution with extends chain support
-- **deepmerge** - Configuration merging for complex setups
-- **tsconfig-paths** - Path mapping resolution
+- **get-tsconfig** - Accurate tsconfig discovery and extends resolution
+- **tmp** - Secure temporary file and directory management for generated configs
 
 ### Testing & Quality
 
@@ -402,7 +401,7 @@ docs: :memo: update README with installation instructions
    - NEVER modify `pnpm-lock.yaml` without explicit permission
    - ALWAYS run quality hooks after file changes
    - NEVER publish without proper changeset workflow
-   - ALWAYS maintain dual package (ESM/CJS) compatibility
+   - ALWAYS maintain ESM build integrity (tsdown output is ESM-only)
 
 2. **Development Process**:
    - ALWAYS use Plan Mode (Shift+Tab twice) for architectural decisions
@@ -465,6 +464,6 @@ docs: :memo: update README with installation instructions
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [tsconfig.json reference](https://www.typescriptlang.org/tsconfig)
 - [ADRs](../docs/decisions/) - Architectural Decision Records
-- [Implementation Strategy](../docs/implementation-strategy.md) - Development roadmap
-- [Architecture Details](../docs/architecture-details.md) - System design
-- [Testing Strategy](../docs/testing-strategy.md) - Testing approach
+- [Architecture Overview](../docs/architecture/README.md) - High-level system design
+- [Architecture Details](../docs/architecture/details.md) - In-depth implementation notes
+- [Testing Strategy](../docs/testing/strategy.md) - Testing approach

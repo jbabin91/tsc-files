@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-10-11
+
 ## Context
 
 The original implementation used multiple libraries to handle TypeScript configuration discovery and parsing:

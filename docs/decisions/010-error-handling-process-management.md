@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-25
+
 ## Context
 
 The CLI tool needs to execute TypeScript compiler processes and handle various failure scenarios gracefully. The original tsc-files community identified critical issues where spawn errors were not properly propagated, leading to silent failures and poor user experience. We needed a robust process execution and error handling strategy that provides clear feedback for all failure modes.

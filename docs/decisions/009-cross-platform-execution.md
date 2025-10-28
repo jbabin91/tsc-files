@@ -2,6 +2,8 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-25
+
 ## Context
 
 The CLI tool needs to execute TypeScript compiler commands across different operating systems (Windows, macOS, Linux) and handle the various platform-specific differences in:

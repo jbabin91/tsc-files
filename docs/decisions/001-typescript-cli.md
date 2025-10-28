@@ -2,13 +2,15 @@
 
 **Status**: Accepted
 
+**Date**: 2025-09-23
+
 ## Context
 
 We needed to decide whether to implement the CLI tool in TypeScript or JavaScript, considering factors like type safety, maintainability, and ecosystem alignment.
 
 ## Decision
 
-We chose to implement the CLI in TypeScript with dual ESM/CJS output.
+We chose to implement the CLI in TypeScript. Module format strategy is tracked separately (see ADR 003 for current guidance).
 
 ## Reasoning
 

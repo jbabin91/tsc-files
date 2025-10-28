@@ -133,9 +133,11 @@ export function provideDependencyDiscoveryEducation(
 export function provideGitHookOptimization(): void {
   outputTip('Git hook optimization tips:');
   logger.info('  • Use with lint-staged for changed files only');
-  logger.info('  • Enable --cache for faster repeat runs');
+  logger.info(
+    '  • Keep caching enabled for repeat runs (use --no-cache only when debugging)',
+  );
   logger.info('  • Try --use-tsgo for 10x performance improvement');
-  logger.info('  • Use --skipLibCheck to speed up checking');
+  logger.info('  • Use --skip-lib-check to speed up checking');
 }
 
 /**

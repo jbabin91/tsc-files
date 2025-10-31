@@ -124,6 +124,10 @@ describe('CLI Runner', () => {
         showCompiler: false,
         benchmark: false,
         fallback: true,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
         cwd: undefined,
       });
     });
@@ -242,6 +246,10 @@ describe('CLI Runner', () => {
         showCompiler: false,
         benchmark: false,
         fallback: true,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
         cwd: undefined,
       });
     });
@@ -315,6 +323,10 @@ describe('CLI Runner', () => {
         showCompiler: false,
         benchmark: false,
         fallback: true,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
         cwd: '/custom/cwd',
       });
     });

@@ -115,6 +115,12 @@ export async function createTempConfig(
     originalConfigDir,
     options.verbose,
     options.include,
+    {
+      maxDepth: options.maxDepth,
+      maxFiles: options.maxFiles,
+      noRecursive: options.noRecursive,
+      verbose: options.verbose,
+    },
   );
 
   // Use discovered files if available, otherwise fall back to original files
@@ -174,6 +180,27 @@ export async function createTempConfig(
   }
   // Otherwise: rely on default TypeScript type resolution from cache directory
 
+  // Handle baseUrl - convert relative baseUrl to absolute path
+  // baseUrl can be used standalone (without paths) for module resolution
+  // TypeScript resolves non-relative imports relative to baseUrl
+  if (
+    sanitizedCompilerOptions.baseUrl &&
+    typeof sanitizedCompilerOptions.baseUrl === 'string'
+  ) {
+    if (sanitizedCompilerOptions.moduleResolution === 'bundler') {
+      // baseUrl is deprecated with bundler moduleResolution - remove it
+      const { baseUrl: _, ...rest } = adjustedCompilerOptions;
+      adjustedCompilerOptions = rest;
+    } else {
+      // Convert relative baseUrl to absolute path
+      const originalBaseUrl = sanitizedCompilerOptions.baseUrl;
+      adjustedCompilerOptions.baseUrl = path.isAbsolute(originalBaseUrl)
+        ? originalBaseUrl
+        : path.resolve(originalConfigDir, originalBaseUrl);
+    }
+  }
+
+  // Handle paths - convert relative paths to absolute paths
   if (sanitizedCompilerOptions.paths) {
     const absolutePaths: Record<string, string[]> = {};
     for (const [alias, pathList] of Object.entries(
@@ -201,10 +228,6 @@ export async function createTempConfig(
     adjustedCompilerOptions = {
       ...adjustedCompilerOptions,
       paths: absolutePaths,
-      // Only set baseUrl if moduleResolution is not bundler (baseUrl is deprecated with bundler)
-      ...(sanitizedCompilerOptions.moduleResolution !== 'bundler' && {
-        baseUrl: originalConfigDir,
-      }),
     };
   }
 

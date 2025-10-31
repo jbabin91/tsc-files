@@ -1195,4 +1195,449 @@ export default defineConfig({
       expect(result2.sourceFiles).toHaveLength(2);
     });
   });
+
+  describe('recursive import discovery', () => {
+    it('should discover transitive dependencies through import chains', async () => {
+      // Create chain: main.ts -> utils.ts -> helpers.ts
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+      const helpersFile = path.join(tempDir, 'helpers.ts');
+
+      writeFileSync(
+        mainFile,
+        'import { util } from "./utils";\nexport const main = () => util();',
+      );
+      writeFileSync(
+        utilsFile,
+        'import { helper } from "./helpers";\nexport const util = () => helper();',
+      );
+      writeFileSync(helpersFile, 'export const helper = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+      expect(result.sourceFiles).toContain(helpersFile);
+      expect(result.sourceFiles).toHaveLength(3);
+    });
+
+    it('should handle export from syntax', async () => {
+      // Create chain with export from
+      const mainFile = path.join(tempDir, 'main.ts');
+      const indexFile = path.join(tempDir, 'index.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+
+      writeFileSync(mainFile, 'import { util } from "./index";');
+      writeFileSync(indexFile, 'export { util } from "./utils";');
+      writeFileSync(utilsFile, 'export const util = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(indexFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+    });
+
+    it('should handle require() syntax', async () => {
+      // Create chain with require()
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+
+      writeFileSync(mainFile, 'const utils = require("./utils");');
+      writeFileSync(utilsFile, 'module.exports = { test: "value" };');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+    });
+
+    it('should handle dynamic import() syntax', async () => {
+      // Create chain with dynamic import
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+
+      writeFileSync(
+        mainFile,
+        'export const loadUtils = async () => await import("./utils");',
+      );
+      writeFileSync(utilsFile, 'export const util = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'esnext' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'esnext' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+    });
+
+    it('should skip node_modules imports', async () => {
+      // Create file that imports from node_modules
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(
+        mainFile,
+        'import { test } from "vitest";\nimport { util } from "./utils";\n',
+      );
+
+      const utilsFile = path.join(tempDir, 'utils.ts');
+      writeFileSync(utilsFile, 'export const util = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+      // Should not include vitest from node_modules
+      expect(result.sourceFiles.every((f) => !f.includes('node_modules'))).toBe(
+        true,
+      );
+    });
+
+    it('should respect maxDepth limit and warn', async () => {
+      // Create deep chain: A -> B -> C -> D -> E
+      const fileA = path.join(tempDir, 'a.ts');
+      const fileB = path.join(tempDir, 'b.ts');
+      const fileC = path.join(tempDir, 'c.ts');
+      const fileD = path.join(tempDir, 'd.ts');
+      const fileE = path.join(tempDir, 'e.ts');
+
+      writeFileSync(fileA, 'import "./b";');
+      writeFileSync(fileB, 'import "./c";');
+      writeFileSync(fileC, 'import "./d";');
+      writeFileSync(fileD, 'import "./e";');
+      writeFileSync(fileE, 'export const e = "test";');
+
+      // Create tsconfig with explicit files array (prevents auto-discovery by TS compiler)
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            moduleResolution: 'node',
+            baseUrl: '.',
+            noResolve: true, // Prevent TypeScript from auto-resolving imports
+          },
+          files: [fileA], // Only include entry point explicitly
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          moduleResolution: 'node',
+          baseUrl: '.',
+          noResolve: true, // Prevent TypeScript from auto-resolving imports
+        },
+        files: [fileA], // Only include entry point explicitly
+      };
+
+      const warnSpy = vi.spyOn(logger, 'warn');
+
+      // Set maxDepth to 2 - chain is A(0) -> B(1) -> C(2) -> D(3) -> E(4)
+      // Should warn when trying to go from C to D at depth 3
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [fileA],
+        tempDir,
+        false,
+        undefined,
+        { maxDepth: 2, maxFiles: 100 },
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Reached maximum depth (2)'),
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should respect maxFiles limit and warn', async () => {
+      // Create many files that import each other
+      const files: string[] = [];
+      for (let i = 0; i < 10; i++) {
+        const file = path.join(tempDir, `file${i}.ts`);
+        files.push(file);
+        if (i < 9) {
+          writeFileSync(file, `import "./file${i + 1}";`);
+        } else {
+          writeFileSync(file, 'export const last = "test";');
+        }
+      }
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const warnSpy = vi.spyOn(logger, 'warn');
+
+      // Set maxFiles to 5 - should warn
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [files[0]],
+        tempDir,
+        false,
+        undefined,
+        { maxDepth: 20, maxFiles: 5 },
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Reached maximum file limit (5)'),
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should handle circular dependencies gracefully', async () => {
+      // Create circular dependency: A -> B -> C -> A
+      const fileA = path.join(tempDir, 'a.ts');
+      const fileB = path.join(tempDir, 'b.ts');
+      const fileC = path.join(tempDir, 'c.ts');
+
+      writeFileSync(fileA, 'import "./b";\nexport const a = "a";');
+      writeFileSync(fileB, 'import "./c";\nexport const b = "b";');
+      writeFileSync(fileC, 'import "./a";\nexport const c = "c";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      // Should not hang or error on circular dependencies
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [fileA],
+        tempDir,
+        false,
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(fileA);
+      expect(result.sourceFiles).toContain(fileB);
+      expect(result.sourceFiles).toContain(fileC);
+      expect(result.sourceFiles).toHaveLength(3);
+    });
+
+    it('should disable recursive discovery with noRecursive flag', async () => {
+      // Create chain: main.ts -> utils.ts -> helpers.ts
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+      const helpersFile = path.join(tempDir, 'helpers.ts');
+
+      writeFileSync(mainFile, 'import { util } from "./utils";');
+      writeFileSync(utilsFile, 'import { helper } from "./helpers";');
+      writeFileSync(helpersFile, 'export const helper = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      // With noRecursive: true, should only get files from TypeScript program
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+        undefined,
+        { noRecursive: true },
+      );
+
+      expect(result.discovered).toBe(true);
+      // TypeScript's program.getSourceFiles() will include utils.ts but may not include helpers.ts
+      // depending on whether TypeScript loads it during type checking
+      expect(result.sourceFiles).toContain(mainFile);
+      expect(result.sourceFiles).toContain(utilsFile);
+    });
+
+    it('should log verbose output during recursive discovery', async () => {
+      // Create chain: main.ts -> utils.ts
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+
+      writeFileSync(mainFile, 'import { util } from "./utils";');
+      writeFileSync(utilsFile, 'export const util = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info');
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        true, // verbose
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Performing recursive import discovery'),
+      );
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Starting recursive import discovery'),
+      );
+
+      infoSpy.mockRestore();
+    });
+  });
 });

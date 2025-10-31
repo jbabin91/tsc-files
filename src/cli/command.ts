@@ -79,6 +79,36 @@ export function createProgram(
       '--include <files>',
       'additional files to include in type checking (comma-separated, useful for test setup files)',
     )
+    .option(
+      '--max-depth <number>',
+      'maximum recursion depth for import discovery (default: 20)',
+      (value) => {
+        const parsed = Number.parseInt(value, 10);
+        if (Number.isNaN(parsed) || parsed < 1) {
+          throw new InvalidArgumentError(
+            'max-depth must be a positive integer',
+          );
+        }
+        return parsed;
+      },
+    )
+    .option(
+      '--max-files <number>',
+      'maximum files to discover recursively (default: 100)',
+      (value) => {
+        const parsed = Number.parseInt(value, 10);
+        if (Number.isNaN(parsed) || parsed < 1) {
+          throw new InvalidArgumentError(
+            'max-files must be a positive integer',
+          );
+        }
+        return parsed;
+      },
+    )
+    .option(
+      '--no-recursive',
+      'disable recursive import discovery for transitive dependencies',
+    )
     .hook('preAction', (_, actionCommand) => {
       const options = actionCommand.opts();
       if (options.verbose) {

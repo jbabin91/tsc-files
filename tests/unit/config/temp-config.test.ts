@@ -341,13 +341,63 @@ describe('createTempConfig', () => {
   });
 
   describe('BaseUrl handling', () => {
-    it('should set baseUrl when moduleResolution is not bundler', async () => {
+    it('should convert relative baseUrl to absolute path (without paths)', async () => {
       const originalConfig: TypeScriptConfig = {
         compilerOptions: {
           target: 'ES2020',
           moduleResolution: 'node',
+          baseUrl: './src',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.baseUrl).toBe(
+        '/test/project/src',
+      );
+    });
+
+    it('should preserve absolute baseUrl (without paths)', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          moduleResolution: 'node',
+          baseUrl: '/absolute/path',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.baseUrl).toBe('/absolute/path');
+    });
+
+    it('should handle baseUrl: "." with paths (most common pattern)', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          moduleResolution: 'node',
+          baseUrl: '.',
           paths: {
             '@/*': ['./src/*'],
+            '@components/*': ['./src/components/*'],
           },
         },
       };
@@ -363,7 +413,46 @@ describe('createTempConfig', () => {
         readFileSync(tempHandle.path, 'utf8'),
       ) as TempConfigContent;
 
+      // baseUrl: "." should resolve to project root
       expect(tempConfigContent.compilerOptions.baseUrl).toBe('/test/project');
+      // paths should resolve relative to original baseUrl location (project root)
+      expect(tempConfigContent.compilerOptions.paths).toEqual({
+        '@/*': ['/test/project/src/*'],
+        '@components/*': ['/test/project/src/components/*'],
+      });
+    });
+
+    it('should handle baseUrl: "./src" with paths (less common pattern)', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          moduleResolution: 'node',
+          baseUrl: './src',
+          paths: {
+            '@/*': ['./components/*'],
+          },
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      // baseUrl: "./src" should resolve to /test/project/src
+      expect(tempConfigContent.compilerOptions.baseUrl).toBe(
+        '/test/project/src',
+      );
+      // paths should resolve relative to original baseUrl location (project root)
+      expect(tempConfigContent.compilerOptions.paths).toEqual({
+        '@/*': ['/test/project/components/*'],
+      });
     });
 
     it('should not set baseUrl when moduleResolution is bundler', async () => {
@@ -371,9 +460,52 @@ describe('createTempConfig', () => {
         compilerOptions: {
           target: 'ES2020',
           moduleResolution: 'bundler',
-          paths: {
-            '@/*': ['./src/*'],
-          },
+          baseUrl: './src',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.baseUrl).toBeUndefined();
+    });
+
+    it('should handle baseUrl with parent directory navigation', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          moduleResolution: 'node',
+          baseUrl: '../shared',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.baseUrl).toBe('/test/shared');
+    });
+
+    it('should not modify baseUrl when not present', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          moduleResolution: 'node',
         },
       };
 

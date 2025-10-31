@@ -32,11 +32,25 @@ describe('analyzeTsgoCompatibility', () => {
     });
   });
 
-  it('detects baseUrl incompatibility when paths require non-bundler resolution', () => {
+  it('detects baseUrl incompatibility when baseUrl is present (without paths)', () => {
     const result = analyzeTsgoCompatibility({
       compilerOptions: {
+        baseUrl: './src',
+        moduleResolution: 'node',
+      },
+    });
+
+    expect(result.compatible).toBe(false);
+    expect(result.incompatibleFeatures).toEqual(['baseUrl']);
+    expect(result.recommendation).toContain('Using tsc due to: baseUrl');
+  });
+
+  it('detects baseUrl incompatibility when baseUrl is present with paths', () => {
+    const result = analyzeTsgoCompatibility({
+      compilerOptions: {
+        baseUrl: './src',
         paths: {
-          '@/*': ['src/*'],
+          '@/*': ['components/*'],
         },
         moduleResolution: 'node',
       },
@@ -45,6 +59,51 @@ describe('analyzeTsgoCompatibility', () => {
     expect(result.compatible).toBe(false);
     expect(result.incompatibleFeatures).toEqual(['baseUrl']);
     expect(result.recommendation).toContain('Using tsc due to: baseUrl');
+  });
+
+  it('allows baseUrl with bundler moduleResolution', () => {
+    const result = analyzeTsgoCompatibility({
+      compilerOptions: {
+        baseUrl: './src',
+        moduleResolution: 'bundler',
+      },
+    });
+
+    expect(result.compatible).toBe(true);
+    expect(result.incompatibleFeatures).toEqual([]);
+  });
+
+  it('allows projects without baseUrl (tsgo compatible)', () => {
+    const result = analyzeTsgoCompatibility({
+      compilerOptions: {
+        moduleResolution: 'node',
+        target: 'ES2020',
+        // No baseUrl - tsgo should work fine
+      },
+    });
+
+    expect(result.compatible).toBe(true);
+    expect(result.incompatibleFeatures).toEqual([]);
+    expect(result.recommendation).toBe(
+      'Configuration is compatible with tsgo for optimal performance',
+    );
+  });
+
+  it('allows projects with paths but no baseUrl (uncommon but valid)', () => {
+    const result = analyzeTsgoCompatibility({
+      compilerOptions: {
+        moduleResolution: 'node',
+        // paths without baseUrl is unusual but TypeScript allows it
+        // baseUrl defaults to tsconfig directory when paths is present
+        paths: {
+          '@/*': ['src/*'],
+        },
+      },
+    });
+
+    // Without explicit baseUrl, tsgo should work
+    expect(result.compatible).toBe(true);
+    expect(result.incompatibleFeatures).toEqual([]);
   });
 });
 
@@ -94,14 +153,15 @@ describe('shouldUseTsgo', () => {
     });
   });
 
-  it('disables tsgo when compatibility analysis fails', () => {
+  it('disables tsgo when compatibility analysis fails (baseUrl present)', () => {
     mockDetectTsgo.mockReturnValueOnce({ available: true });
 
     const result = shouldUseTsgo(
       {
         compilerOptions: {
+          baseUrl: './src',
           paths: {
-            '@/*': ['src/*'],
+            '@/*': ['components/*'],
           },
           moduleResolution: 'node',
         },

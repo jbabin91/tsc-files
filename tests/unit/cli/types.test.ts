@@ -32,6 +32,7 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        recursive: true, // default
       });
     });
 
@@ -50,6 +51,7 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        recursive: true, // default
       });
     });
 
@@ -93,6 +95,11 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
+        recursive: true,
       });
     });
 
@@ -109,6 +116,11 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
+        recursive: true,
       });
 
       expect(validateCliOptions({})).toEqual({
@@ -123,6 +135,11 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
+        recursive: true,
       });
     });
 
@@ -139,6 +156,11 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
+        recursive: true,
       });
 
       expect(validateCliOptions(123)).toEqual({
@@ -153,6 +175,11 @@ describe('CLI Types', () => {
         benchmark: false,
         fallback: true,
         tips: false,
+        include: undefined,
+        maxDepth: undefined,
+        maxFiles: undefined,
+        noRecursive: false,
+        recursive: true,
       });
     });
   });

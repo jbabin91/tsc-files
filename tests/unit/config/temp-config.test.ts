@@ -449,9 +449,10 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.baseUrl).toBe(
         '/test/project/src',
       );
-      // paths should resolve relative to original baseUrl location (project root)
+      // paths should resolve relative to resolved baseUrl (TypeScript semantics)
+      // './components/*' relative to baseUrl '/test/project/src' = '/test/project/src/components/*'
       expect(tempConfigContent.compilerOptions.paths).toEqual({
-        '@/*': ['/test/project/components/*'],
+        '@/*': ['/test/project/src/components/*'],
       });
     });
 

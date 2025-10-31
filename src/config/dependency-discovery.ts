@@ -290,7 +290,16 @@ type RecursiveDiscoveryResult = {
 
 /**
  * Extract import/export declarations from a TypeScript file
- * Handles: import, export from, require(), dynamic import()
+ *
+ * Parses a TypeScript file and extracts all module import specifiers, including:
+ * - Static imports: `import { x } from 'module'`
+ * - Export from: `export { x } from 'module'`
+ * - CommonJS require: `const x = require('module')`
+ * - Dynamic imports: `await import('module')`
+ *
+ * @param tsInstance - TypeScript compiler instance
+ * @param filePath - Absolute path to the TypeScript file to parse
+ * @returns Array of import specifiers (module names), or empty array if parsing fails
  */
 function extractImports(tsInstance: typeof ts, filePath: string): string[] {
   try {
@@ -352,7 +361,17 @@ function extractImports(tsInstance: typeof ts, filePath: string): string[] {
 
 /**
  * Resolve an import specifier to an absolute file path
- * Uses TypeScript's module resolution algorithm
+ *
+ * Uses TypeScript's module resolution algorithm to resolve relative and absolute
+ * import specifiers to their corresponding file paths. Node modules are skipped.
+ *
+ * @param tsInstance - TypeScript compiler instance
+ * @param importSpecifier - Module specifier from import statement (e.g., './utils', '../types')
+ * @param containingFile - Absolute path to the file containing the import
+ * @param compilerOptions - TypeScript compiler options for resolution
+ * @returns Absolute path to the resolved file, or undefined if:
+ *          - Import is a node_modules package (e.g., 'react', '@types/node')
+ *          - Resolution fails (file not found, invalid specifier)
  */
 function resolveImport(
   tsInstance: typeof ts,
@@ -389,7 +408,25 @@ function resolveImport(
 
 /**
  * Recursively discover imports from source files
- * Follows import chains with depth and file count limits
+ *
+ * Performs depth-first traversal of import chains starting from initial files.
+ * Discovers all transitively imported local files while respecting depth and file limits.
+ * Handles circular dependencies gracefully by tracking visited files.
+ *
+ * Algorithm:
+ * 1. Start with initial source files
+ * 2. For each file, extract all import specifiers
+ * 3. Resolve specifiers to absolute paths (skip node_modules)
+ * 4. Add newly discovered files to the set
+ * 5. Recursively process new files (DFS) until depth/file limits reached
+ * 6. Track visited files to handle circular dependencies
+ *
+ * @param tsInstance - TypeScript compiler instance
+ * @param initialFiles - Starting set of absolute file paths
+ * @param compilerOptions - TypeScript compiler options for module resolution
+ * @param configDir - Project root directory for relative path calculations
+ * @param options - Discovery options (maxDepth, maxFiles, verbose)
+ * @returns Discovery result containing all found files and any warnings about limit enforcement
  */
 function discoverImportsRecursively(
   tsInstance: typeof ts,

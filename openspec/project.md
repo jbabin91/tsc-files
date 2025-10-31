@@ -265,8 +265,9 @@ CRITICAL: Only resolve comments you have ACTUALLY addressed. Never bulk-resolve 
 **Example workflow:**
 
 ```bash
-# 1. Get unresolved comments (note: '...' is pseudocode placeholder for the full GraphQL query)
-# See the actual working query in AGENTS.md for the complete syntax
+# 1. Get unresolved comments
+# Note: Replace "owner" and "repo" with your repository owner and name
+# For more GraphQL examples, see: openspec/AGENTS.md
 gh api graphql -f query='
   query {
     repository(owner: "owner", name: "repo") {

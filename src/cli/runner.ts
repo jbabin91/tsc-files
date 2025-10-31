@@ -31,7 +31,14 @@ import {
 import { logger } from '@/utils/logger';
 
 /**
- * Run full tsc --noEmit on entire project
+ * Run full tsc --noEmit on entire project for benchmarking
+ *
+ * Executes the TypeScript compiler on the entire project without emitting files.
+ * Used as a baseline for performance comparison in benchmark mode.
+ * Does not fail on type errors (reject: false) - always returns timing.
+ *
+ * @param cwd - Working directory containing tsconfig.json
+ * @returns Duration in milliseconds (rounded), regardless of type check success/failure
  */
 async function runFullTsc(cwd: string): Promise<number> {
   const start = performance.now();

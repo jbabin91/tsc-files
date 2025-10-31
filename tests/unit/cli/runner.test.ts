@@ -23,6 +23,11 @@ import { findTypeScriptCompiler } from '@/detectors/typescript';
 import type { CheckResult } from '@/types/core';
 import { logger } from '@/utils/logger';
 
+// Mock execa for benchmark tests
+vi.mock('execa', () => ({
+  execa: vi.fn(() => Promise.resolve({ stdout: '', stderr: '', exitCode: 0 })),
+}));
+
 // Mock the checkFiles function
 vi.mock('@/core/checker', () => ({
   checkFiles: vi.fn(),
@@ -640,6 +645,15 @@ describe('CLI Runner', () => {
         stderr: '',
       });
 
+      const loggerErrorSpy = vi
+        .spyOn(logger, 'error')
+        .mockImplementation(() => {
+          /* empty */
+        });
+      const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* empty */
+      });
+
       const result = await runTypeCheck(['test.ts'], {
         benchmark: true,
         verbose: false,
@@ -654,6 +668,81 @@ describe('CLI Runner', () => {
 
       // Should call checkFiles twice (failed benchmark + fallback)
       expect(mockCheckFiles).toHaveBeenCalledTimes(2);
+
+      // Should log error and fallback message
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Benchmark failed'),
+      );
+      expect(loggerInfoSpy).toHaveBeenCalledWith(
+        'Falling back to normal type checking...',
+      );
+
+      loggerErrorSpy.mockRestore();
+      loggerInfoSpy.mockRestore();
+    });
+
+    it('should handle benchmark when tsgo is unavailable', async () => {
+      mockCheckFiles.mockReset();
+      const mockTscResult: CheckResult = {
+        success: true,
+        errorCount: 2,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 250,
+        checkedFiles: ['test.ts'],
+        includedSetupFiles: [],
+      };
+
+      const mockFinalResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 180,
+        checkedFiles: ['test.ts'],
+        includedSetupFiles: [],
+      };
+
+      // First call succeeds (tsc), second call throws (tsgo unavailable), third call succeeds (final)
+      mockCheckFiles
+        .mockResolvedValueOnce(mockTscResult) // tsc run
+        .mockRejectedValueOnce(new Error('tsgo not available')) // tsgo fails
+        .mockResolvedValueOnce(mockFinalResult); // final run
+
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* empty */
+      });
+
+      const result = await runTypeCheck(['test.ts'], {
+        benchmark: true,
+        verbose: false,
+        json: false,
+      });
+
+      expect(result).toEqual({
+        exitCode: 0,
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      // Should still show tool comparison even when tsgo unavailable
+      expect(loggerInfoSpy).toHaveBeenCalledWith('🏆 Benchmark Results:');
+      expect(loggerInfoSpy).toHaveBeenCalledWith('');
+      expect(loggerInfoSpy).toHaveBeenCalledWith(
+        'Tool Comparison (tsc-files value):',
+      );
+      expect(loggerInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('tsc-files (specific files):'),
+      );
+
+      loggerInfoSpy.mockRestore();
     });
   });
 

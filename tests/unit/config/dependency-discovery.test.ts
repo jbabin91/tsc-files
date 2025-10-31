@@ -1194,6 +1194,97 @@ export default defineConfig({
       expect(result2.sourceFiles).toContain(ambientFile);
       expect(result2.sourceFiles).toHaveLength(2);
     });
+
+    it('should log cache invalidation reasons in verbose mode', async () => {
+      // Create main file
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      // First discovery
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, false);
+
+      // Add ambient file
+      const ambientFile = path.join(tempDir, 'new.d.ts');
+      writeFileSync(ambientFile, 'declare const NEW: string;');
+
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* noop */
+      });
+
+      // Second discovery with verbose - should log cache invalidation reason
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, true);
+
+      // Should log that cache was invalidated due to ambient file count change
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/Cache invalidated: ambient file count changed/),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('should log cache invalidation when files are modified', async () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+
+      writeFileSync(mainFile, 'import { helper } from "./utils";');
+      writeFileSync(utilsFile, 'export const helper = () => "test";');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+          },
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+        },
+      };
+
+      // First discovery
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, false);
+
+      // Modify file to invalidate cache
+      writeFileSync(utilsFile, 'export const helper = () => "modified";');
+
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* noop */
+      });
+
+      // Second discovery with verbose - should log file modification detection
+      await discoverDependencyClosure(ts, config, [mainFile], tempDir, true);
+
+      // Should log that cache was invalidated due to file modifications
+      expect(infoSpy).toHaveBeenCalledWith(
+        'Cache invalidated: file modifications detected',
+      );
+
+      infoSpy.mockRestore();
+    });
   });
 
   describe('recursive import discovery', () => {

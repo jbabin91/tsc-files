@@ -915,7 +915,9 @@ export const routes: Route[] = [];`,
           cwd: testDir,
           shell: true,
           reject: false,
-          timeout: 10_000, // Set timeout to prevent hanging
+          // Integration test timeout: accounts for real npm package execution,
+          // TypeScript compiler, circular dependency detection, and CI overhead
+          timeout: 10_000,
         },
       );
 

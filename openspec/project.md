@@ -265,15 +265,38 @@ CRITICAL: Only resolve comments you have ACTUALLY addressed. Never bulk-resolve 
 **Example workflow:**
 
 ```bash
-# 1. Get unresolved comments
-gh api graphql -f query='...' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+# 1. Get unresolved comments (note: '...' is pseudocode placeholder for the full GraphQL query)
+# See the actual working query in AGENTS.md for the complete syntax
+gh api graphql -f query='
+  query {
+    repository(owner: "owner", name: "repo") {
+      pullRequest(number: 55) {
+        reviewThreads(first: 10) {
+          nodes {
+            id
+            isResolved
+            comments(first: 1) {
+              nodes { path body }
+            }
+          }
+        }
+      }
+    }
+  }
+' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
 
 # 2. Review EACH comment individually
 
 # 3. Fix the specific issue
 
 # 4. Resolve ONLY the specific thread you addressed
-gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "PRRT_..."}) { thread { id } } }'
+gh api graphql -f query='
+  mutation {
+    resolveReviewThread(input: {threadId: "PRRT_kwDOP1frcc5gKTQ7"}) {
+      thread { id isResolved }
+    }
+  }
+'
 ```
 
 **Required Template Sections** (in this exact order):

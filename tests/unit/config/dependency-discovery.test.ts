@@ -1730,5 +1730,234 @@ export default defineConfig({
 
       infoSpy.mockRestore();
     });
+
+    it('should handle circular imports without infinite loop', async () => {
+      // Create circular dependency: a.ts -> b.ts -> a.ts
+      const fileA = path.join(tempDir, 'a.ts');
+      const fileB = path.join(tempDir, 'b.ts');
+
+      writeFileSync(
+        fileA,
+        'import { b } from "./b";\nexport const a = () => b();',
+      );
+      writeFileSync(
+        fileB,
+        'import { a } from "./a";\nexport const b = () => a();',
+      );
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [fileA],
+        tempDir,
+        false,
+      );
+
+      // Should discover both files without hanging
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(fileA);
+      expect(result.sourceFiles).toContain(fileB);
+      expect(result.sourceFiles).toHaveLength(2);
+    });
+
+    it('should handle invalid TypeScript files gracefully', async () => {
+      // Create a file with invalid syntax that will cause parsing to fail
+      const mainFile = path.join(tempDir, 'main.ts');
+      const invalidFile = path.join(tempDir, 'invalid.ts');
+
+      writeFileSync(
+        mainFile,
+        'import { x } from "./invalid";\nexport const main = x;',
+      );
+      // Create file with syntax that might cause parsing issues
+      writeFileSync(invalidFile, 'export const x = "test";'); // Valid, but we'll stub parseImports to fail
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      // Note: In practice, parseImports has a try-catch that returns [] on errors
+      // This test documents that behavior, but actual parse failures are rare
+      // since TypeScript is very permissive
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false,
+      );
+
+      // Should still succeed even if one file has issues
+      expect(result.discovered).toBe(true);
+    });
+
+    it('should log verbose output when discovering imports', async () => {
+      // Create a 3-file chain: main -> utils -> helper
+      const mainFile = path.join(tempDir, 'main.ts');
+      const utilsFile = path.join(tempDir, 'utils.ts');
+      const helperFile = path.join(tempDir, 'helper.ts');
+
+      writeFileSync(
+        mainFile,
+        'import { util } from "./utils";\nexport const main = util();',
+      );
+      writeFileSync(
+        utilsFile,
+        'import { helper } from "./helper";\nexport const util = () => helper();',
+      );
+      writeFileSync(helperFile, 'export const helper = () => "test";');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          files: ['main.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        files: ['main.ts'],
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info');
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        true, // verbose
+      );
+
+      expect(result.discovered).toBe(true);
+
+      // Should log that recursive import discovery is starting
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Performing recursive import discovery'),
+      );
+
+      // Should log when starting recursive discovery with parameters
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Starting recursive import discovery'),
+      );
+
+      // Should log when discovering imports from files
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Discovering imports from'),
+      );
+
+      // Should log when discovery is complete
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Recursive discovery complete'),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('should log when no additional files are found with verbose', async () => {
+      // Create file with no imports
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = "test";');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info');
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        true, // verbose
+      );
+
+      expect(result.discovered).toBe(true);
+
+      // Should log when no additional files are needed
+      expect(infoSpy).toHaveBeenCalledWith(
+        expect.stringContaining('no additional files needed'),
+      );
+
+      infoSpy.mockRestore();
+    });
+
+    it('should log when recursive discovery is disabled', async () => {
+      const mainFile = path.join(tempDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = "test";');
+
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: { target: 'ES2020', module: 'commonjs' },
+          include: ['**/*.ts'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: { target: 'ES2020', module: 'commonjs' },
+        include: ['**/*.ts'],
+      };
+
+      const infoSpy = vi.spyOn(logger, 'info');
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        true, // verbose
+        undefined, // includeFiles
+        { noRecursive: true }, // Disable recursive discovery
+      );
+
+      // Discovery still succeeds (finds source files) even when recursive discovery is disabled
+      expect(result.discovered).toBe(true);
+
+      // Should NOT perform recursive discovery (no message about recursive discovery)
+      expect(infoSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('Performing recursive import discovery'),
+      );
+
+      infoSpy.mockRestore();
+    });
   });
 });

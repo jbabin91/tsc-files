@@ -744,6 +744,134 @@ describe('CLI Runner', () => {
 
       loggerInfoSpy.mockRestore();
     });
+
+    it('should handle execa error in runFullTsc during benchmark', async () => {
+      const { execa } = await import('execa');
+      const execaMock = vi.mocked(execa);
+
+      // Make execa throw an error (not just return non-zero, but actually throw)
+      execaMock.mockRejectedValueOnce(new Error('Command execution failed'));
+
+      const mockTscResult: CheckResult = {
+        success: true,
+        errorCount: 1,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 200,
+        checkedFiles: ['test.ts'],
+      };
+
+      const mockTsgoResult: CheckResult = {
+        success: true,
+        errorCount: 1,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 100,
+        checkedFiles: ['test.ts'],
+      };
+
+      const mockFinalResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 150,
+        checkedFiles: ['test.ts'],
+      };
+
+      mockCheckFiles
+        .mockResolvedValueOnce(mockTscResult)
+        .mockResolvedValueOnce(mockTsgoResult)
+        .mockResolvedValueOnce(mockFinalResult);
+
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      // Should complete without crashing despite execa error
+      const result = await runTypeCheck(['test.ts'], {
+        benchmark: true,
+        verbose: false,
+        json: false,
+      });
+
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should show slow emoji when tsgo is slower than tsc', async () => {
+      // Mock performance.now() to return specific times for benchmark calculations
+      let callCount = 0;
+      vi.spyOn(performance, 'now').mockImplementation(() => {
+        callCount++;
+        // First call: full tsc start (0)
+        // Second call: full tsc end (100)
+        if (callCount === 1) return 0;
+        if (callCount === 2) return 100;
+        // Other calls don't matter for this test
+        return 0;
+      });
+
+      const mockTscResult: CheckResult = {
+        success: true,
+        errorCount: 1,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 100, // tsc is faster
+        checkedFiles: ['test.ts'],
+      };
+
+      const mockTsgoResult: CheckResult = {
+        success: true,
+        errorCount: 1,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 300, // tsgo is slower (unusual case)
+        checkedFiles: ['test.ts'],
+      };
+
+      const mockFinalResult: CheckResult = {
+        success: true,
+        errorCount: 0,
+        warningCount: 0,
+        errors: [],
+        warnings: [],
+        duration: 150,
+        checkedFiles: ['test.ts'],
+      };
+
+      mockCheckFiles
+        .mockResolvedValueOnce(mockTscResult)
+        .mockResolvedValueOnce(mockTsgoResult)
+        .mockResolvedValueOnce(mockFinalResult);
+
+      mockFormatOutput.mockReturnValue({
+        stdout: '✓ Type check passed\n',
+        stderr: '',
+      });
+
+      const loggerInfoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {
+        /* empty */
+      });
+
+      await runTypeCheck(['test.ts'], {
+        benchmark: true,
+        verbose: false,
+        json: false,
+      });
+
+      // Should show slow emoji (🐌) since tsgo (300ms) is slower than tsc (100ms)
+      // Speedup = 100 / 300 = 0.33x
+      expect(loggerInfoSpy).toHaveBeenCalledWith(expect.stringContaining('🐌'));
+
+      loggerInfoSpy.mockRestore();
+      vi.mocked(performance.now).mockRestore();
+    });
   });
 
   describe('runTypeCheckWithOutput', () => {

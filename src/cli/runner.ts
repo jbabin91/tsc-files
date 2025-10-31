@@ -34,13 +34,13 @@ import { logger } from '@/utils/logger';
  * Run full tsc --noEmit on entire project
  */
 async function runFullTsc(cwd: string): Promise<number> {
+  const start = performance.now();
   try {
-    const start = performance.now();
     await execa('npx', ['tsc', '--noEmit'], { cwd, reject: false });
     return Math.round(performance.now() - start);
   } catch {
     // If tsc fails, still return timing
-    return Math.round(performance.now() - performance.now());
+    return Math.round(performance.now() - start);
   }
 }
 

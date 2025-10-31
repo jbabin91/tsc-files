@@ -142,8 +142,6 @@ export function validateCliOptions(rawOptions: unknown): ValidatedCliOptions {
   return {
     ...parsed,
     include,
-    maxDepth: parsed.maxDepth,
-    maxFiles: parsed.maxFiles,
     noRecursive,
   };
 }

@@ -228,63 +228,216 @@ Execution Layer (executor.ts, output-parser.ts)
 - Feature branches for development
 - No direct commits to main (PR required)
 
-**Pull Request Format**:
+**Creating Pull Requests**:
 
-ALWAYS follow `.github/PULL_REQUEST_TEMPLATE.md` for consistency. Use narrative format with these required sections:
+CRITICAL: ALWAYS read `.github/PULL_REQUEST_TEMPLATE.md` FIRST before creating a PR.
+
+**Step-by-step process:**
+
+1. **Read the template** - Open and review `.github/PULL_REQUEST_TEMPLATE.md` to understand required sections
+2. **Prepare PR body** - Draft the PR description following the template EXACTLY
+3. **Use the template structure** - Include ALL required sections in the correct order
+4. **Create the PR** - Use `gh pr create` with the prepared body
+
+**Resolving PR Review Comments**:
+
+CRITICAL: Only resolve comments you have ACTUALLY addressed. Never bulk-resolve all comments.
+
+**Review comment workflow:**
+
+1. **Read each comment** - Understand what the reviewer is suggesting
+2. **Evaluate the suggestion** - Decide if it's valid and should be implemented
+3. **Take action** - Either implement the fix OR document why you're rejecting it
+4. **Only then resolve** - Mark as resolved ONLY after addressing it
+
+**Valid reasons to resolve:**
+
+- ✅ You implemented the suggested fix
+- ✅ You implemented an alternative fix that addresses the concern
+- ✅ You documented in code/comments why the suggestion doesn't apply
+
+**Invalid reasons to resolve:**
+
+- ❌ You haven't looked at the comment yet
+- ❌ You're bulk-resolving all comments without reviewing each one
+- ❌ You're assuming it's not important without investigation
+
+**Example workflow:**
+
+```bash
+# 1. Get unresolved comments
+# Note: Replace "owner" and "repo" with your repository owner and name
+# For more GraphQL examples, see: openspec/AGENTS.md
+gh api graphql -f query='
+  query {
+    repository(owner: "owner", name: "repo") {
+      pullRequest(number: 55) {
+        reviewThreads(first: 10) {
+          nodes {
+            id
+            isResolved
+            comments(first: 1) {
+              nodes { path body }
+            }
+          }
+        }
+      }
+    }
+  }
+' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+
+# 2. Review EACH comment individually
+
+# 3. Fix the specific issue
+
+# 4. Resolve ONLY the specific thread you addressed
+gh api graphql -f query='
+  mutation {
+    resolveReviewThread(input: {threadId: "PRRT_kwDOP1frcc5gKTQ7"}) {
+      thread { id isResolved }
+    }
+  }
+'
+```
+
+**Required Template Sections** (in this exact order):
 
 ```markdown
 ## Summary
 
-Brief description with issue reference (Closes #X)
+<!-- Brief description with issue reference if applicable -->
+
+Closes #
 
 ## Problem
 
-Why this change matters - explain context and motivation
+<!-- Explain context and motivation - WHY this change matters -->
 
 ## Changes
 
-Detailed breakdown with subsections for complex PRs:
+### Core Changes
 
-- ### Core Changes
-- ### Additional Changes (if applicable)
+- Change 1
+- Change 2
+
+### Additional Changes (if applicable)
+
+- Additional change 1
 
 ## Benefits
 
-List advantages with ✅ checkmarks for readability
+<!-- Use ✅ checkmarks for readability -->
+
+- ✅ Benefit 1
+- ✅ Benefit 2
 
 ## Testing
 
-Quality gates passed + test coverage results:
+**All quality gates passed:**
 
-- ✅ pnpm lint - zero errors/warnings
-- ✅ pnpm typecheck - zero TypeScript errors
-- ✅ pnpm test - all tests passing
-- ✅ pnpm build - clean build success
-- ✅ pnpm lint:md - markdown compliance
+- ✅ `pnpm lint` - zero errors/warnings
+- ✅ `pnpm typecheck` - zero TypeScript errors
+- ✅ `pnpm test` - all tests passing
+- ✅ `pnpm build` - clean build success
+- ✅ `pnpm lint:md` - markdown compliance
+
+**Test coverage:**
+
+- Unit tests: X/X passing
+- Integration tests: X/X passing
+- Coverage: XX.X% (meets thresholds)
 
 ## Breaking Changes
 
-**NONE** or list breaking changes with migration guidance
+**NONE** - All changes are backwards compatible.
 
-## Documentation (if applicable)
+<!-- OR list breaking changes with migration guidance -->
 
-List doc updates with ✅ checkmarks
+## Documentation
 
-## Changeset (if affecting public API)
+<!-- Delete section if not applicable -->
 
-- [ ] Changeset added and categorized correctly
+- ✅ README updated
+- ✅ API docs updated
+
+## Changeset
+
+<!-- For changes affecting public API -->
+
+- [ ] Changeset added (`pnpm changeset`)
+- [ ] Changeset category is correct (patch/minor/major)
+
+---
+
+**Type of change:** <!-- Bug fix | New feature | Breaking change | Performance | Refactor | Docs | Chore -->
 ```
 
-**PR Format Principles**:
+**PR Content Guidelines**:
 
-- Use narrative format (not excessive checkboxes)
-- Include issue reference in Summary section
-- Explain WHY in Problem section (context, motivation)
-- Detail WHAT in Changes section (implementation specifics)
-- Show benefits with ✅ checkmarks for visual clarity
-- Always specify if breaking changes exist
-- Document all quality gates passed
-- Add OpenSpec reference if change was tracked with OpenSpec
+**Summary Section:**
+
+- Brief 1-2 sentence description of the change
+- Include `Closes #X` if fixing an issue (or remove the line if no issue)
+- Be specific about what was accomplished
+
+**Problem Section:**
+
+- Explain the context: what was wrong or missing?
+- Describe why this change matters
+- Use narrative format, not bullet points
+- Focus on the motivation and background
+
+**Changes Section:**
+
+- MUST use subsections: "Core Changes" and "Additional Changes" (if applicable)
+- List specific changes, not just categories
+- Use bullet points within each subsection
+- Be detailed about implementation specifics
+
+**Benefits Section:**
+
+- ALWAYS use ✅ checkmarks for each benefit
+- Focus on advantages and improvements
+- Be specific about the value provided
+
+**Testing Section:**
+
+- List ALL quality gates with ✅ checkmarks
+- Include actual test counts: "Unit tests: 543/543 passing"
+- Include actual coverage percentage: "Coverage: 95.2%"
+- Provide example output if relevant (benchmarks, CLI results, etc.)
+
+**Breaking Changes Section:**
+
+- Write "**NONE** - All changes are backwards compatible." if no breaking changes
+- If breaking changes exist, list them with migration guidance
+- Never leave this section empty
+
+**Documentation Section:**
+
+- Delete entire section if no documentation changes
+- If documentation changed, list specific files with ✅ checkmarks
+
+**Changeset Section:**
+
+- Keep the checkboxes
+- Note if changeset is needed (changes affecting public API)
+- Note if changeset has been added
+
+**Type of Change:**
+
+- Fill in the appropriate type (not a placeholder)
+- Choose from: Bug fix, New feature, Breaking change, Performance, Refactor, Docs, Chore
+
+**Common Mistakes to Avoid:**
+
+- ❌ Don't leave placeholder text like `<!-- Brief description -->`
+- ❌ Don't skip required sections
+- ❌ Don't use wrong section order
+- ❌ Don't forget ✅ checkmarks in Benefits and Testing sections
+- ❌ Don't leave "Closes #" without a number (remove line if no issue)
+- ❌ Don't use excessive bullet points in Problem section (use narrative)
+- ❌ Don't forget to fill in "Type of change" at the bottom
 
 **PR vs Changeset Content**:
 

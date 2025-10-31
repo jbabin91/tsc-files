@@ -267,6 +267,270 @@ function hasTestFiles(rootFiles: string[]): boolean {
 }
 
 /**
+ * Options for recursive import discovery
+ */
+type RecursiveDiscoveryOptions = {
+  /** Maximum recursion depth (default: 20) */
+  maxDepth?: number;
+  /** Maximum files to discover (default: 100) */
+  maxFiles?: number;
+  /** Enable verbose logging */
+  verbose?: boolean;
+};
+
+/**
+ * Result of recursive import discovery
+ */
+type RecursiveDiscoveryResult = {
+  /** All discovered files */
+  files: string[];
+  /** Warnings encountered during discovery */
+  warnings: string[];
+};
+
+/**
+ * Extract import/export declarations from a TypeScript file
+ *
+ * Parses a TypeScript file and extracts all module import specifiers, including:
+ * - Static imports: `import { x } from 'module'`
+ * - Export from: `export { x } from 'module'`
+ * - CommonJS require: `const x = require('module')`
+ * - Dynamic imports: `await import('module')`
+ *
+ * @param tsInstance - TypeScript compiler instance
+ * @param filePath - Absolute path to the TypeScript file to parse
+ * @returns Array of import specifiers (module names), or empty array if parsing fails
+ */
+function extractImports(tsInstance: typeof ts, filePath: string): string[] {
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    const sourceFile = tsInstance.createSourceFile(
+      filePath,
+      content,
+      tsInstance.ScriptTarget.Latest,
+      true,
+    );
+
+    const imports: string[] = [];
+
+    function visit(node: ts.Node): void {
+      // Static imports: import ... from 'module'
+      if (tsInstance.isImportDeclaration(node)) {
+        const moduleSpecifier = node.moduleSpecifier;
+        if (tsInstance.isStringLiteral(moduleSpecifier)) {
+          imports.push(moduleSpecifier.text);
+        }
+      }
+      // Export from: export ... from 'module'
+      else if (tsInstance.isExportDeclaration(node)) {
+        const moduleSpecifier = node.moduleSpecifier;
+        if (moduleSpecifier && tsInstance.isStringLiteral(moduleSpecifier)) {
+          imports.push(moduleSpecifier.text);
+        }
+      }
+      // require(): const x = require('module')
+      else if (
+        tsInstance.isCallExpression(node) &&
+        node.expression.kind === tsInstance.SyntaxKind.Identifier &&
+        (node.expression as ts.Identifier).text === 'require' &&
+        node.arguments.length > 0 &&
+        tsInstance.isStringLiteral(node.arguments[0])
+      ) {
+        imports.push(node.arguments[0].text);
+      }
+      // Dynamic import(): import('module')
+      else if (
+        tsInstance.isCallExpression(node) &&
+        node.expression.kind === tsInstance.SyntaxKind.ImportKeyword &&
+        node.arguments.length > 0 &&
+        tsInstance.isStringLiteral(node.arguments[0])
+      ) {
+        imports.push(node.arguments[0].text);
+      }
+
+      tsInstance.forEachChild(node, visit);
+    }
+
+    visit(sourceFile);
+    return imports;
+  } catch {
+    // If parsing fails, return empty array (file might not be valid TypeScript)
+    return [];
+  }
+}
+
+/**
+ * Resolve an import specifier to an absolute file path
+ *
+ * Uses TypeScript's module resolution algorithm to resolve relative and absolute
+ * import specifiers to their corresponding file paths. Node modules are skipped.
+ *
+ * @param tsInstance - TypeScript compiler instance
+ * @param importSpecifier - Module specifier from import statement (e.g., './utils', '../types')
+ * @param containingFile - Absolute path to the file containing the import
+ * @param compilerOptions - TypeScript compiler options for resolution
+ * @returns Absolute path to the resolved file, or undefined if:
+ *          - Import is a node_modules package (e.g., 'react', '@types/node')
+ *          - Resolution fails (file not found, invalid specifier)
+ */
+function resolveImport(
+  tsInstance: typeof ts,
+  importSpecifier: string,
+  containingFile: string,
+  compilerOptions: ts.CompilerOptions,
+): string | undefined {
+  // Skip node_modules imports (e.g., 'react', '@types/node')
+  if (!importSpecifier.startsWith('.') && !importSpecifier.startsWith('/')) {
+    return undefined;
+  }
+
+  try {
+    const resolved = tsInstance.resolveModuleName(
+      importSpecifier,
+      containingFile,
+      compilerOptions,
+      tsInstance.sys,
+    );
+
+    if (resolved.resolvedModule) {
+      const resolvedPath = resolved.resolvedModule.resolvedFileName;
+      // Only include files within the project (not node_modules)
+      if (!isNodeModulesPath(resolvedPath)) {
+        return resolvedPath;
+      }
+    }
+  } catch {
+    // Module resolution failed, skip this import
+  }
+
+  return undefined;
+}
+
+/**
+ * Recursively discover imports from source files
+ *
+ * Performs depth-first traversal of import chains starting from initial files.
+ * Discovers all transitively imported local files while respecting depth and file limits.
+ * Handles circular dependencies gracefully by tracking visited files.
+ *
+ * Algorithm:
+ * 1. Start with initial source files
+ * 2. For each file, extract all import specifiers
+ * 3. Resolve specifiers to absolute paths (skip node_modules)
+ * 4. Add newly discovered files to the set
+ * 5. Recursively process new files (DFS) until depth/file limits reached
+ * 6. Track visited files to handle circular dependencies
+ *
+ * @param tsInstance - TypeScript compiler instance
+ * @param initialFiles - Starting set of absolute file paths
+ * @param compilerOptions - TypeScript compiler options for module resolution
+ * @param configDir - Project root directory for relative path calculations
+ * @param options - Discovery options (maxDepth, maxFiles, verbose)
+ * @returns Discovery result containing all found files and any warnings about limit enforcement
+ */
+function discoverImportsRecursively(
+  tsInstance: typeof ts,
+  initialFiles: string[],
+  compilerOptions: ts.CompilerOptions,
+  configDir: string,
+  options: RecursiveDiscoveryOptions = {},
+): RecursiveDiscoveryResult {
+  const maxDepth = options.maxDepth ?? 20;
+  const maxFiles = options.maxFiles ?? 100;
+  const verbose = options.verbose ?? false;
+
+  const discovered = new Set<string>(initialFiles);
+  const warnings: string[] = [];
+  const visited = new Set<string>();
+  let depthLimitHit = false;
+  let filesLimitHit = false;
+
+  function discoverFromFile(filePath: string, currentDepth: number): void {
+    // Check depth limit
+    if (currentDepth >= maxDepth) {
+      if (!depthLimitHit) {
+        depthLimitHit = true;
+        warnings.push(
+          `Reached maximum depth (${maxDepth}) during recursive import discovery. Use --max-depth to increase.`,
+        );
+      }
+      return;
+    }
+
+    // Check file limit
+    if (discovered.size >= maxFiles) {
+      if (!filesLimitHit) {
+        filesLimitHit = true;
+        warnings.push(
+          `Reached maximum file limit (${maxFiles}) during recursive import discovery. Use --max-files to increase.`,
+        );
+      }
+      return;
+    }
+
+    // Skip if already visited
+    if (visited.has(filePath)) {
+      return;
+    }
+    visited.add(filePath);
+
+    if (verbose) {
+      logger.info(
+        `  Discovering imports from ${path.relative(configDir, filePath)} (depth: ${currentDepth})`,
+      );
+    }
+
+    // Extract imports from this file
+    const imports = extractImports(tsInstance, filePath);
+
+    // Resolve and follow each import
+    for (const importSpecifier of imports) {
+      const resolvedPath = resolveImport(
+        tsInstance,
+        importSpecifier,
+        filePath,
+        compilerOptions,
+      );
+
+      if (resolvedPath && !discovered.has(resolvedPath)) {
+        discovered.add(resolvedPath);
+
+        if (verbose) {
+          logger.info(
+            `    Found: ${importSpecifier} -> ${path.relative(configDir, resolvedPath)}`,
+          );
+        }
+
+        // Recursively discover imports from this file
+        discoverFromFile(resolvedPath, currentDepth + 1);
+      }
+    }
+  }
+
+  // Start discovery from initial files
+  if (verbose) {
+    logger.info(
+      `Starting recursive import discovery (maxDepth: ${maxDepth}, maxFiles: ${maxFiles})`,
+    );
+  }
+
+  for (const filePath of initialFiles) {
+    discoverFromFile(filePath, 0);
+  }
+
+  if (verbose) {
+    logger.info(
+      `✓ Recursive discovery complete: ${discovered.size} files (${visited.size} visited)`,
+    );
+  }
+
+  return {
+    files: [...discovered].toSorted(),
+    warnings,
+  };
+}
+
+/**
  * Discover the complete set of source files required to typecheck the given root files
  */
 export async function discoverDependencyClosure(
@@ -276,6 +540,7 @@ export async function discoverDependencyClosure(
   configDir: string,
   verbose = false,
   includeFiles?: string[],
+  recursiveOptions?: RecursiveDiscoveryOptions & { noRecursive?: boolean },
 ): Promise<DependencyClosure> {
   // Generate cache key
   const tsconfigContent = JSON.stringify(originalConfig);
@@ -466,6 +731,54 @@ export async function discoverDependencyClosure(
     }
 
     sourceFiles = sourceFiles.toSorted();
+
+    // Recursively discover transitive dependencies if enabled
+    if (recursiveOptions?.noRecursive !== true) {
+      if (verbose) {
+        logger.info(
+          `Performing recursive import discovery to find transitive dependencies...`,
+        );
+      }
+
+      const recursiveResult = discoverImportsRecursively(
+        tsInstance,
+        sourceFiles,
+        parsedConfig.options,
+        configDir,
+        {
+          maxDepth: recursiveOptions?.maxDepth,
+          maxFiles: recursiveOptions?.maxFiles,
+          verbose,
+        },
+      );
+
+      // Log warnings (never fail)
+      for (const warning of recursiveResult.warnings) {
+        logger.warn(`⚠ ${warning}`);
+      }
+
+      // Add any newly discovered files
+      const newFiles = recursiveResult.files.filter(
+        (file) => !sourceFiles.includes(file),
+      );
+
+      if (newFiles.length > 0) {
+        sourceFiles.push(...newFiles);
+        sourceFiles = sourceFiles.toSorted();
+
+        if (verbose) {
+          logger.info(
+            `✓ Recursive discovery added ${newFiles.length} transitive dependencies`,
+          );
+        }
+      } else if (verbose) {
+        logger.info(
+          `✓ Recursive discovery complete: no additional files needed`,
+        );
+      }
+    } else if (verbose) {
+      logger.info(`Recursive import discovery disabled (--no-recursive)`);
+    }
 
     // Compute mtime hash for cache validation
     const mtimeHash = computeMtimeHash(sourceFiles);

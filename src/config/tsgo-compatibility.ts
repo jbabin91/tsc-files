@@ -39,10 +39,11 @@ export function analyzeTsgoCompatibility(
 ): TsgoCompatibilityResult {
   const incompatibleFeatures: string[] = [];
 
-  // Check if baseUrl would be required
-  // We set baseUrl when paths exist and moduleResolution is not bundler
+  // Check if baseUrl is present
+  // baseUrl is not supported by tsgo (even without paths)
+  // TypeScript uses baseUrl for module resolution, but tsgo doesn't support it
   if (
-    config.compilerOptions?.paths &&
+    config.compilerOptions?.baseUrl &&
     config.compilerOptions?.moduleResolution !== 'bundler'
   ) {
     incompatibleFeatures.push(TSGO_INCOMPATIBLE_FEATURES.baseUrl.name);

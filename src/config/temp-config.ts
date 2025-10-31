@@ -115,6 +115,12 @@ export async function createTempConfig(
     originalConfigDir,
     options.verbose,
     options.include,
+    {
+      maxDepth: options.maxDepth,
+      maxFiles: options.maxFiles,
+      noRecursive: options.noRecursive,
+      verbose: options.verbose,
+    },
   );
 
   // Use discovered files if available, otherwise fall back to original files
@@ -174,7 +180,37 @@ export async function createTempConfig(
   }
   // Otherwise: rely on default TypeScript type resolution from cache directory
 
+  // Handle baseUrl - convert relative baseUrl to absolute path or remove if bundler mode
+  // baseUrl can be used standalone (without paths) for module resolution
+  // TypeScript resolves non-relative imports relative to baseUrl
+  // Note: baseUrl is removed when moduleResolution is 'bundler' (deprecated in that mode)
+  if (
+    sanitizedCompilerOptions.baseUrl &&
+    typeof sanitizedCompilerOptions.baseUrl === 'string'
+  ) {
+    if (sanitizedCompilerOptions.moduleResolution === 'bundler') {
+      // baseUrl is deprecated with bundler moduleResolution - remove it
+      const { baseUrl: _, ...rest } = adjustedCompilerOptions;
+      adjustedCompilerOptions = rest;
+    } else {
+      // Convert relative baseUrl to absolute path
+      const originalBaseUrl = sanitizedCompilerOptions.baseUrl;
+      adjustedCompilerOptions.baseUrl = path.isAbsolute(originalBaseUrl)
+        ? originalBaseUrl
+        : path.resolve(originalConfigDir, originalBaseUrl);
+    }
+  }
+
+  // Handle paths - convert relative paths to absolute paths
+  // Per TypeScript semantics, paths are resolved relative to baseUrl if present
   if (sanitizedCompilerOptions.paths) {
+    // Determine base directory for path resolution
+    // If baseUrl exists (and wasn't removed by bundler mode), use it; otherwise use config dir
+    const pathsBaseDir: string =
+      (typeof adjustedCompilerOptions.baseUrl === 'string'
+        ? adjustedCompilerOptions.baseUrl
+        : undefined) ?? originalConfigDir;
+
     const absolutePaths: Record<string, string[]> = {};
     for (const [alias, pathList] of Object.entries(
       sanitizedCompilerOptions.paths,
@@ -184,14 +220,14 @@ export async function createTempConfig(
         absolutePaths[alias] = (pathList as string[]).map((pathItem) => {
           // Convert relative paths to absolute paths
           if (pathItem.startsWith('./') || pathItem.startsWith('../')) {
-            // Explicit relative paths
-            return path.resolve(originalConfigDir, pathItem);
+            // Explicit relative paths - resolve relative to baseUrl if present
+            return path.resolve(pathsBaseDir, pathItem);
           } else if (
             !path.isAbsolute(pathItem) &&
             !pathItem.startsWith('node_modules')
           ) {
             // Implicit relative paths (no leading ./ but not absolute or node_modules)
-            return path.resolve(originalConfigDir, pathItem);
+            return path.resolve(pathsBaseDir, pathItem);
           }
           // Keep absolute paths and node_modules paths as-is
           return pathItem;
@@ -201,10 +237,6 @@ export async function createTempConfig(
     adjustedCompilerOptions = {
       ...adjustedCompilerOptions,
       paths: absolutePaths,
-      // Only set baseUrl if moduleResolution is not bundler (baseUrl is deprecated with bundler)
-      ...(sanitizedCompilerOptions.moduleResolution !== 'bundler' && {
-        baseUrl: originalConfigDir,
-      }),
     };
   }
 

@@ -1,3 +1,7 @@
+import { performance } from 'node:perf_hooks';
+
+import { execa } from 'execa';
+
 import {
   provideCompilerEducation,
   provideGitHookOptimization,
@@ -25,6 +29,27 @@ import {
   validateCliOptions,
 } from '@/types/cli';
 import { logger } from '@/utils/logger';
+
+/**
+ * Run full tsc --noEmit on entire project for benchmarking
+ *
+ * Executes the TypeScript compiler on the entire project without emitting files.
+ * Used as a baseline for performance comparison in benchmark mode.
+ * Does not fail on type errors (reject: false) - always returns timing.
+ *
+ * @param cwd - Working directory containing tsconfig.json
+ * @returns Duration in milliseconds (rounded), regardless of type check success/failure
+ */
+async function runFullTsc(cwd: string): Promise<number> {
+  const start = performance.now();
+  try {
+    await execa('npx', ['tsc', '--noEmit'], { cwd, reject: false });
+    return Math.round(performance.now() - start);
+  } catch {
+    // If tsc fails, still return timing
+    return Math.round(performance.now() - start);
+  }
+}
 
 /**
  * Execute type checking with given files and options
@@ -92,38 +117,72 @@ export async function runTypeCheck(
     // Handle --benchmark flag
     if (validatedOptions.benchmark) {
       try {
-        logger.info('🏃 Running benchmark comparison...');
+        logger.info('🏃 Running comprehensive benchmark...');
+        logger.info('');
 
-        // Run with tsc
+        // 1. Run full tsc on entire project
+        logger.info('Running full tsc on entire project...');
+        const fullTscDuration = await runFullTsc(process.cwd());
+
+        // 2. Run tsc-files with tsc compiler
+        logger.info('Running tsc-files with tsc compiler...');
         const tscStart = performance.now();
         const tscResult = await checkFiles(files, {
           ...checkOptions,
           useTsc: true,
           useTsgo: false,
         });
-        const tscDuration = Math.round(performance.now() - tscStart);
+        const tscFilesDuration = Math.round(performance.now() - tscStart);
 
-        // Run with tsgo
-        const tsgoStart = performance.now();
-        const tsgoResult = await checkFiles(files, {
-          ...checkOptions,
-          useTsc: false,
-          useTsgo: true,
-        });
-        const tsgoDuration = Math.round(performance.now() - tsgoStart);
+        // 3. Run tsc-files with tsgo compiler (if available)
+        logger.info('Running tsc-files with tsgo compiler...');
+        let tsgoFilesDuration = 0;
+        let tsgoResult = null;
+        let tsgoAvailable = false;
 
-        // Display benchmark results
-        const speedup = tscDuration / tsgoDuration;
+        try {
+          const tsgoStart = performance.now();
+          tsgoResult = await checkFiles(files, {
+            ...checkOptions,
+            useTsc: false,
+            useTsgo: true,
+          });
+          tsgoFilesDuration = Math.round(performance.now() - tsgoStart);
+          tsgoAvailable = true;
+        } catch {
+          logger.info('  (tsgo not available)');
+        }
+
+        // Display comprehensive benchmark results
+        logger.info('');
         logger.info('🏆 Benchmark Results:');
+        logger.info('');
+        logger.info('Tool Comparison (tsc-files value):');
+        const toolSpeedup = fullTscDuration / tscFilesDuration;
+        logger.info(`  Full tsc (entire project):  ${fullTscDuration}ms`);
         logger.info(
-          `  tsc:  ${tscDuration}ms (${tscResult.errorCount} errors)`,
+          `  tsc-files (specific files):  ${tscFilesDuration}ms (${tscResult.errorCount} errors)`,
         );
         logger.info(
-          `  tsgo: ${tsgoDuration}ms (${tsgoResult.errorCount} errors)`,
+          `  Speedup: ${toolSpeedup.toFixed(2)}x ${toolSpeedup > 1 ? '🚀' : '🐌'}`,
         );
-        logger.info(
-          `  Speedup: ${speedup.toFixed(1)}x ${speedup > 1 ? '🚀' : '🐌'}`,
-        );
+
+        if (tsgoAvailable && tsgoResult) {
+          logger.info('');
+          logger.info('Compiler Comparison (within tsc-files):');
+          const compilerSpeedup = tscFilesDuration / tsgoFilesDuration;
+          logger.info(
+            `  tsc-files + tsc:   ${tscFilesDuration}ms (${tscResult.errorCount} errors)`,
+          );
+          logger.info(
+            `  tsc-files + tsgo:  ${tsgoFilesDuration}ms (${tsgoResult.errorCount} errors)`,
+          );
+          logger.info(
+            `  Speedup: ${compilerSpeedup.toFixed(2)}x ${compilerSpeedup > 1 ? '🚀' : '🐌'}`,
+          );
+        }
+
+        logger.info('');
 
         // Return result from the configured compiler (not benchmark forced)
         const finalOptions = { ...checkOptions };

@@ -30,6 +30,12 @@ export type CheckOptions = {
   fallback?: boolean;
   /** Additional files to include in type checking */
   include?: string[];
+  /** Maximum depth for recursive import discovery (default: 20) */
+  maxDepth?: number;
+  /** Maximum files to discover recursively (default: 100) */
+  maxFiles?: number;
+  /** Disable recursive import discovery */
+  noRecursive?: boolean;
 };
 
 /**

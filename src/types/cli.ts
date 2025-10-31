@@ -18,6 +18,9 @@ export type RawCliOptions = {
   fallback?: boolean;
   tips?: boolean;
   include?: string;
+  maxDepth?: number;
+  maxFiles?: number;
+  recursive?: boolean;
 };
 
 /**
@@ -37,6 +40,9 @@ export type ValidatedCliOptions = {
   fallback: boolean;
   tips: boolean;
   include?: string[];
+  maxDepth?: number;
+  maxFiles?: number;
+  noRecursive?: boolean;
 };
 
 /**
@@ -74,6 +80,9 @@ export const CliOptionsSchema = z.object({
   fallback: z.boolean().default(true),
   tips: z.boolean().default(false),
   include: z.string().optional(),
+  maxDepth: z.number().int().positive().optional(),
+  maxFiles: z.number().int().positive().optional(),
+  recursive: z.boolean().default(true),
 });
 
 /**
@@ -95,6 +104,9 @@ export function toCheckOptions(
     benchmark: validated.benchmark,
     fallback: validated.fallback,
     include: validated.include,
+    maxDepth: validated.maxDepth,
+    maxFiles: validated.maxFiles,
+    noRecursive: validated.noRecursive,
     cwd,
   };
 }
@@ -122,8 +134,14 @@ export function validateCliOptions(rawOptions: unknown): ValidatedCliOptions {
         .filter((s) => s.length > 0)
     : undefined;
 
+  // Invert recursive flag to noRecursive
+  // Commander parses --no-recursive as recursive: false
+  // We want noRecursive: true when --no-recursive is passed
+  const noRecursive = !parsed.recursive;
+
   return {
     ...parsed,
     include,
+    noRecursive,
   };
 }

@@ -582,6 +582,7 @@ No configuration needed - it just works!
 - [API Reference](./docs/reference/api.md) - Complete CLI and programmatic API documentation
 - [Usage Examples](./docs/guides/usage-examples.md) - Real-world usage scenarios and patterns
 - [tsgo Compiler Guide](./docs/usage/tsgo-compiler.md) - 10x faster type checking with native compiler
+- [Benchmarking Guide](./docs/guides/benchmarking.md) - Performance measurement and optimization
 - [Troubleshooting Guide](./docs/guides/troubleshooting-guide.md) - Common issues and solutions
 - [Architecture](./docs/architecture/README.md) - How tsc-files works internally
 - [Contributing](./docs/CONTRIBUTING.md) - Development setup and contribution guidelines

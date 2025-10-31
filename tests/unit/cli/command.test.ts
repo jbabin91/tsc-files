@@ -137,10 +137,12 @@ describe('CLI Command', () => {
   });
 
   describe('parseArguments', () => {
-    let mockAction: ReturnType<typeof vi.fn>;
+    let mockAction: (files: string[], options: unknown) => Promise<void>;
 
     beforeEach(() => {
-      mockAction = vi.fn();
+      mockAction = vi.fn(async () => {
+        // Mock action - does nothing
+      });
     });
 
     it('should parse files and options correctly', () => {
@@ -243,6 +245,7 @@ describe('CLI Command', () => {
       expect(options).toEqual({
         cache: true,
         fallback: true,
+        recursive: true,
       });
     });
 
@@ -333,6 +336,123 @@ describe('CLI Command', () => {
       expect(options).toMatchObject({
         useTsgo: true,
         fallback: false,
+      });
+    });
+
+    it('should validate --max-depth option - reject non-numeric values', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--max-depth', 'abc', 'test.ts']);
+      }).toThrow('max-depth must be a positive integer');
+    });
+
+    it('should validate --max-depth option - reject zero', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--max-depth', '0', 'test.ts']);
+      }).toThrow('max-depth must be a positive integer');
+    });
+
+    it('should validate --max-depth option - reject negative values', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--max-depth', '-5', 'test.ts']);
+      }).toThrow('max-depth must be a positive integer');
+    });
+
+    it('should validate --max-depth option - accept valid positive integers', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { options } = parseArguments(program, [
+        '--max-depth',
+        '10',
+        'test.ts',
+      ]);
+
+      expect(options).toMatchObject({
+        maxDepth: 10,
+      });
+    });
+
+    it('should validate --max-files option - reject non-numeric values', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--max-files', 'xyz', 'test.ts']);
+      }).toThrow('max-files must be a positive integer');
+    });
+
+    it('should validate --max-files option - reject zero', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--max-files', '0', 'test.ts']);
+      }).toThrow('max-files must be a positive integer');
+    });
+
+    it('should validate --max-files option - reject negative values', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      expect(() => {
+        parseArguments(program, ['--max-files', '-100', 'test.ts']);
+      }).toThrow('max-files must be a positive integer');
+    });
+
+    it('should validate --max-files option - accept valid positive integers', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { options } = parseArguments(program, [
+        '--max-files',
+        '200',
+        'test.ts',
+      ]);
+
+      expect(options).toMatchObject({
+        maxFiles: 200,
+      });
+    });
+
+    it('should parse --no-recursive flag correctly', () => {
+      const program = createProgram(mockAction);
+      program.exitOverride((err) => {
+        throw err;
+      });
+
+      const { files, options } = parseArguments(program, [
+        '--no-recursive',
+        'test.ts',
+      ]);
+
+      expect(files).toEqual(['test.ts']);
+      expect(options).toMatchObject({
+        recursive: false,
       });
     });
   });

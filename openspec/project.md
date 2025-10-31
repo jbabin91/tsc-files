@@ -239,6 +239,43 @@ CRITICAL: ALWAYS read `.github/PULL_REQUEST_TEMPLATE.md` FIRST before creating a
 3. **Use the template structure** - Include ALL required sections in the correct order
 4. **Create the PR** - Use `gh pr create` with the prepared body
 
+**Resolving PR Review Comments**:
+
+CRITICAL: Only resolve comments you have ACTUALLY addressed. Never bulk-resolve all comments.
+
+**Review comment workflow:**
+
+1. **Read each comment** - Understand what the reviewer is suggesting
+2. **Evaluate the suggestion** - Decide if it's valid and should be implemented
+3. **Take action** - Either implement the fix OR document why you're rejecting it
+4. **Only then resolve** - Mark as resolved ONLY after addressing it
+
+**Valid reasons to resolve:**
+
+- ✅ You implemented the suggested fix
+- ✅ You implemented an alternative fix that addresses the concern
+- ✅ You documented in code/comments why the suggestion doesn't apply
+
+**Invalid reasons to resolve:**
+
+- ❌ You haven't looked at the comment yet
+- ❌ You're bulk-resolving all comments without reviewing each one
+- ❌ You're assuming it's not important without investigation
+
+**Example workflow:**
+
+```bash
+# 1. Get unresolved comments
+gh api graphql -f query='...' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)'
+
+# 2. Review EACH comment individually
+
+# 3. Fix the specific issue
+
+# 4. Resolve ONLY the specific thread you addressed
+gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "PRRT_..."}) { thread { id } } }'
+```
+
 **Required Template Sections** (in this exact order):
 
 ```markdown

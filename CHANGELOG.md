@@ -1,5 +1,13 @@
 # @jbabin91/tsc-files
 
+## 0.8.3
+
+### Patch Changes
+
+- [#60](https://github.com/jbabin91/tsc-files/pull/60) [`68ee8e9`](https://github.com/jbabin91/tsc-files/commit/68ee8e951ae6beb61529cc708b4a09b5712d0fc7) Thanks [@jbabin91](https://github.com/jbabin91)! - Fix recursive import discovery from ambient files with path-mapped imports
+
+  Fixes a bug where imports from ambient declaration files (found via pattern matching) were not recursively discovered when using path-mapped imports configured via baseUrl/paths in tsconfig.json. This caused false positive type errors about missing files in the file list.
+
 ## 0.8.2
 
 ### Patch Changes

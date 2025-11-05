@@ -362,15 +362,16 @@ function extractImports(tsInstance: typeof ts, filePath: string): string[] {
 /**
  * Resolve an import specifier to an absolute file path
  *
- * Uses TypeScript's module resolution algorithm to resolve relative and absolute
- * import specifiers to their corresponding file paths. Node modules are skipped.
+ * Uses TypeScript's module resolution algorithm to resolve import specifiers to their
+ * corresponding file paths. Handles relative imports, absolute imports, and path-mapped
+ * imports (via baseUrl/paths). Node modules are skipped.
  *
  * @param tsInstance - TypeScript compiler instance
- * @param importSpecifier - Module specifier from import statement (e.g., './utils', '../types')
+ * @param importSpecifier - Module specifier from import statement (e.g., './utils', 'styles/themes/KCFTheme')
  * @param containingFile - Absolute path to the file containing the import
- * @param compilerOptions - TypeScript compiler options for resolution
+ * @param compilerOptions - TypeScript compiler options for resolution (must include baseUrl/paths)
  * @returns Absolute path to the resolved file, or undefined if:
- *          - Import is a node_modules package (e.g., 'react', '@types/node')
+ *          - Import resolves to node_modules (e.g., 'react', '@types/node')
  *          - Resolution fails (file not found, invalid specifier)
  */
 function resolveImport(
@@ -379,11 +380,6 @@ function resolveImport(
   containingFile: string,
   compilerOptions: ts.CompilerOptions,
 ): string | undefined {
-  // Skip node_modules imports (e.g., 'react', '@types/node')
-  if (!importSpecifier.startsWith('.') && !importSpecifier.startsWith('/')) {
-    return undefined;
-  }
-
   try {
     const resolved = tsInstance.resolveModuleName(
       importSpecifier,

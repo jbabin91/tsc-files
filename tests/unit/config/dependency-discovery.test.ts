@@ -1240,6 +1240,87 @@ export default defineConfig({
       infoSpy.mockRestore();
     });
 
+    it('should discover imports from ambient declarations with path-mapped imports', async () => {
+      // Create directory structure
+      const srcDir = path.join(tempDir, 'src');
+      const themesDir = path.join(srcDir, 'styles', 'themes');
+      mkdirSync(themesDir, { recursive: true });
+
+      // Create ambient declaration file with path-mapped import
+      const styledDtsFile = path.join(themesDir, 'styled.d.ts');
+      writeFileSync(
+        styledDtsFile,
+        'import { KCFTheme } from "styles/themes/KCFTheme";\ndeclare module "styled-components" { export interface DefaultTheme extends KCFTheme {} }',
+      );
+
+      // Create the files that styled.d.ts imports (via path mapping)
+      const themeFile = path.join(themesDir, 'KCFTheme.ts');
+      const styleFile = path.join(themesDir, 'KCFStyle.ts');
+      const colorFile = path.join(themesDir, 'KCFColor.ts');
+
+      writeFileSync(
+        themeFile,
+        'import { KCFStyle } from "styles/themes/KCFStyle";\nimport { KCFColor } from "styles/themes/KCFColor";\nexport interface KCFTheme { style: KCFStyle; color: KCFColor; }',
+      );
+      writeFileSync(
+        styleFile,
+        'export interface KCFStyle { fontSize: number; }',
+      );
+      writeFileSync(
+        colorFile,
+        'export interface KCFColor { primary: string; }',
+      );
+
+      // Create main file (doesn't directly import anything from styled.d.ts)
+      const mainFile = path.join(srcDir, 'main.ts');
+      writeFileSync(mainFile, 'export const main = () => "test";');
+
+      // Create tsconfig with baseUrl for path mapping
+      const tsconfigPath = path.join(tempDir, 'tsconfig.json');
+      writeFileSync(
+        tsconfigPath,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'commonjs',
+            baseUrl: './src', // Enable path mapping
+            strict: true,
+          },
+          include: ['src/**/*'],
+        }),
+      );
+
+      const config: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2020',
+          module: 'commonjs',
+          baseUrl: './src', // Enable path mapping
+          strict: true,
+        },
+        include: ['src/**/*'],
+      };
+
+      const result = await discoverDependencyClosure(
+        ts,
+        config,
+        [mainFile],
+        tempDir,
+        false, // verbose
+      );
+
+      expect(result.discovered).toBe(true);
+      expect(result.sourceFiles).toContain(mainFile);
+
+      // Should discover ambient declaration via pattern matching
+      expect(result.sourceFiles).toContain(styledDtsFile);
+
+      // CRITICAL: Should recursively discover imports from ambient file
+      // This was the bug - imports from ambient files with path-mapped imports were not discovered
+      expect(result.sourceFiles).toContain(themeFile);
+      expect(result.sourceFiles).toContain(styleFile);
+      expect(result.sourceFiles).toContain(colorFile);
+    });
+
     it('should log cache invalidation when files are modified', async () => {
       const mainFile = path.join(tempDir, 'main.ts');
       const utilsFile = path.join(tempDir, 'utils.ts');

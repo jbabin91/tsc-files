@@ -1,0 +1,158 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jbabin91/super-claude/main/.claude-plugin/super-claude-config.schema.json",
+
+  "workflow": {
+    "skills": {},
+    "hooks": {
+      "gitCommitGuard": {
+        "enabled": false,
+        "protectedBranches": ["main", "master"],
+        "bypassEnvVar": "SKIP_COMMIT_GUARD"
+      },
+      "branchNameValidator": {
+        "enabled": true,
+        "allowedPrefixes": [
+          "feat",
+          "fix",
+          "chore",
+          "docs",
+          "test",
+          "refactor",
+          "perf",
+          "build",
+          "ci",
+          "revert",
+          "style"
+        ],
+        "allowedBranches": ["main", "master", "develop"]
+      },
+      "typeChecker": {
+        "enabled": true,
+        "timeout": 2000
+      },
+      "sessionChecklist": {
+        "enabled": true
+      }
+    }
+  },
+
+  "meta": {
+    "skills": {
+      "skill-creator": {
+        "enabled": true,
+        "triggers": {
+          "keywords": [
+            "create skill",
+            "new skill",
+            "skill development",
+            "generate skill",
+            "skill template"
+          ],
+          "patterns": [
+            "(create|add|generate|build).*?skill",
+            "how to.*?(create|add|build).*?skill",
+            "skill.*?(template|generator|builder)",
+            "need.*?skill.*?(for|to)",
+            "(make|write).*?skill"
+          ]
+        }
+      },
+      "hook-creator": {
+        "enabled": true,
+        "triggers": {
+          "keywords": [
+            "create hook",
+            "new hook",
+            "hook development",
+            "generate hook",
+            "pre-commit",
+            "post-commit",
+            "hook automation"
+          ],
+          "patterns": [
+            "(create|add|generate|build).*?hook",
+            "how to.*?(create|add|build).*?hook",
+            "(pre|post)[-\\s](commit|push|merge)",
+            "hook.*?(template|generator|builder)",
+            "automat(e|ion).*?(before|after).*?(commit|push)"
+          ]
+        }
+      },
+      "command-creator": {
+        "enabled": true,
+        "triggers": {
+          "keywords": [
+            "create command",
+            "new command",
+            "slash command",
+            "generate command",
+            "command development"
+          ],
+          "patterns": [
+            "(create|add|generate|build).*?command",
+            "how to.*?(create|add|build).*?command",
+            "slash.*?command",
+            "command.*?(template|generator|builder)",
+            "custom.*?command"
+          ]
+        }
+      },
+      "agent-creator": {
+        "enabled": true,
+        "triggers": {
+          "keywords": [
+            "create agent",
+            "new agent",
+            "agent development",
+            "generate agent",
+            "specialized agent"
+          ],
+          "patterns": [
+            "(create|add|generate|build).*?agent",
+            "how to.*?(create|add|build).*?agent",
+            "agent.*?(template|generator|builder)",
+            "specialized.*?agent",
+            "(task|workflow).*?agent"
+          ]
+        }
+      },
+      "plugin-creator": {
+        "enabled": true,
+        "triggers": {
+          "keywords": [
+            "create plugin",
+            "new plugin",
+            "plugin development",
+            "generate plugin",
+            "plugin structure"
+          ],
+          "patterns": [
+            "(create|add|generate|build).*?plugin",
+            "how to.*?(create|add|build).*?plugin",
+            "plugin.*?(template|generator|builder|scaffold)",
+            "new.*?marketplace.*?plugin"
+          ]
+        }
+      },
+      "skill-validator": {
+        "enabled": true,
+        "triggers": {
+          "keywords": [
+            "validate skill",
+            "check skill",
+            "skill validation",
+            "verify skill",
+            "skill quality"
+          ],
+          "patterns": [
+            "(validate|check|verify|test).*?skill",
+            "skill.*?(valid|correct|quality|check)",
+            "is.*?skill.*?(valid|correct)",
+            "review.*?skill"
+          ]
+        }
+      }
+    },
+    "hooks": {}
+  }
+}

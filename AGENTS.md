@@ -47,23 +47,23 @@ Read these files on-demand when you need specific guidance:
 
 **For Contributors:**
 
-- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) - Quick start for contributors
-- [docs/contributing/setup.md](docs/contributing/setup.md) - Development environment setup
-- [docs/contributing/coding-standards.md](docs/contributing/coding-standards.md) - TypeScript guidelines and code style
-- [docs/contributing/pull-requests.md](docs/contributing/pull-requests.md) - PR workflow and code review
-- [docs/testing/README.md](docs/testing/README.md) - Testing overview and quick start
-- [docs/architecture/README.md](docs/architecture/README.md) - System design and components
+- [docs/CONTRIBUTING.md](/docs/CONTRIBUTING.md) - Quick start for contributors
+- [docs/contributing/setup.md](/docs/contributing/setup.md) - Development environment setup
+- [docs/contributing/coding-standards.md](/docs/contributing/coding-standards.md) - TypeScript guidelines and code style
+- [docs/contributing/pull-requests.md](/docs/contributing/pull-requests.md) - PR workflow and code review
+- [docs/testing/README.md](/docs/testing/README.md) - Testing overview and quick start
+- [docs/architecture/README.md](/docs/architecture/README.md) - System design and components
 
 **For Troubleshooting:**
 
-- [docs/guides/troubleshooting-guide.md](docs/guides/troubleshooting-guide.md) - Common issues and solutions
-- [docs/reference/api.md](docs/reference/api.md) - CLI options and programmatic API reference
+- [docs/guides/troubleshooting-guide.md](/docs/guides/troubleshooting-guide.md) - Common issues and solutions
+- [docs/reference/api.md](/docs/reference/api.md) - CLI options and programmatic API reference
 
 **For Deep Dives:**
 
-- [docs/architecture/details.md](docs/architecture/details.md) - In-depth implementation details
-- [docs/architecture/security.md](docs/architecture/security.md) - Comprehensive security requirements
-- [docs/testing/strategy.md](docs/testing/strategy.md) - Complete testing approach
+- [docs/architecture/details.md](/docs/architecture/details.md) - In-depth implementation details
+- [docs/architecture/security.md](/docs/architecture/security.md) - Comprehensive security requirements
+- [docs/testing/strategy.md](/docs/testing/strategy.md) - Complete testing approach
 
 ## 🎯 Project Mission
 
@@ -877,7 +877,7 @@ When adding or fixing tests:
 2. **Use test subagent** for comprehensive test implementation
 3. **Follow security testing protocols** from [Security Requirements](docs/architecture/security.md)
 4. **Ensure coverage requirements** are met (>90%)
-5. **Reference [Contributing Guide](docs/contributing.md)** for quality standards
+5. **Reference [Contributing Guide](/docs/CONTRIBUTING.md)** for quality standards
 
 ### **Security Tasks**
 

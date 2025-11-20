@@ -226,4 +226,3 @@ pnpm test:coverage
 - [get-tsconfig documentation](https://github.com/privatenumber/get-tsconfig)
 - [TypeScript configuration reference](https://www.typescriptlang.org/tsconfig)
 - [PR #40: Migrate to get-tsconfig](https://github.com/jbabin91/tsc-files/pull/40)
-- [Changeset: migrate-to-get-tsconfig.md](.changeset/migrate-to-get-tsconfig.md)

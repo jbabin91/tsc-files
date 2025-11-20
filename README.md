@@ -589,7 +589,7 @@ No configuration needed - it just works!
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](./docs/contributing.md) for details.
+We welcome contributions! Please see our [Contributing Guide](/docs/CONTRIBUTING.md) for details.
 
 ### Development Setup
 

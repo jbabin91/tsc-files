@@ -1,7 +1,7 @@
 // markdownlint-cli2 configuration
 // See: https://github.com/DavidAnson/markdownlint-cli2#configuration
 
-const config = {
+export default {
   // markdownlint configuration
   config: {
     default: true,
@@ -35,11 +35,9 @@ const config = {
     MD046: {
       style: 'fenced',
     },
+    // MD060: Table column alignment
+    MD060: false,
   },
-  // Files to process
-  globs: ['**/*.{md,mdx}'],
   // Use .gitignore patterns automatically
   gitignore: true,
 };
-
-export default config;

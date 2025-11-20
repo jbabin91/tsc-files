@@ -58,8 +58,8 @@
     "format:check": "prettier -uc --cache .",
     "lint": "eslint . --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/.eslintcache",
     "lint:fix": "eslint . --fix --cache --cache-location node_modules/.cache/eslint/.eslintcache",
-    "lint:md": "markdownlint-cli2",
-    "lint:md:fix": "markdownlint-cli2 --fix",
+    "lint:md": "markdownlint-cli2 '**/*.{md,mdx}'",
+    "lint:md:fix": "markdownlint-cli2 --fix '**/*.{md,mdx}'",
     "prepare": "lefthook install",
     "prepublishOnly": "pnpm test && pnpm build",
     "test": "vitest run --project=unit",
@@ -136,7 +136,7 @@
   },
   "packageManager": "pnpm@10.23.0+sha512.21c4e5698002ade97e4efe8b8b4a89a8de3c85a37919f957e7a0f30f38fbc5bbdd05980ffe29179b2fb6e6e691242e098d945d1601772cad0fef5fb6411e2a4b",
   "engines": {
-    "node": ">=24.11.0"
+    "node": ">=24.11.1"
   },
   "publishConfig": {
     "access": "public",

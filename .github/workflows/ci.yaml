@@ -19,7 +19,7 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
       - name: Static Analysis
@@ -31,7 +31,7 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
       - name: Build Package
@@ -64,7 +64,7 @@ jobs:
             test_scenario: basic
             timeout: 4
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup
         uses: ./.github/actions/setup
       - name: Setup Additional Package Managers

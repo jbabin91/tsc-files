@@ -570,6 +570,156 @@ const other: number = "not a number";`,
       expect(result.checkedFiles).toHaveLength(0);
       expect(result.errorCount).toBe(0);
     });
+
+    it('should resolve relative paths correctly in monorepos without root tsconfig', async () => {
+      // Create a monorepo structure without a root tsconfig.json
+      const monorepoDir = createTempDir();
+
+      // Remove any root tsconfig if it exists (shouldn't, but be explicit)
+      const rootTsconfig = path.join(monorepoDir, 'tsconfig.json');
+      if (existsSync(rootTsconfig)) {
+        rmSync(rootTsconfig);
+      }
+
+      // Create apps/web with its own tsconfig
+      const webDir = path.join(monorepoDir, 'apps', 'web');
+      mkdirSync(webDir, { recursive: true });
+      writeFileSync(
+        path.join(webDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(webDir, 'index.ts'),
+        'const web: string = "web";',
+      );
+
+      // Create apps/api with its own tsconfig
+      const apiDir = path.join(monorepoDir, 'apps', 'api');
+      mkdirSync(apiDir, { recursive: true });
+      writeFileSync(
+        path.join(apiDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(apiDir, 'index.ts'),
+        'const api: string = "api";',
+      );
+
+      // Run with RELATIVE paths from monorepo root - this is the key test case
+      const result = await checkFiles(
+        ['apps/web/index.ts', 'apps/api/index.ts'],
+        {
+          cwd: monorepoDir,
+          verbose: true,
+        },
+      );
+
+      // Should succeed because each file finds its own tsconfig
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(2);
+
+      cleanupTempDir(monorepoDir);
+    });
+
+    it('should handle mixed relative and absolute paths correctly', async () => {
+      const monorepoDir = createTempDir();
+
+      // Create package with tsconfig
+      const pkgDir = path.join(monorepoDir, 'packages', 'core');
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        path.join(pkgDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(pkgDir, 'index.ts'),
+        'const core: string = "core";',
+      );
+      writeFileSync(
+        path.join(pkgDir, 'utils.ts'),
+        'export const util = "util";',
+      );
+
+      // Mix relative and absolute paths
+      const absolutePath = path.join(pkgDir, 'index.ts');
+      const relativePath = 'packages/core/utils.ts';
+
+      const result = await checkFiles([absolutePath, relativePath], {
+        cwd: monorepoDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(2);
+
+      cleanupTempDir(monorepoDir);
+    });
+
+    it('should handle relative paths with ./ prefix', async () => {
+      // Create nested directory with its own tsconfig
+      const nestedDir = path.join(tempDir, 'packages', 'prefix-test');
+      mkdirSync(nestedDir, { recursive: true });
+      writeFileSync(
+        path.join(nestedDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(nestedDir, 'test.ts'),
+        'const prefix: string = "prefix";',
+      );
+
+      // Use ./ prefix in relative path
+      const result = await checkFiles(['./packages/prefix-test/test.ts'], {
+        cwd: tempDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(1);
+    });
+
+    it('should handle deeply nested relative paths', async () => {
+      const monorepoDir = createTempDir();
+
+      // Create deeply nested package structure
+      const deepDir = path.join(
+        monorepoDir,
+        'packages',
+        'shared',
+        'utils',
+        'helpers',
+      );
+      mkdirSync(deepDir, { recursive: true });
+
+      // Create tsconfig at the shared level
+      writeFileSync(
+        path.join(monorepoDir, 'packages', 'shared', 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(deepDir, 'deep.ts'),
+        'export const deep = "deeply nested";',
+      );
+
+      // Use deeply nested relative path
+      const result = await checkFiles(
+        ['packages/shared/utils/helpers/deep.ts'],
+        { cwd: monorepoDir },
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(1);
+
+      cleanupTempDir(monorepoDir);
+    });
   });
 
   describe('javascript support', () => {

@@ -3,8 +3,6 @@
  *
  * These tests verify the fix for the issue where relative paths in monorepos
  * without a root tsconfig.json would fail to find per-file tsconfig files.
- *
- * @see https://github.com/jbabin91/tsc-files/issues/XX
  */
 
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';

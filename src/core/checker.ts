@@ -22,12 +22,23 @@ function groupRawFilesByTsConfig(
   const groups = new Map<string, string[]>();
   const cwd = options.cwd ?? process.cwd();
 
+  // If project is explicitly specified, resolve it once relative to cwd
+  // This ensures explicit project paths like "tsconfig.custom.json" work correctly
+  const explicitProjectPath = options.project
+    ? path.resolve(cwd, options.project)
+    : undefined;
+
   for (const file of files) {
     try {
-      // For absolute file paths, start searching from the file's directory
-      // This ensures we find the correct tsconfig for files in different projects
-      const searchDir = path.isAbsolute(file) ? path.dirname(file) : cwd;
-      const tsconfigPath = findTsConfig(searchDir, options.project);
+      // Always resolve to absolute path first, then extract directory
+      // This ensures relative paths like "apps/web/src/index.ts" are searched
+      // from the file's directory, not from cwd (important for monorepos without root tsconfig)
+      const absolutePath = path.isAbsolute(file)
+        ? file
+        : path.resolve(cwd, file);
+      const searchDir = path.dirname(absolutePath);
+      // Pass the pre-resolved absolute project path if specified, otherwise let findTsConfig discover
+      const tsconfigPath = explicitProjectPath ?? findTsConfig(searchDir);
 
       if (!groups.has(tsconfigPath)) {
         groups.set(tsconfigPath, []);

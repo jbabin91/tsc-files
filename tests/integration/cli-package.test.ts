@@ -925,4 +925,308 @@ export const routes: Route[] = [];`,
       expect([0, 1]).toContain(exitCode);
     });
   });
+
+  describe('Monorepo Support', () => {
+    it('should handle relative paths in monorepo without root tsconfig', async () => {
+      // Create monorepo structure without root tsconfig
+      const monorepoDir = path.join(testDir, 'monorepo-no-root');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      // Create apps/web package
+      const webDir = path.join(monorepoDir, 'apps', 'web');
+      mkdirSync(webDir, { recursive: true });
+      writeFileSync(
+        path.join(webDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+          },
+        }),
+      );
+      writeFileSync(
+        path.join(webDir, 'index.ts'),
+        'export const web: string = "web";',
+      );
+
+      // Create apps/api package
+      const apiDir = path.join(monorepoDir, 'apps', 'api');
+      mkdirSync(apiDir, { recursive: true });
+      writeFileSync(
+        path.join(apiDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+          },
+        }),
+      );
+      writeFileSync(
+        path.join(apiDir, 'index.ts'),
+        'export const api: string = "api";',
+      );
+
+      // Run tsc-files with relative paths from monorepo root
+      const { exitCode } = await execaCommand(
+        'npx tsc-files apps/web/index.ts apps/api/index.ts',
+        {
+          cwd: monorepoDir,
+          shell: true,
+          reject: false,
+        },
+      );
+
+      expect(exitCode).toBe(0);
+    });
+
+    it('should detect multiple tsconfig groups in verbose mode', async () => {
+      // Create monorepo with multiple packages
+      const monorepoDir = path.join(testDir, 'monorepo-verbose');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      // Create packages/core
+      const coreDir = path.join(monorepoDir, 'packages', 'core');
+      mkdirSync(coreDir, { recursive: true });
+      writeFileSync(
+        path.join(coreDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true, skipLibCheck: true },
+        }),
+      );
+      writeFileSync(
+        path.join(coreDir, 'index.ts'),
+        'export const core = "core";',
+      );
+
+      // Create packages/utils
+      const utilsDir = path.join(monorepoDir, 'packages', 'utils');
+      mkdirSync(utilsDir, { recursive: true });
+      writeFileSync(
+        path.join(utilsDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true, skipLibCheck: true },
+        }),
+      );
+      writeFileSync(
+        path.join(utilsDir, 'index.ts'),
+        'export const utils = "utils";',
+      );
+
+      const { exitCode, stdout, stderr } = await execaCommand(
+        'npx tsc-files --verbose packages/core/index.ts packages/utils/index.ts',
+        {
+          cwd: monorepoDir,
+          shell: true,
+          reject: false,
+        },
+      );
+
+      expect(exitCode).toBe(0);
+      // Verbose output should mention monorepo or multiple configs
+      const output = stdout + stderr;
+      expect(
+        output.includes('Monorepo') ||
+          output.includes('tsconfig') ||
+          output.includes('Processing'),
+      ).toBe(true);
+    });
+
+    it('should handle lefthook-style staged files pattern', async () => {
+      // Simulate the exact pattern lefthook uses: individual file paths
+      const monorepoDir = path.join(testDir, 'monorepo-lefthook');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      // Create multiple apps like a real monorepo
+      const apps = ['auth', 'dashboard', 'api'];
+      for (const app of apps) {
+        const appDir = path.join(monorepoDir, 'apps', app, 'src');
+        mkdirSync(appDir, { recursive: true });
+        writeFileSync(
+          path.join(monorepoDir, 'apps', app, 'tsconfig.json'),
+          JSON.stringify({
+            compilerOptions: {
+              target: 'ES2020',
+              strict: true,
+              noEmit: true,
+              skipLibCheck: true,
+            },
+          }),
+        );
+        writeFileSync(
+          path.join(appDir, 'index.ts'),
+          `export const ${app}: string = "${app}";`,
+        );
+      }
+
+      // Simulate lefthook expanding {staged_files} to individual paths
+      const stagedFiles = apps
+        .map((app) => `apps/${app}/src/index.ts`)
+        .join(' ');
+
+      const { exitCode } = await execaCommand(`npx tsc-files ${stagedFiles}`, {
+        cwd: monorepoDir,
+        shell: true,
+        reject: false,
+      });
+
+      expect(exitCode).toBe(0);
+    });
+
+    it('should handle mixed relative and absolute paths', async () => {
+      const monorepoDir = path.join(testDir, 'monorepo-mixed');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      // Create package
+      const pkgDir = path.join(monorepoDir, 'packages', 'lib');
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        path.join(pkgDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true, skipLibCheck: true },
+        }),
+      );
+      writeFileSync(path.join(pkgDir, 'a.ts'), 'export const a: string = "a";');
+      writeFileSync(path.join(pkgDir, 'b.ts'), 'export const b: string = "b";');
+
+      // Mix absolute and relative paths
+      const absolutePath = path.join(pkgDir, 'a.ts');
+      const relativePath = 'packages/lib/b.ts';
+
+      const { exitCode } = await execaCommand(
+        `npx tsc-files "${absolutePath}" ${relativePath}`,
+        {
+          cwd: monorepoDir,
+          shell: true,
+          reject: false,
+        },
+      );
+
+      expect(exitCode).toBe(0);
+    });
+
+    it('should report type errors in correct package', async () => {
+      const monorepoDir = path.join(testDir, 'monorepo-errors');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      // Create valid package
+      const validDir = path.join(monorepoDir, 'packages', 'valid');
+      mkdirSync(validDir, { recursive: true });
+      writeFileSync(
+        path.join(validDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true, skipLibCheck: true },
+        }),
+      );
+      writeFileSync(
+        path.join(validDir, 'index.ts'),
+        'export const valid: string = "valid";',
+      );
+
+      // Create package with error
+      const errorDir = path.join(monorepoDir, 'packages', 'broken');
+      mkdirSync(errorDir, { recursive: true });
+      writeFileSync(
+        path.join(errorDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true, skipLibCheck: true },
+        }),
+      );
+      writeFileSync(
+        path.join(errorDir, 'index.ts'),
+        'export const broken: string = 42; // Type error!',
+      );
+
+      const { exitCode, stderr } = await execaCommand(
+        'npx tsc-files packages/valid/index.ts packages/broken/index.ts',
+        {
+          cwd: monorepoDir,
+          shell: true,
+          reject: false,
+        },
+      );
+
+      expect(exitCode).toBe(1);
+      // Error should be about type mismatch (number to string)
+      expect(stderr).toContain('not assignable to type');
+    });
+
+    it('should handle paths with ./ prefix', async () => {
+      const monorepoDir = path.join(testDir, 'monorepo-dotslash');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      const pkgDir = path.join(monorepoDir, 'src');
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        path.join(monorepoDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true, skipLibCheck: true },
+        }),
+      );
+      writeFileSync(
+        path.join(pkgDir, 'index.ts'),
+        'export const main: string = "main";',
+      );
+
+      const { exitCode } = await execaCommand('npx tsc-files ./src/index.ts', {
+        cwd: monorepoDir,
+        shell: true,
+        reject: false,
+      });
+
+      expect(exitCode).toBe(0);
+    });
+
+    it('should use explicit --project flag over per-file detection', async () => {
+      const monorepoDir = path.join(testDir, 'monorepo-project-flag');
+      mkdirSync(monorepoDir, { recursive: true });
+
+      // Create root tsconfig with specific settings
+      writeFileSync(
+        path.join(monorepoDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+          },
+        }),
+      );
+
+      // Create package with different tsconfig
+      const pkgDir = path.join(monorepoDir, 'packages', 'lib');
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        path.join(pkgDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES5', // Different target
+            strict: false, // Different strict setting
+            noEmit: true,
+            skipLibCheck: true,
+          },
+        }),
+      );
+      writeFileSync(
+        path.join(pkgDir, 'index.ts'),
+        'export const lib: string = "lib";',
+      );
+
+      // Use --project to force root tsconfig
+      const { exitCode } = await execaCommand(
+        'npx tsc-files --project tsconfig.json packages/lib/index.ts',
+        {
+          cwd: monorepoDir,
+          shell: true,
+          reject: false,
+        },
+      );
+
+      expect(exitCode).toBe(0);
+    });
+  });
 });

@@ -1,5 +1,13 @@
 # @jbabin91/tsc-files
 
+## 0.8.4
+
+### Patch Changes
+
+- [#66](https://github.com/jbabin91/tsc-files/pull/66) [`00fba5f`](https://github.com/jbabin91/tsc-files/commit/00fba5f02663845f21fbbae54582534d43efbb22) Thanks [@jbabin91](https://github.com/jbabin91)! - Fix relative path resolution in monorepos without root tsconfig.
+
+  When running tsc-files with relative paths like `apps/web/src/index.ts` from a monorepo root that lacks a root `tsconfig.json`, the tool now correctly discovers per-package tsconfig files. This enables seamless integration with lefthook and lint-staged in monorepo setups.
+
 ## 0.8.3
 
 ### Patch Changes

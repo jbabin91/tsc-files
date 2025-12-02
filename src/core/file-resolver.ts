@@ -13,7 +13,10 @@ import { getFileExtensions, hasValidExtension } from '@/utils/file-patterns';
  */
 export function isGlobPattern(pattern: string): boolean {
   return (
-    pattern.includes('*') || pattern.includes('{') || pattern.includes('[')
+    pattern.includes('*') ||
+    pattern.includes('?') ||
+    pattern.includes('{') ||
+    pattern.includes('[')
   );
 }
 
@@ -90,13 +93,13 @@ function handleGlobPattern(pattern: string, includeJs: boolean): string[] {
 }
 
 /**
- * Pre-expand glob patterns to concrete file paths for tsconfig grouping
- * This ensures cross-package globs (e.g., `packages/*`) are expanded
- * before being grouped by their per-package tsconfig files.
+ * Pre-expand glob patterns to concrete file paths for tsconfig grouping.
+ * This ensures cross-package globs are expanded before being grouped by
+ * their per-package tsconfig files (e.g., patterns like "packages/star/src").
  *
  * @param patterns - Array of file patterns (may include globs)
  * @param cwd - Current working directory
- * @returns Promise resolving to array of concrete file paths (no globs)
+ * @returns Promise resolving to array of absolute file paths (no globs)
  */
 export async function preExpandGlobsForGrouping(
   patterns: string[],
@@ -107,7 +110,9 @@ export async function preExpandGlobsForGrouping(
 
   for (const pattern of patterns) {
     if (isGlobPattern(pattern)) {
-      // Check if it has valid TypeScript/JavaScript extension patterns
+      // Always include JS at pre-expansion stage since we don't know which
+      // tsconfig each file will use. Actual filtering by allowJs/checkJs
+      // happens later in resolveFiles() with the resolved tsconfig.
       if (hasValidExtension(pattern, true)) {
         globPatterns.push(pattern);
       }

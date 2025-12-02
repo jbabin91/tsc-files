@@ -291,8 +291,9 @@ export async function checkFiles(
       : files;
 
     if (hasGlobs && options.verbose) {
+      const globCount = files.filter((f) => isGlobPattern(f)).length;
       logger.info(
-        `Expanded ${files.length} glob pattern(s) to ${filesToGroup.length} file(s)`,
+        `Expanded ${globCount} glob pattern(s) to ${filesToGroup.length} file(s)`,
       );
     }
 

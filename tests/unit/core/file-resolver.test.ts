@@ -270,6 +270,11 @@ describe('isGlobPattern', () => {
     expect(isGlobPattern('src/file[0-9].ts')).toBe(true);
   });
 
+  it('detects question mark as glob pattern', () => {
+    expect(isGlobPattern('src/file?.ts')).toBe(true);
+    expect(isGlobPattern('src/test?.spec.ts')).toBe(true);
+  });
+
   it('returns false for direct file paths', () => {
     expect(isGlobPattern('src/index.ts')).toBe(false);
     expect(isGlobPattern('packages/core/src/index.ts')).toBe(false);
@@ -349,9 +354,11 @@ describe('preExpandGlobsForGrouping', () => {
       '/workspace',
     );
 
-    // Should have unique entries only
-    const uniqueResults = [...new Set(result)];
-    expect(result.length).toBe(uniqueResults.length);
+    // Direct file 'src/index.ts' becomes '/workspace/src/index.ts'
+    // which is also in the glob result - should be deduplicated
+    expect(result).toHaveLength(2);
+    expect(result).toContain('/workspace/src/index.ts');
+    expect(result).toContain('/workspace/src/utils.ts');
   });
 
   it('filters out invalid glob patterns', async () => {
@@ -364,5 +371,14 @@ describe('preExpandGlobsForGrouping', () => {
 
     expect(glob).not.toHaveBeenCalled();
     expect(result).toEqual(['direct.ts']);
+  });
+
+  it('propagates errors from glob expansion', async () => {
+    vi.mocked(hasValidExtension).mockReturnValue(true);
+    vi.mocked(glob).mockRejectedValue(new Error('Glob expansion failed'));
+
+    await expect(
+      preExpandGlobsForGrouping(['src/*.ts'], '/workspace'),
+    ).rejects.toThrow('Glob expansion failed');
   });
 });

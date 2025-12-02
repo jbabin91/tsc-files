@@ -6,7 +6,11 @@ import { glob } from 'tinyglobby';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { shouldIncludeJavaScriptFiles } from '@/config/tsconfig-resolver';
-import { resolveFiles } from '@/core/file-resolver';
+import {
+  isGlobPattern,
+  preExpandGlobsForGrouping,
+  resolveFiles,
+} from '@/core/file-resolver';
 import { getFileExtensions, hasValidExtension } from '@/utils/file-patterns';
 
 vi.mock('node:fs', () => ({
@@ -246,5 +250,119 @@ describe('resolveFiles', () => {
     // Fallback processes pattern through full chain:
     // filter by processedDirectPatterns → filter by regex → map to absolute → filter by exists
     expect(files).toEqual(['/workspace/src/*.ts']);
+  });
+});
+
+describe('isGlobPattern', () => {
+  it('detects asterisk as glob pattern', () => {
+    expect(isGlobPattern('src/*.ts')).toBe(true);
+    expect(isGlobPattern('src/**/*.ts')).toBe(true);
+    expect(isGlobPattern('packages/*/src/index.ts')).toBe(true);
+  });
+
+  it('detects curly braces as glob pattern', () => {
+    expect(isGlobPattern('src/*.{ts,tsx}')).toBe(true);
+    expect(isGlobPattern('{apps,packages}/**/index.ts')).toBe(true);
+  });
+
+  it('detects square brackets as glob pattern', () => {
+    expect(isGlobPattern('src/[abc].ts')).toBe(true);
+    expect(isGlobPattern('src/file[0-9].ts')).toBe(true);
+  });
+
+  it('returns false for direct file paths', () => {
+    expect(isGlobPattern('src/index.ts')).toBe(false);
+    expect(isGlobPattern('packages/core/src/index.ts')).toBe(false);
+    expect(isGlobPattern('/absolute/path/file.ts')).toBe(false);
+  });
+
+  it('handles paths with special characters that are not glob patterns', () => {
+    expect(isGlobPattern('src/file.(test).ts')).toBe(false);
+    expect(isGlobPattern('src/file.$test.ts')).toBe(false);
+    expect(isGlobPattern('src/my-file_v2.ts')).toBe(false);
+  });
+});
+
+describe('preExpandGlobsForGrouping', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns direct files unchanged when no globs present', async () => {
+    const result = await preExpandGlobsForGrouping(
+      ['src/index.ts', 'src/utils.ts'],
+      '/workspace',
+    );
+
+    expect(result).toEqual(['src/index.ts', 'src/utils.ts']);
+    expect(glob).not.toHaveBeenCalled();
+  });
+
+  it('expands glob patterns to concrete files', async () => {
+    vi.mocked(hasValidExtension).mockReturnValue(true);
+    vi.mocked(glob).mockResolvedValue([
+      '/workspace/packages/core/index.ts',
+      '/workspace/packages/utils/index.ts',
+    ]);
+
+    const result = await preExpandGlobsForGrouping(
+      ['packages/*/index.ts'],
+      '/workspace',
+    );
+
+    expect(glob).toHaveBeenCalledWith(
+      ['packages/*/index.ts'],
+      expect.objectContaining({
+        cwd: '/workspace',
+        absolute: true,
+        onlyFiles: true,
+      }),
+    );
+    expect(result).toEqual([
+      '/workspace/packages/core/index.ts',
+      '/workspace/packages/utils/index.ts',
+    ]);
+  });
+
+  it('combines direct files with expanded globs', async () => {
+    vi.mocked(hasValidExtension).mockReturnValue(true);
+    vi.mocked(glob).mockResolvedValue(['/workspace/packages/core/index.ts']);
+
+    const result = await preExpandGlobsForGrouping(
+      ['src/direct.ts', 'packages/*/index.ts'],
+      '/workspace',
+    );
+
+    expect(result).toContain('/workspace/src/direct.ts');
+    expect(result).toContain('/workspace/packages/core/index.ts');
+  });
+
+  it('deduplicates when direct file is also matched by glob', async () => {
+    vi.mocked(hasValidExtension).mockReturnValue(true);
+    vi.mocked(glob).mockResolvedValue([
+      '/workspace/src/index.ts',
+      '/workspace/src/utils.ts',
+    ]);
+
+    const result = await preExpandGlobsForGrouping(
+      ['src/index.ts', 'src/*.ts'],
+      '/workspace',
+    );
+
+    // Should have unique entries only
+    const uniqueResults = [...new Set(result)];
+    expect(result.length).toBe(uniqueResults.length);
+  });
+
+  it('filters out invalid glob patterns', async () => {
+    vi.mocked(hasValidExtension).mockReturnValue(false);
+
+    const result = await preExpandGlobsForGrouping(
+      ['src/*.invalid', 'direct.ts'],
+      '/workspace',
+    );
+
+    expect(glob).not.toHaveBeenCalled();
+    expect(result).toEqual(['direct.ts']);
   });
 });

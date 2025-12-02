@@ -7,14 +7,23 @@ import { shouldIncludeJavaScriptFiles } from '@/config/tsconfig-resolver';
 import { getFileExtensions, hasValidExtension } from '@/utils/file-patterns';
 
 /**
+ * Check if a pattern contains glob metacharacters
+ * @param pattern - File pattern to check
+ * @returns True if pattern is a glob pattern
+ */
+export function isGlobPattern(pattern: string): boolean {
+  return (
+    pattern.includes('*') || pattern.includes('{') || pattern.includes('[')
+  );
+}
+
+/**
  * Check if a pattern represents a direct file (not a glob pattern)
  * @param pattern - File pattern to check
  * @returns True if pattern is a direct file path
  */
 function isDirectFile(pattern: string): boolean {
-  return (
-    !pattern.includes('*') && !pattern.includes('{') && !pattern.includes('[')
-  );
+  return !isGlobPattern(pattern);
 }
 
 /**
@@ -81,7 +90,56 @@ function handleGlobPattern(pattern: string, includeJs: boolean): string[] {
 }
 
 /**
- * Resolve files using fast-glob with TypeScript and optionally JavaScript patterns
+ * Pre-expand glob patterns to concrete file paths for tsconfig grouping
+ * This ensures cross-package globs (e.g., `packages/*`) are expanded
+ * before being grouped by their per-package tsconfig files.
+ *
+ * @param patterns - Array of file patterns (may include globs)
+ * @param cwd - Current working directory
+ * @returns Promise resolving to array of concrete file paths (no globs)
+ */
+export async function preExpandGlobsForGrouping(
+  patterns: string[],
+  cwd: string,
+): Promise<string[]> {
+  const directFiles: string[] = [];
+  const globPatterns: string[] = [];
+
+  for (const pattern of patterns) {
+    if (isGlobPattern(pattern)) {
+      // Check if it has valid TypeScript/JavaScript extension patterns
+      if (hasValidExtension(pattern, true)) {
+        globPatterns.push(pattern);
+      }
+    } else {
+      directFiles.push(pattern);
+    }
+  }
+
+  if (globPatterns.length === 0) {
+    return directFiles;
+  }
+
+  // Expand glob patterns to concrete files
+  const expandedFiles = await glob(globPatterns, {
+    cwd,
+    absolute: true,
+    onlyFiles: true,
+    ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+  });
+
+  // Combine direct files with expanded glob results
+  // Convert direct files to absolute paths for consistency
+  const absoluteDirectFiles = directFiles.map((file) =>
+    path.isAbsolute(file) ? file : path.resolve(cwd, file),
+  );
+
+  // Deduplicate in case a direct file was also matched by a glob
+  return [...new Set([...absoluteDirectFiles, ...expandedFiles])];
+}
+
+/**
+ * Resolve files using tinyglobby with TypeScript and optionally JavaScript patterns
  * Handles files with special characters by bypassing glob for validated direct files
  * @param patterns - Array of file patterns to resolve
  * @param cwd - Current working directory

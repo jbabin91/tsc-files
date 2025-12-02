@@ -75,9 +75,8 @@ export function detectTsgo(cwd: string): TsgoDetectionResult {
     const require = createRequire(path.join(cwd, 'package.json'));
 
     try {
-      const tsgoPackagePath = require.resolve(
-        '@typescript/native-preview/package.json',
-      );
+      const tsgoPackagePath =
+        require.resolve('@typescript/native-preview/package.json');
       const tsgoPackageDir = path.dirname(tsgoPackagePath);
 
       // Look for tsgo executable in the package

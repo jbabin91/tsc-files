@@ -98,9 +98,8 @@ describe('TypeScript Detection on Windows', () => {
   it('should quote executables with spaces on Windows', async () => {
     await runWithGlobalTscBypassed(async () => {
       const typescriptModule = await loadTypescriptModuleOnWindows();
-      const { detectPackageManagerAdvanced } = await import(
-        '@/detectors/package-manager'
-      );
+      const { detectPackageManagerAdvanced } =
+        await import('@/detectors/package-manager');
       const mockedDetect = vi.mocked(detectPackageManagerAdvanced);
 
       mockedDetect.mockReturnValue({
@@ -128,9 +127,8 @@ describe('TypeScript Detection on Windows', () => {
   it('should use package manager executables with cmd extension', async () => {
     await runWithGlobalTscBypassed(async () => {
       const typescriptModule = await loadTypescriptModuleOnWindows();
-      const { detectPackageManagerAdvanced } = await import(
-        '@/detectors/package-manager'
-      );
+      const { detectPackageManagerAdvanced } =
+        await import('@/detectors/package-manager');
       const mockedDetect = vi.mocked(detectPackageManagerAdvanced);
 
       mockedDetect.mockReturnValue({

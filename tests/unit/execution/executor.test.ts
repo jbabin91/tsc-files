@@ -393,9 +393,8 @@ describe('execution/executor', () => {
   describe('executeAndParseTypeScript', () => {
     it('should execute TypeScript and parse results successfully', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const mockedExeca = vi.mocked(execa);
       const mockedParser = vi.mocked(parseAndSeparateOutput);
 
@@ -432,9 +431,8 @@ describe('execution/executor', () => {
 
     it('should handle execution failures with zero exit code', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const mockedExeca = vi.mocked(execa);
       const mockedParser = vi.mocked(parseAndSeparateOutput);
 
@@ -469,9 +467,8 @@ describe('execution/executor', () => {
 
     it('should return errors when parser finds them', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const mockedExeca = vi.mocked(execa);
       const mockedParser = vi.mocked(parseAndSeparateOutput);
 
@@ -514,9 +511,8 @@ describe('execution/executor', () => {
 
     it('should handle execution success but non-zero exit code with allOutput', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const mockedExeca = vi.mocked(execa);
       const mockedParser = vi.mocked(parseAndSeparateOutput);
 
@@ -554,9 +550,8 @@ describe('execution/executor', () => {
 
     it('should handle tsgo fallback to tsc when tsgo fails', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const { findTypeScriptCompiler } = await import('@/detectors/typescript');
       const { provideFallbackEducation } = await import('@/cli/education');
 
@@ -651,9 +646,8 @@ describe('execution/executor', () => {
 
     it('should handle both compilers failing with no meaningful output', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const { findTypeScriptCompiler } = await import('@/detectors/typescript');
 
       const mockedExeca = vi.mocked(execa);
@@ -720,9 +714,8 @@ describe('execution/executor', () => {
 
     it('should hit default error message fallback when both allOutput and errorMessage are falsy', async () => {
       const { execa } = await import('execa');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const { findTypeScriptCompiler } = await import('@/detectors/typescript');
 
       const mockedExeca = vi.mocked(execa);
@@ -778,9 +771,8 @@ describe('execution/executor', () => {
 
     it('should not attempt fallback when disabled even if tsgo is available', async () => {
       const { findTypeScriptCompiler } = await import('@/detectors/typescript');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
 
       const mockedFindCompiler = vi.mocked(findTypeScriptCompiler);
       const mockedParser = vi.mocked(parseAndSeparateOutput);
@@ -853,9 +845,8 @@ describe('execution/executor', () => {
     it('should return fallback parser errors when fallback execution fails with diagnostics', async () => {
       const { execa } = await import('execa');
       const { findTypeScriptCompiler } = await import('@/detectors/typescript');
-      const { parseAndSeparateOutput } = await import(
-        '@/execution/output-parser'
-      );
+      const { parseAndSeparateOutput } =
+        await import('@/execution/output-parser');
       const { provideFallbackEducation } = await import('@/cli/education');
 
       const mockedExeca = vi.mocked(execa);

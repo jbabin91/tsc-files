@@ -2,6 +2,8 @@
 
 Follow the cz-git configuration from `.commitlintrc.js` with gitmojis enabled.
 
+**Note:** PR titles follow the same format since squash merge uses PR title as commit title.
+
 ## Commit Format
 
 ```text

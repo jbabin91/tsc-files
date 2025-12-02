@@ -300,157 +300,96 @@ gh api graphql -f query='
 '
 ```
 
-**Required Template Sections** (in this exact order):
+**PR Template Structure**:
+
+**Key principle:** PR description = commit message body (squash merge). Keep it clean and informative.
 
 ```markdown
+<!--
+PR title format: type(scope): description
+Examples: fix(core): handle missing tsconfig, feat(cli): add --verbose flag
+
+This description becomes the commit message body when squash merged.
+-->
+
 ## Summary
 
-<!-- Brief description with issue reference if applicable -->
+<!-- What does this PR do? (1-2 sentences) -->
 
-Closes #
+## Why
 
-## Problem
-
-<!-- Explain context and motivation - WHY this change matters -->
+<!-- What problem does this solve? Why is this change needed? -->
 
 ## Changes
 
-### Core Changes
-
-- Change 1
-- Change 2
-
-### Additional Changes (if applicable)
-
-- Additional change 1
-
-## Benefits
-
-<!-- Use ✅ checkmarks for readability -->
-
-- ✅ Benefit 1
-- ✅ Benefit 2
-
-## Testing
-
-**All quality gates passed:**
-
-- ✅ `pnpm lint` - zero errors/warnings
-- ✅ `pnpm typecheck` - zero TypeScript errors
-- ✅ `pnpm test` - all tests passing
-- ✅ `pnpm build` - clean build success
-- ✅ `pnpm lint:md` - markdown compliance
-
-**Test coverage:**
-
-- Unit tests: X/X passing
-- Integration tests: X/X passing
-- Coverage: XX.X% (meets thresholds)
-
-## Breaking Changes
-
-**NONE** - All changes are backwards compatible.
-
-<!-- OR list breaking changes with migration guidance -->
-
-## Documentation
-
-<!-- Delete section if not applicable -->
-
-- ✅ README updated
-- ✅ API docs updated
-
-## Changeset
-
-<!-- For changes affecting public API -->
-
-- [ ] Changeset added (`pnpm changeset`)
-- [ ] Changeset category is correct (patch/minor/major)
-
----
-
-**Type of change:** <!-- Bug fix | New feature | Breaking change | Performance | Refactor | Docs | Chore -->
+<!-- Key changes (bullet points) -->
 ```
 
 **PR Content Guidelines**:
 
-**Summary Section:**
+- **Summary**: Brief 1-2 sentence description of what the PR does
+- **Why**: Explain the problem and motivation (narrative format, not bullets)
+- **Changes**: Key changes as bullet points
 
-- Brief 1-2 sentence description of the change
-- Include `Closes #X` if fixing an issue (or remove the line if no issue)
-- Be specific about what was accomplished
+**What NOT to include** (handled elsewhere):
 
-**Problem Section:**
-
-- Explain the context: what was wrong or missing?
-- Describe why this change matters
-- Use narrative format, not bullet points
-- Focus on the motivation and background
-
-**Changes Section:**
-
-- MUST use subsections: "Core Changes" and "Additional Changes" (if applicable)
-- List specific changes, not just categories
-- Use bullet points within each subsection
-- Be detailed about implementation specifics
-
-**Benefits Section:**
-
-- ALWAYS use ✅ checkmarks for each benefit
-- Focus on advantages and improvements
-- Be specific about the value provided
-
-**Testing Section:**
-
-- List ALL quality gates with ✅ checkmarks
-- Include actual test counts: "Unit tests: 543/543 passing"
-- Include actual coverage percentage: "Coverage: 95.2%"
-- Provide example output if relevant (benchmarks, CLI results, etc.)
-
-**Breaking Changes Section:**
-
-- Write "**NONE** - All changes are backwards compatible." if no breaking changes
-- If breaking changes exist, list them with migration guidance
-- Never leave this section empty
-
-**Documentation Section:**
-
-- Delete entire section if no documentation changes
-- If documentation changed, list specific files with ✅ checkmarks
-
-**Changeset Section:**
-
-- Keep the checkboxes
-- Note if changeset is needed (changes affecting public API)
-- Note if changeset has been added
-
-**Type of Change:**
-
-- Fill in the appropriate type (not a placeholder)
-- Choose from: Bug fix, New feature, Breaking change, Performance, Refactor, Docs, Chore
+- Test counts/coverage (visible in CI checks and Codecov bot)
+- Changeset status (changeset-bot comments on PR)
+- Checklists (review artifacts don't belong in commit history)
+- Type of change (already in PR title)
 
 **Common Mistakes to Avoid:**
 
-- ❌ Don't leave placeholder text like `<!-- Brief description -->`
-- ❌ Don't skip required sections
-- ❌ Don't use wrong section order
-- ❌ Don't forget ✅ checkmarks in Benefits and Testing sections
-- ❌ Don't leave "Closes #" without a number (remove line if no issue)
-- ❌ Don't use excessive bullet points in Problem section (use narrative)
-- ❌ Don't forget to fill in "Type of change" at the bottom
+- ❌ Don't leave HTML comment placeholders (replace `<!-- ... -->` with actual content)
+- ❌ Don't just describe WHAT changed - explain WHY it matters
+- ❌ Don't use bullets in the "Why" section - use narrative prose
+- ❌ Don't copy-paste errors or logs without context
+- ❌ Don't reference line numbers (they become stale immediately)
+- ❌ Don't assume reviewers have full context - write for someone unfamiliar with the background
+- ❌ Don't create massive PRs - if description is getting long, the PR is probably too big
+
+**Before Submitting:**
+
+- **Self-review first** - Review your own diff before requesting review; catch obvious issues
+- **Think like a reviewer** - Anticipate questions and address them proactively in the description
+- **Keep PRs focused** - Single purpose; smaller PRs merge faster and introduce fewer bugs
+
+**Writing Tips:**
+
+- **Be concise** - This becomes the permanent commit message
+- **Lead with impact** - Start Summary with the user/developer benefit
+- **Tell a story in Why** - Problem → Context → Solution approach
+- **Link issues** - Use "Closes #123" or "Fixes #123" to auto-close issues
+- **Consider future readers** - Someone debugging in 6 months should understand why this change was made
+- **Document concerns** - Flag limitations, uncertainties, or areas needing extra attention
+- **Explain design choices** - If you chose approach A over B, briefly explain why
+
+**For Complex PRs:**
+
+- **Guide the review** - Suggest file review order (e.g., "Start with `types.ts`, then `checker.ts`")
+- **Specify feedback needed** - "Looking for quick review" vs "Need deeper architectural feedback"
+- **Use collapsible sections** - For large CLI output or test results:
+
+```markdown
+<details>
+<summary>Test output</summary>
+
+\`\`\`
+... large output here ...
+\`\`\`
+
+</details>
+```
 
 **PR vs Changeset Content**:
 
-**PR Description (comprehensive, internal details):**
+**PR Description** (becomes commit message body):
 
-- Full implementation details
-- Test coverage improvements
-- Internal refactoring rationale
-- Developer tooling changes
-- Architectural decisions
-- All quality gates with detailed results
+- Summary of what the PR does
+- Why the change is needed (problem/motivation)
+- Key changes (bullet points)
 
-**Changeset (concise, user-focused):**
+**Changeset** (becomes release notes):
 
 - User-facing behavior changes ONLY
 - Brief (1-3 paragraphs for patch releases)

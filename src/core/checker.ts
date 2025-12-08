@@ -6,7 +6,11 @@ import {
   parseTypeScriptConfig,
 } from '@/config/tsconfig-resolver';
 import { shouldUseTsgo } from '@/config/tsgo-compatibility';
-import { resolveFiles } from '@/core/file-resolver';
+import {
+  isGlobPattern,
+  preExpandGlobsForGrouping,
+  resolveFiles,
+} from '@/core/file-resolver';
 import { executeAndParseTypeScript } from '@/execution/executor';
 import type { CheckOptions, CheckResult } from '@/types/core';
 import { logger } from '@/utils/logger';
@@ -278,8 +282,23 @@ export async function checkFiles(
   }
 
   try {
+    // Check if any patterns are globs that need pre-expansion for correct tsconfig grouping
+    // This ensures cross-package globs like "packages/*/src/*.ts" are expanded
+    // to concrete files before being grouped by their per-package tsconfig files
+    const hasGlobs = files.some((f) => isGlobPattern(f));
+    const filesToGroup = hasGlobs
+      ? await preExpandGlobsForGrouping(files, cwd)
+      : files;
+
+    if (hasGlobs && options.verbose) {
+      const globCount = files.filter((f) => isGlobPattern(f)).length;
+      logger.info(
+        `Expanded ${globCount} glob pattern(s) to ${filesToGroup.length} file(s)`,
+      );
+    }
+
     // Group files by their tsconfig
-    const fileGroups = groupRawFilesByTsConfig(files, options);
+    const fileGroups = groupRawFilesByTsConfig(filesToGroup, options);
 
     if (fileGroups.size > 1 && options.verbose) {
       logger.info(

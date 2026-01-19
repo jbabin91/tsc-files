@@ -96,15 +96,15 @@
     "@changesets/cli": "^2.29.8",
     "@changesets/types": "^6.1.0",
     "@changesets/write": "^0.4.0",
-    "@commitlint/cli": "^20.3.0",
-    "@commitlint/config-conventional": "^20.3.0",
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^20.3.1",
     "@eslint/js": "^9.39.2",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.9",
     "@types/tmp": "^0.2.6",
     "@typescript/native-preview": "latest",
-    "@vitest/coverage-v8": "^4.0.16",
-    "@vitest/ui": "^4.0.16",
+    "@vitest/coverage-v8": "^4.0.17",
+    "@vitest/ui": "^4.0.17",
     "commitizen": "^4.3.1",
     "cz-git": "^1.12.0",
     "eslint": "^9.39.2",
@@ -114,17 +114,17 @@
     "eslint-plugin-sort-keys-plus": "^1.5.0",
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^17.0.0",
-    "lefthook": "^2.0.13",
+    "lefthook": "^2.0.15",
     "markdownlint-cli2": "^0.20.0",
-    "prettier": "^3.7.4",
-    "prettier-plugin-packagejson": "^2.5.20",
+    "prettier": "^3.8.0",
+    "prettier-plugin-packagejson": "^2.5.22",
     "publint": "^0.3.16",
-    "tsdown": "0.18.4",
+    "tsdown": "0.19.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.51.0",
-    "vite-tsconfig-paths": "^6.0.3",
-    "vitest": "^4.0.16"
+    "typescript-eslint": "^8.53.0",
+    "vite-tsconfig-paths": "^6.0.4",
+    "vitest": "^4.0.17"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"
@@ -134,9 +134,9 @@
       "optional": false
     }
   },
-  "packageManager": "pnpm@10.27.0",
+  "packageManager": "pnpm@10.28.0",
   "engines": {
-    "node": ">=24.12.0"
+    "node": ">=24.13.0"
   },
   "publishConfig": {
     "access": "public",

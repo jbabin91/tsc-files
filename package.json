@@ -117,7 +117,7 @@
     "lefthook": "^2.0.15",
     "markdownlint-cli2": "^0.20.0",
     "prettier": "^3.8.0",
-    "prettier-plugin-packagejson": "^2.5.22",
+    "prettier-plugin-packagejson": "^3.0.0",
     "publint": "^0.3.16",
     "tsdown": "0.19.0",
     "tsx": "^4.21.0",

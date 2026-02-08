@@ -28,8 +28,6 @@
     "./cli": "./dist/cli.mjs",
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "bin": {
     "tsc-files": "./dist/cli.mjs"
@@ -82,13 +80,13 @@
     }
   },
   "dependencies": {
-    "commander": "^14.0.2",
+    "commander": "^14.0.3",
     "execa": "^9.6.1",
-    "get-tsconfig": "^4.13.0",
+    "get-tsconfig": "^4.13.6",
     "kleur": "^4.1.5",
     "tinyglobby": "^0.2.15",
     "tmp": "^0.2.5",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.2",
@@ -96,15 +94,15 @@
     "@changesets/cli": "^2.29.8",
     "@changesets/types": "^6.1.0",
     "@changesets/write": "^0.4.0",
-    "@commitlint/cli": "^20.3.1",
-    "@commitlint/config-conventional": "^20.3.1",
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
     "@eslint/js": "^9.39.2",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/node": "^25.0.9",
+    "@types/node": "^25.2.2",
     "@types/tmp": "^0.2.6",
     "@typescript/native-preview": "latest",
-    "@vitest/coverage-v8": "^4.0.17",
-    "@vitest/ui": "^4.0.17",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "commitizen": "^4.3.1",
     "cz-git": "^1.12.0",
     "eslint": "^9.39.2",
@@ -113,18 +111,18 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-sort-keys-plus": "^1.5.0",
     "eslint-plugin-unicorn": "^62.0.0",
-    "globals": "^17.0.0",
-    "lefthook": "^2.0.15",
+    "globals": "^17.3.0",
+    "lefthook": "^2.1.0",
     "markdownlint-cli2": "^0.20.0",
-    "prettier": "^3.8.0",
-    "prettier-plugin-packagejson": "^2.5.22",
-    "publint": "^0.3.16",
-    "tsdown": "0.19.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-packagejson": "^3.0.0",
+    "publint": "^0.3.17",
+    "tsdown": "0.20.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.0",
-    "vite-tsconfig-paths": "^6.0.4",
-    "vitest": "^4.0.17"
+    "typescript-eslint": "^8.54.0",
+    "vite-tsconfig-paths": "^6.1.0",
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0"
@@ -134,7 +132,7 @@
       "optional": false
     }
   },
-  "packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@10.29.1+sha512.48dae233635a645768a3028d19545cacc1688639eeb1f3734e42d6d6b971afbf22aa1ac9af52a173d9c3a20c15857cfa400f19994d79a2f626fcc73fccda9bbc",
   "engines": {
     "node": ">=24.13.0"
   },

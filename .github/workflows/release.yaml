@@ -52,7 +52,7 @@ jobs:
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        uses: changesets/action@v1.5.3
+        uses: changesets/action@v1.6.0
         with:
           publish: pnpm changeset:release
           version: pnpm changeset:version

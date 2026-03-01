@@ -134,7 +134,7 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
     vi.clearAllMocks();
   });
 
-  describe('getTscPath function coverage', () => {
+  describe('pnpm tsc path detection', () => {
     it('should detect pnpm nested TypeScript binary within .pnpm store', () => {
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
@@ -178,11 +178,7 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
     });
 
     it('should handle Windows platform detection for pnpm paths', () => {
-      const originalPlatform = process.platform;
-      Object.defineProperty(process, 'platform', {
-        value: 'win32',
-        writable: true,
-      });
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
 
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
@@ -193,11 +189,6 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
       const result = packageManagerModule.detectPackageManager(testDir);
 
       expect(result.manager).toBe('npm');
-
-      Object.defineProperty(process, 'platform', {
-        value: originalPlatform,
-        writable: true,
-      });
     });
 
     it('should handle pnpm parent directory traversal with security checks', () => {
@@ -215,11 +206,7 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
     });
 
     it('should handle Windows cmd extension for pnpm paths', () => {
-      const originalPlatform = process.platform;
-      Object.defineProperty(process, 'platform', {
-        value: 'win32',
-        writable: true,
-      });
+      vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
 
       mockExistsSync.mockImplementation((filePath) => {
         const pathStr = filePath.toString();
@@ -228,11 +215,6 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
 
       const testDir = '/test/pnpm/project';
       packageManagerModule.detectPackageManager(testDir);
-
-      Object.defineProperty(process, 'platform', {
-        value: originalPlatform,
-        writable: true,
-      });
     });
 
     it('should handle security path traversal validation', () => {
@@ -298,8 +280,6 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
     });
 
     it('should test environment variable parsing for all package managers', () => {
-      const originalEnv = process.env;
-
       const testCases = [
         { userAgent: 'pnpm/8.0.0 npm/? node/v18.0.0', expected: 'pnpm' },
         { userAgent: 'yarn/3.0.0 npm/? node/v18.0.0', expected: 'yarn' },
@@ -308,15 +288,13 @@ describe('Package Manager Detection - Advanced Scenarios', () => {
       ];
 
       for (const testCase of testCases) {
-        process.env = { ...originalEnv };
-        process.env.npm_config_user_agent = testCase.userAgent;
+        vi.unstubAllEnvs();
+        vi.stubEnv('npm_config_user_agent', testCase.userAgent);
 
         const result =
           packageManagerModule.detectPackageManagerAdvanced('/test');
         expect(result.manager).toBe(testCase.expected);
       }
-
-      process.env = originalEnv;
     });
   });
 });

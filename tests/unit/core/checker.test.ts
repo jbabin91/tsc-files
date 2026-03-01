@@ -977,9 +977,8 @@ const other: number = "not a number";`,
     });
   });
 
-  describe('coverage improvement tests', () => {
+  describe('error handling edge cases', () => {
     it('should handle throwOnError: false for missing project config', async () => {
-      // Test lines 502-522: throwOnError: false path for project validation
       const result = await checkFiles(['nonexistent.ts'], {
         cwd: tempDir,
         project: 'nonexistent-config.json',
@@ -995,7 +994,6 @@ const other: number = "not a number";`,
     });
 
     it('should handle throwOnError: false for missing tsconfig in directory', async () => {
-      // Test lines 571-589: throwOnError: false path for config grouping errors
       // Create a secure temp directory (not in project directory)
       const systemTempDir = createTempDir();
 
@@ -1021,7 +1019,6 @@ const other: number = "not a number";`,
     });
 
     it('should handle glob patterns without extensions', async () => {
-      // Test lines 137,139-140: Glob pattern handling for files without extensions
       writeFileSync(
         path.join(srcDir, 'pattern-test.ts'),
         'const message: string = "test";',
@@ -1106,7 +1103,6 @@ const other: number = "not a number";`,
     });
 
     it('should handle fast-glob failure fallback', async () => {
-      // Test lines 161-165: Fallback glob pattern matching
       writeFileSync(
         path.join(srcDir, 'fallback-test.ts'),
         'const message: string = "test";',
@@ -1161,7 +1157,6 @@ const other: number = "not a number";`,
     });
 
     it('should handle fs.stat failure in direct file resolution', async () => {
-      // Test lines 107-110: fs.stat error handling in directory detection
       const directPattern = 'nonexistent-directory';
 
       const result = await checkFiles([directPattern], {
@@ -1174,7 +1169,6 @@ const other: number = "not a number";`,
     });
 
     it('should handle complex extension patterns for JavaScript inclusion', async () => {
-      // Test lines 124-127: Complex pattern matching branches
       // Create a tsconfig that allows JavaScript
       const jsEnabledConfig = {
         compilerOptions: {

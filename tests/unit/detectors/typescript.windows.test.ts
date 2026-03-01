@@ -29,47 +29,6 @@ vi.mock('@/detectors/package-manager', () => ({
   })),
 }));
 
-const runWithGlobalTscBypassed = async <T>(callback: () => T | Promise<T>) => {
-  const iteratorSymbol: typeof Symbol.iterator = Symbol.iterator;
-  type ArrayIterator = (typeof Array.prototype)[typeof Symbol.iterator];
-  const originalIterator: ArrayIterator = Array.prototype[iteratorSymbol];
-
-  const iteratorOverride = function* (
-    this: unknown[],
-  ): IterableIterator<unknown> {
-    if (
-      Array.isArray(this) &&
-      this.length === 2 &&
-      typeof this[1] === 'string' &&
-      this[1] === 'tsc' &&
-      typeof this[0] === 'string' &&
-      this[0].includes('node_modules') &&
-      this[0].includes('.bin') &&
-      this[0].includes('tsc')
-    ) {
-      yield this[0];
-      return;
-    }
-
-    const fallbackIterator = originalIterator.call(this);
-    yield* fallbackIterator;
-  };
-
-  Object.defineProperty(Array.prototype, iteratorSymbol, {
-    configurable: true,
-    value: iteratorOverride as ArrayIterator,
-  });
-
-  try {
-    return await callback();
-  } finally {
-    Object.defineProperty(Array.prototype, iteratorSymbol, {
-      configurable: true,
-      value: originalIterator,
-    });
-  }
-};
-
 const loadTypescriptModuleOnWindows = async () => {
   const platformSpy = vi
     .spyOn(process, 'platform', 'get')
@@ -96,56 +55,54 @@ describe('TypeScript Detection on Windows', () => {
   });
 
   it('should quote executables with spaces on Windows', async () => {
-    await runWithGlobalTscBypassed(async () => {
-      const typescriptModule = await loadTypescriptModuleOnWindows();
-      const { detectPackageManagerAdvanced } =
-        await import('@/detectors/package-manager');
-      const mockedDetect = vi.mocked(detectPackageManagerAdvanced);
+    const tsModule = await loadTypescriptModuleOnWindows();
+    vi.spyOn(tsModule._internal, 'buildGlobalPaths').mockReturnValue([]);
 
-      mockedDetect.mockReturnValue({
-        manager: 'npm',
-        lockFile: 'package-lock.json',
-        command: 'npm',
-        tscPath: '',
-      });
+    const { detectPackageManagerAdvanced } =
+      await import('@/detectors/package-manager');
+    const mockedDetect = vi.mocked(detectPackageManagerAdvanced);
 
-      mockExistsSync.mockImplementation((filePath) => {
-        const pathStr = filePath.toString().replaceAll('\\', '/');
-        return pathStr.endsWith('/node_modules/.bin/tsc');
-      });
-
-      const result = typescriptModule.findTypeScriptCompiler('C:/project path');
-
-      expect(result.executable.replaceAll('\\', '/')).toContain(
-        '/node_modules/.bin/tsc',
-      );
-      expect(result.quotedExecutable).toMatch(/^".+"$/);
-      expect(result.useShell).toBe(false);
+    mockedDetect.mockReturnValue({
+      manager: 'npm',
+      lockFile: 'package-lock.json',
+      command: 'npm',
+      tscPath: '',
     });
+
+    mockExistsSync.mockImplementation((filePath) => {
+      const pathStr = filePath.toString().replaceAll('\\', '/');
+      return pathStr.endsWith('/node_modules/.bin/tsc');
+    });
+
+    const result = tsModule.findTypeScriptCompiler('C:/project path');
+
+    expect(result.executable.replaceAll('\\', '/')).toContain(
+      '/node_modules/.bin/tsc',
+    );
+    expect(result.quotedExecutable).toMatch(/^".+"$/);
+    expect(result.useShell).toBe(false);
   });
 
   it('should use package manager executables with cmd extension', async () => {
-    await runWithGlobalTscBypassed(async () => {
-      const typescriptModule = await loadTypescriptModuleOnWindows();
-      const { detectPackageManagerAdvanced } =
-        await import('@/detectors/package-manager');
-      const mockedDetect = vi.mocked(detectPackageManagerAdvanced);
+    const tsModule = await loadTypescriptModuleOnWindows();
+    vi.spyOn(tsModule._internal, 'buildGlobalPaths').mockReturnValue([]);
 
-      mockedDetect.mockReturnValue({
-        manager: 'pnpm',
-        lockFile: 'pnpm-lock.yaml',
-        command: 'pnpm',
-        tscPath: '',
-      });
+    const { detectPackageManagerAdvanced } =
+      await import('@/detectors/package-manager');
+    const mockedDetect = vi.mocked(detectPackageManagerAdvanced);
 
-      mockExistsSync.mockReturnValue(false);
-
-      const result = typescriptModule.findTypeScriptCompiler(
-        String.raw`C:\repo`,
-      );
-
-      expect(result.executable.toLowerCase()).toBe('pnpm.cmd');
-      expect(result.useShell).toBe(true);
+    mockedDetect.mockReturnValue({
+      manager: 'pnpm',
+      lockFile: 'pnpm-lock.yaml',
+      command: 'pnpm',
+      tscPath: '',
     });
+
+    mockExistsSync.mockReturnValue(false);
+
+    const result = tsModule.findTypeScriptCompiler(String.raw`C:\repo`);
+
+    expect(result.executable.toLowerCase()).toBe('pnpm.cmd');
+    expect(result.useShell).toBe(true);
   });
 });

@@ -116,6 +116,19 @@ export function detectTsgo(cwd: string): TsgoDetectionResult {
 }
 
 /**
+ * Internal helpers exposed for testability.
+ * Tests can mock `_internal.buildGlobalPaths` to bypass global tsc fallback.
+ */
+export const _internal = {
+  buildGlobalPaths(cwd: string): string[] {
+    return [
+      path.join(cwd, 'node_modules', '.bin', 'tsc'), // Current project's tsc
+      'tsc', // Global tsc as final fallback
+    ];
+  },
+};
+
+/**
  * Find TypeScript compiler executable with enhanced detection
  * Integrates with package manager detection for optimal execution
  * @param cwd - Current working directory to search for TypeScript compiler
@@ -217,10 +230,7 @@ export function findTypeScriptCompiler(
   }
 
   // Try global TypeScript installation paths for test environments
-  const globalPaths = [
-    path.join(process.cwd(), 'node_modules', '.bin', 'tsc'), // Current project's tsc
-    'tsc', // Global tsc as final fallback
-  ];
+  const globalPaths = _internal.buildGlobalPaths(cwd);
 
   for (const tscPath of globalPaths) {
     if (tscPath === 'tsc' || existsSync(tscPath)) {

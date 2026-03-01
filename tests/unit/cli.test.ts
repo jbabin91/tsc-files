@@ -1,7 +1,15 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from 'vitest';
 
 import { createProgram, parseArguments } from '@/cli/command';
 import { runTypeCheck } from '@/cli/runner';
@@ -10,13 +18,9 @@ const ESC = String.fromCodePoint(27);
 const ANSI_PATTERN = new RegExp(String.raw`${ESC}\[[0-9;]*m`, 'g');
 const stripAnsi = (value: string): string => value.split(ANSI_PATTERN).join('');
 
-// Mock console methods to capture output
-const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {
-  /* empty */
-});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {
-  /* empty */
-});
+// Console spies are created in beforeEach to avoid module-scope side effects
+let mockConsoleLog: MockInstance;
+let mockConsoleError: MockInstance;
 
 // Test utilities - now use direct CLI function calls instead of process spawning
 
@@ -174,18 +178,18 @@ describe('CLI', () => {
   let srcDir: string;
 
   beforeEach(() => {
+    mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {
+      /* empty */
+    });
+    mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {
+      /* empty */
+    });
     tempDir = createTempDir();
     ({ srcDir } = createCliTestProject(tempDir));
-    // Clear console mocks before each test
-    mockConsoleLog.mockClear();
-    mockConsoleError.mockClear();
   });
 
   afterEach(() => {
     cleanupTempDir(tempDir);
-    // Restore console mocks after each test
-    mockConsoleLog.mockClear();
-    mockConsoleError.mockClear();
   });
 
   describe('help and version', () => {

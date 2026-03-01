@@ -5,19 +5,14 @@ import { createCli, main } from '@/cli/main';
 import * as runnerModule from '@/cli/runner';
 import { logger } from '@/utils/logger';
 
-// Mock process.cwd for tests
-vi.stubGlobal('process', {
-  ...process,
-  cwd: vi.fn(() => '/test/cwd'),
-});
-
 describe('CLI Main', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(process, 'cwd').mockReturnValue('/test/cwd');
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('createCli', () => {

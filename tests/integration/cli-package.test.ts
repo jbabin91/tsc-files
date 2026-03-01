@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { execa, execaCommand } from 'execa';
+import { execa } from 'execa';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 describe('CLI Package Integration', () => {
@@ -29,7 +29,7 @@ describe('CLI Package Integration', () => {
 
     // Find the tarball (should exist from build)
     try {
-      const { stdout } = await execaCommand('npm pack', {
+      const { stdout } = await execa('npm', ['pack'], {
         cwd: projectRoot,
         shell: true,
       });
@@ -59,7 +59,7 @@ describe('CLI Package Integration', () => {
     }
 
     // Install package and TypeScript in test directory
-    await execaCommand('npm init -y', {
+    await execa('npm', ['init', '-y'], {
       cwd: testDir,
       shell: true,
       stdio: 'ignore',
@@ -131,7 +131,7 @@ describe('CLI Package Integration', () => {
 
   describe('CLI Basic Operations', () => {
     it('should display version', async () => {
-      const { stdout } = await execaCommand('npx tsc-files --version', {
+      const { stdout } = await execa('npx', ['tsc-files', '--version'], {
         cwd: testDir,
         shell: true,
       });
@@ -140,7 +140,7 @@ describe('CLI Package Integration', () => {
     });
 
     it('should display help', async () => {
-      const { stdout } = await execaCommand('npx tsc-files --help', {
+      const { stdout } = await execa('npx', ['tsc-files', '--help'], {
         cwd: testDir,
         shell: true,
       });
@@ -155,7 +155,7 @@ describe('CLI Package Integration', () => {
       const validFile = path.join(testDir, 'valid.ts');
       writeFileSync(validFile, 'const valid: string = "Hello";');
 
-      const { exitCode } = await execaCommand('npx tsc-files valid.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'valid.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -168,7 +168,7 @@ describe('CLI Package Integration', () => {
       const errorFile = path.join(testDir, 'error.ts');
       writeFileSync(errorFile, 'const error: string = 123;');
 
-      const { exitCode } = await execaCommand('npx tsc-files error.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'error.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -194,7 +194,7 @@ describe('CLI Package Integration', () => {
         'import { User } from "../types"; export const createUser = (data: User) => data;',
       );
 
-      const { exitCode } = await execaCommand('npx tsc-files "src/**/*.ts"', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'src/**/*.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -209,8 +209,9 @@ describe('CLI Package Integration', () => {
       const testFile = path.join(testDir, 'json-test.ts');
       writeFileSync(testFile, 'const test: string = "json";');
 
-      const { stdout } = await execaCommand(
-        'npx tsc-files --json json-test.ts',
+      const { stdout } = await execa(
+        'npx',
+        ['tsc-files', '--json', 'json-test.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -238,8 +239,9 @@ describe('CLI Package Integration', () => {
       const testFile = path.join(testDir, 'custom-test.ts');
       writeFileSync(testFile, 'const test: string = "custom";');
 
-      const { exitCode } = await execaCommand(
-        'npx tsc-files --project custom.tsconfig.json custom-test.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', '--project', 'custom.tsconfig.json', 'custom-test.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -285,8 +287,9 @@ describe('CLI Package Integration', () => {
         'import logo from "./logo.svg"; const x: string = logo;',
       );
 
-      const { stderr } = await execaCommand(
-        'npx tsc-files --project tsconfig.ambient.json app-with-svg.ts',
+      const { stderr } = await execa(
+        'npx',
+        ['tsc-files', '--project', 'tsconfig.ambient.json', 'app-with-svg.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -316,8 +319,9 @@ export const routes: Route[] = [];`,
         'import { Route } from "./routeTree.gen"; export const useRoute = (route: Route) => route;',
       );
 
-      const { exitCode } = await execaCommand(
-        'npx tsc-files app-with-routes.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', 'app-with-routes.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -336,7 +340,7 @@ export const routes: Route[] = [];`,
       mkdirSync(spacedDir, { recursive: true });
       writeFileSync(spacedFile, 'const test: string = "spaces";');
 
-      const { exitCode } = await execaCommand(`npx tsc-files "${spacedFile}"`, {
+      const { exitCode } = await execa('npx', ['tsc-files', spacedFile], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -351,7 +355,7 @@ export const routes: Route[] = [];`,
       mkdirSync(deepDir, { recursive: true });
       writeFileSync(deepFile, 'const deep: string = "nested";');
 
-      const { exitCode } = await execaCommand(`npx tsc-files "${deepFile}"`, {
+      const { exitCode } = await execa('npx', ['tsc-files', deepFile], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -402,8 +406,9 @@ export const routes: Route[] = [];`,
         'import { Props } from "@/components/types"; import { formatText } from "@/utils/format"; export const component = (props: Props) => formatText(props.title);',
       );
 
-      const { exitCode } = await execaCommand(
-        'npx tsc-files --project tsconfig.paths.json src/app.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', '--project', 'tsconfig.paths.json', 'src/app.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -420,8 +425,9 @@ export const routes: Route[] = [];`,
       const testFile = path.join(testDir, 'compiler-test.ts');
       writeFileSync(testFile, 'const test: string = "tsc";');
 
-      const { exitCode } = await execaCommand(
-        'npx tsc-files --use-tsc compiler-test.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', '--use-tsc', 'compiler-test.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -436,8 +442,9 @@ export const routes: Route[] = [];`,
       const testFile = path.join(testDir, 'show-compiler-test.ts');
       writeFileSync(testFile, 'const test: string = "show";');
 
-      const { stdout } = await execaCommand(
-        'npx tsc-files --show-compiler show-compiler-test.ts',
+      const { stdout } = await execa(
+        'npx',
+        ['tsc-files', '--show-compiler', 'show-compiler-test.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -454,8 +461,9 @@ export const routes: Route[] = [];`,
       writeFileSync(testFile, 'const test: string = "tsgo";');
 
       // May not have tsgo available - should handle gracefully
-      const result = await execaCommand(
-        'npx tsc-files --use-tsgo tsgo-test.ts',
+      const result = await execa(
+        'npx',
+        ['tsc-files', '--use-tsgo', 'tsgo-test.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -474,7 +482,7 @@ export const routes: Route[] = [];`,
       const testFile = path.join(testDir, 'npx-test.ts');
       writeFileSync(testFile, 'const test: string = "npx";');
 
-      const { exitCode } = await execaCommand('npx tsc-files npx-test.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'npx-test.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -498,7 +506,7 @@ export const routes: Route[] = [];`,
       }
 
       const startTime = Date.now();
-      const { exitCode } = await execaCommand('npx tsc-files file*.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'file*.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -514,7 +522,7 @@ export const routes: Route[] = [];`,
       const emptyFile = path.join(testDir, 'empty.ts');
       writeFileSync(emptyFile, '');
 
-      const { exitCode } = await execaCommand('npx tsc-files empty.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'empty.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -527,7 +535,7 @@ export const routes: Route[] = [];`,
       const commentFile = path.join(testDir, 'comments.ts');
       writeFileSync(commentFile, '// This is a comment\n/* Another comment */');
 
-      const { exitCode } = await execaCommand('npx tsc-files comments.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'comments.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -554,11 +562,15 @@ export const routes: Route[] = [];`,
       );
 
       // Without the ambient declaration, this would fail with type errors
-      const { exitCode, stderr } = await execaCommand('npx tsc-files main.ts', {
-        cwd: testDir,
-        shell: true,
-        reject: false,
-      });
+      const { exitCode, stderr } = await execa(
+        'npx',
+        ['tsc-files', 'main.ts'],
+        {
+          cwd: testDir,
+          shell: true,
+          reject: false,
+        },
+      );
 
       expect(exitCode).toBe(0);
       expect(stderr).not.toContain('Cannot find module');
@@ -579,11 +591,15 @@ export const routes: Route[] = [];`,
         'const version: string = window.MY_APP_VERSION;\nconst constant: string = TEST_CONSTANT;\nexport { version, constant };',
       );
 
-      const { exitCode } = await execaCommand('npx tsc-files example.test.ts', {
-        cwd: testDir,
-        shell: true,
-        reject: false,
-      });
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', 'example.test.ts'],
+        {
+          cwd: testDir,
+          shell: true,
+          reject: false,
+        },
+      );
 
       expect(exitCode).toBe(0);
     });
@@ -610,7 +626,7 @@ export const routes: Route[] = [];`,
         'import styles from "./button.module.css";\nimport { legacyFunc } from "legacy-lib";\nexport const buttonClass: string = styles.button;\nlegacyFunc();',
       );
 
-      const { exitCode } = await execaCommand('npx tsc-files styles-test.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'styles-test.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -634,7 +650,7 @@ export const routes: Route[] = [];`,
         'import { routes, type Routes } from "./routes.gen";\nconst r: Routes = routes;\nexport const homePath: string = r.home.path;',
       );
 
-      const { exitCode } = await execaCommand('npx tsc-files router-test.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', 'router-test.ts'], {
         cwd: testDir,
         shell: true,
         reject: false,
@@ -673,11 +689,15 @@ export const routes: Route[] = [];`,
         'const x: string = INCLUDED;\nexport const test = x;',
       );
 
-      const { exitCode } = await execaCommand('npx tsc-files exclude-test.ts', {
-        cwd: testDir,
-        shell: true,
-        reject: false,
-      });
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', 'exclude-test.ts'],
+        {
+          cwd: testDir,
+          shell: true,
+          reject: false,
+        },
+      );
 
       expect(exitCode).toBe(0);
     });
@@ -720,8 +740,14 @@ export const routes: Route[] = [];`,
       );
 
       // Should succeed by discovering transitive dependencies
-      const { exitCode, stderr } = await execaCommand(
-        'npx tsc-files --project tsconfig.transitive.json transitive-main.ts',
+      const { exitCode, stderr } = await execa(
+        'npx',
+        [
+          'tsc-files',
+          '--project',
+          'tsconfig.transitive.json',
+          'transitive-main.ts',
+        ],
         {
           cwd: testDir,
           shell: true,
@@ -765,8 +791,17 @@ export const routes: Route[] = [];`,
       );
 
       // With maxDepth=2, should warn about depth limit
-      const { exitCode, stderr } = await execaCommand(
-        'npx tsc-files --project tsconfig.depth.json --max-depth 2 --verbose depth-a.ts',
+      const { exitCode, stderr } = await execa(
+        'npx',
+        [
+          'tsc-files',
+          '--project',
+          'tsconfig.depth.json',
+          '--max-depth',
+          '2',
+          '--verbose',
+          'depth-a.ts',
+        ],
         {
           cwd: testDir,
           shell: true,
@@ -815,8 +850,16 @@ export const routes: Route[] = [];`,
       );
 
       // With maxFiles=5, should stop discovery at 5 files
-      const { stderr } = await execaCommand(
-        'npx tsc-files --project tsconfig.files.json --max-files 5 chain0.ts',
+      const { stderr } = await execa(
+        'npx',
+        [
+          'tsc-files',
+          '--project',
+          'tsconfig.files.json',
+          '--max-files',
+          '5',
+          'chain0.ts',
+        ],
         {
           cwd: testDir,
           shell: true,
@@ -857,8 +900,16 @@ export const routes: Route[] = [];`,
 
       // With --no-recursive, should disable recursive discovery
       // Note: The TypeScript fallback may still resolve some imports
-      const { exitCode, stderr } = await execaCommand(
-        'npx tsc-files --project tsconfig.no-rec.json --no-recursive --verbose no-recursive-main.ts',
+      const { exitCode, stderr } = await execa(
+        'npx',
+        [
+          'tsc-files',
+          '--project',
+          'tsconfig.no-rec.json',
+          '--no-recursive',
+          '--verbose',
+          'no-recursive-main.ts',
+        ],
         {
           cwd: testDir,
           shell: true,
@@ -909,8 +960,9 @@ export const routes: Route[] = [];`,
       );
 
       // Should handle circular imports without infinite loop
-      const { exitCode } = await execaCommand(
-        'npx tsc-files --project tsconfig.circ.json circ-a.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', '--project', 'tsconfig.circ.json', 'circ-a.ts'],
         {
           cwd: testDir,
           shell: true,
@@ -971,8 +1023,9 @@ export const routes: Route[] = [];`,
       );
 
       // Run tsc-files with relative paths from monorepo root
-      const { exitCode } = await execaCommand(
-        'npx tsc-files apps/web/index.ts apps/api/index.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', 'apps/web/index.ts', 'apps/api/index.ts'],
         {
           cwd: monorepoDir,
           shell: true,
@@ -1016,8 +1069,14 @@ export const routes: Route[] = [];`,
         'export const utils = "utils";',
       );
 
-      const { exitCode, stdout, stderr } = await execaCommand(
-        'npx tsc-files --verbose packages/core/index.ts packages/utils/index.ts',
+      const { exitCode, stdout, stderr } = await execa(
+        'npx',
+        [
+          'tsc-files',
+          '--verbose',
+          'packages/core/index.ts',
+          'packages/utils/index.ts',
+        ],
         {
           cwd: monorepoDir,
           shell: true,
@@ -1067,11 +1126,15 @@ export const routes: Route[] = [];`,
         .map((app) => `apps/${app}/src/index.ts`)
         .join(' ');
 
-      const { exitCode } = await execaCommand(`npx tsc-files ${stagedFiles}`, {
-        cwd: monorepoDir,
-        shell: true,
-        reject: false,
-      });
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', ...stagedFiles.split(' ')],
+        {
+          cwd: monorepoDir,
+          shell: true,
+          reject: false,
+        },
+      );
 
       expect(exitCode).toBe(0);
     });
@@ -1096,8 +1159,9 @@ export const routes: Route[] = [];`,
       const absolutePath = path.join(pkgDir, 'a.ts');
       const relativePath = 'packages/lib/b.ts';
 
-      const { exitCode } = await execaCommand(
-        `npx tsc-files "${absolutePath}" ${relativePath}`,
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', absolutePath, relativePath],
         {
           cwd: monorepoDir,
           shell: true,
@@ -1140,8 +1204,9 @@ export const routes: Route[] = [];`,
         'export const broken: string = 42; // Type error!',
       );
 
-      const { exitCode, stderr } = await execaCommand(
-        'npx tsc-files packages/valid/index.ts packages/broken/index.ts',
+      const { exitCode, stderr } = await execa(
+        'npx',
+        ['tsc-files', 'packages/valid/index.ts', 'packages/broken/index.ts'],
         {
           cwd: monorepoDir,
           shell: true,
@@ -1171,7 +1236,7 @@ export const routes: Route[] = [];`,
         'export const main: string = "main";',
       );
 
-      const { exitCode } = await execaCommand('npx tsc-files ./src/index.ts', {
+      const { exitCode } = await execa('npx', ['tsc-files', './src/index.ts'], {
         cwd: monorepoDir,
         shell: true,
         reject: false,
@@ -1217,8 +1282,9 @@ export const routes: Route[] = [];`,
       );
 
       // Use --project to force root tsconfig
-      const { exitCode } = await execaCommand(
-        'npx tsc-files --project tsconfig.json packages/lib/index.ts',
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', '--project', 'tsconfig.json', 'packages/lib/index.ts'],
         {
           cwd: monorepoDir,
           shell: true,

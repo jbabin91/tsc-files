@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CliOptionsSchema,
+  type CliResult,
+  type ErrorCategory,
+  type RawCliOptions,
   toCheckOptions,
   validateCliOptions,
+  type ValidatedCliOptions,
 } from '@/types/cli';
 
 describe('CLI Types', () => {
@@ -182,6 +186,37 @@ describe('CLI Types', () => {
         recursive: true,
       });
     });
+
+    it('should parse comma-separated include string', () => {
+      const rawOptions = {
+        include: 'src/**/*.ts, tests/**/*.ts ,utils/**/*.ts',
+      };
+
+      const result = validateCliOptions(rawOptions);
+      expect(result.include).toEqual([
+        'src/**/*.ts',
+        'tests/**/*.ts',
+        'utils/**/*.ts',
+      ]);
+    });
+
+    it('should handle empty include string', () => {
+      const rawOptions = {
+        include: '',
+      };
+
+      const result = validateCliOptions(rawOptions);
+      expect(result.include).toBeUndefined();
+    });
+
+    it('should handle include string with only commas and spaces', () => {
+      const rawOptions = {
+        include: ' , , ',
+      };
+
+      const result = validateCliOptions(rawOptions);
+      expect(result.include).toEqual([]);
+    });
   });
 
   describe('toCheckOptions', () => {
@@ -270,6 +305,83 @@ describe('CLI Types', () => {
       const result = toCheckOptions(validatedOptions);
 
       expect(result).not.toHaveProperty('json');
+    });
+
+    it('should handle undefined include array', () => {
+      const validatedOptions: ValidatedCliOptions = {
+        noEmit: true,
+        skipLibCheck: true,
+        verbose: false,
+        cache: true,
+        json: false,
+        useTsc: false,
+        useTsgo: false,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
+        include: undefined,
+      };
+
+      const result = toCheckOptions(validatedOptions);
+      expect(result.include).toBeUndefined();
+    });
+  });
+
+  describe('Type definitions', () => {
+    it('should export RawCliOptions type', () => {
+      const options: RawCliOptions = {
+        project: './tsconfig.json',
+        verbose: true,
+      };
+
+      expect(options.project).toBe('./tsconfig.json');
+      expect(options.verbose).toBe(true);
+    });
+
+    it('should export ValidatedCliOptions type', () => {
+      const options: ValidatedCliOptions = {
+        noEmit: true,
+        skipLibCheck: false,
+        verbose: true,
+        cache: false,
+        json: true,
+        useTsc: false,
+        useTsgo: true,
+        showCompiler: false,
+        benchmark: false,
+        fallback: true,
+        tips: false,
+        include: ['src/**/*.ts'],
+      };
+
+      expect(options.noEmit).toBe(true);
+      expect(options.include).toEqual(['src/**/*.ts']);
+    });
+
+    it('should export CliResult type', () => {
+      const result: CliResult = {
+        exitCode: 0,
+        stdout: 'Success',
+        stderr: '',
+      };
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('Success');
+      expect(result.stderr).toBe('');
+    });
+
+    it('should export ErrorCategory type', () => {
+      const categories: ErrorCategory[] = [
+        'CONFIG_ERROR',
+        'SYSTEM_ERROR',
+        'TYPE_ERROR',
+        'UNKNOWN_ERROR',
+      ];
+
+      expect(categories).toHaveLength(4);
+      expect(categories).toContain('TYPE_ERROR');
+      expect(categories).toContain('CONFIG_ERROR');
     });
   });
 

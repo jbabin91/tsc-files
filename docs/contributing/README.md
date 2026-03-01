@@ -27,7 +27,6 @@ New to the project? Start here:
 - [Parent Contributing Guide](../CONTRIBUTING.md) - Overview and getting started
 - [Testing Guide](../testing/README.md) - Writing and running tests
 - [Architecture](../architecture/README.md) - Understanding the codebase
-- [OpenSpec Workflow](../../openspec/AGENTS.md) - Spec-driven development
 
 ## Getting Help
 

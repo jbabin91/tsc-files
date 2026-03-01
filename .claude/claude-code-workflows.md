@@ -110,11 +110,9 @@ Use Task tool to launch simultaneous sub-agents for:
 ```markdown
 For Implementation Tasks:
 
-1. Read @openspec/specs/ for current capabilities
-2. Read @openspec/changes/ for planned work
-3. Read @docs/architecture/details.md for system design
-4. Read @docs/architecture/security.md for security requirements
-5. Load specific component documentation as needed
+1. Read @docs/architecture/details.md for system design
+2. Read @docs/architecture/security.md for security requirements
+3. Load specific component documentation as needed
 
 For Testing Tasks:
 

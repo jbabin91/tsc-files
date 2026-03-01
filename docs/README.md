@@ -50,7 +50,6 @@ Understand the system design:
 Project-specific guidance:
 
 - **[CLAUDE.md](../CLAUDE.md)** - AI assistant instructions and project conventions
-- **[OpenSpec Workflow](../openspec/AGENTS.md)** - Spec-driven development process
 - **[Commit Conventions](../.claude/commit-conventions.md)** - Commit message format
 
 ## 📚 Documentation Map

@@ -145,6 +145,12 @@ reports/
 !.yarn/sdks
 !.yarn/versions
 
+# Claude Code plans
+.claude/plans/
+
+# Trekker task tracking
+.trekker/
+
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*

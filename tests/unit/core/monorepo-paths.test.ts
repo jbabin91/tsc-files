@@ -512,4 +512,173 @@ describe('Monorepo Relative Path Resolution', () => {
       ).rejects.toThrow('No tsconfig.json found');
     });
   });
+
+  describe('cross-package glob patterns', () => {
+    it('should expand glob patterns and group by per-package tsconfig', async () => {
+      // Create multiple packages with their own tsconfigs
+      const packages = ['core', 'utils', 'ui'];
+      for (const pkg of packages) {
+        const pkgDir = path.join(monorepoDir, 'packages', pkg);
+        mkdirSync(pkgDir, { recursive: true });
+        writeFileSync(
+          path.join(pkgDir, 'tsconfig.json'),
+          JSON.stringify({
+            compilerOptions: { strict: true, noEmit: true },
+          }),
+        );
+        writeFileSync(
+          path.join(pkgDir, 'index.ts'),
+          `export const ${pkg} = "${pkg}";`,
+        );
+      }
+
+      // Use cross-package glob pattern
+      const result = await checkFiles(['packages/*/index.ts'], {
+        cwd: monorepoDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(3);
+    });
+
+    it('should handle glob patterns with nested directories', async () => {
+      // Create packages with src directories
+      const packages = ['web', 'api'];
+      for (const pkg of packages) {
+        const srcDir = path.join(monorepoDir, 'apps', pkg, 'src');
+        mkdirSync(srcDir, { recursive: true });
+        writeFileSync(
+          path.join(monorepoDir, 'apps', pkg, 'tsconfig.json'),
+          JSON.stringify({
+            compilerOptions: { strict: true, noEmit: true },
+          }),
+        );
+        writeFileSync(
+          path.join(srcDir, 'index.ts'),
+          `export const ${pkg} = "${pkg}";`,
+        );
+        writeFileSync(
+          path.join(srcDir, 'utils.ts'),
+          `export const ${pkg}Utils = "${pkg}Utils";`,
+        );
+      }
+
+      // Use recursive glob pattern
+      const result = await checkFiles(['apps/*/src/*.ts'], {
+        cwd: monorepoDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(4);
+    });
+
+    it('should detect type errors with cross-package globs', async () => {
+      // Create packages with mixed valid/invalid code
+      const validDir = path.join(monorepoDir, 'packages', 'valid');
+      mkdirSync(validDir, { recursive: true });
+      writeFileSync(
+        path.join(validDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(validDir, 'index.ts'),
+        'export const valid: string = "valid";',
+      );
+
+      const errorDir = path.join(monorepoDir, 'packages', 'error');
+      mkdirSync(errorDir, { recursive: true });
+      writeFileSync(
+        path.join(errorDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(errorDir, 'index.ts'),
+        'export const error: string = 42; // Type error',
+      );
+
+      const result = await checkFiles(['packages/*/index.ts'], {
+        cwd: monorepoDir,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCount).toBeGreaterThan(0);
+      expect(
+        result.errors.some((e) => e.message.includes('not assignable to type')),
+      ).toBe(true);
+    });
+
+    it('should combine glob and direct file patterns', async () => {
+      // Create package for glob
+      const pkgDir = path.join(monorepoDir, 'packages', 'globbed');
+      mkdirSync(pkgDir, { recursive: true });
+      writeFileSync(
+        path.join(pkgDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(pkgDir, 'index.ts'),
+        'export const globbed = "globbed";',
+      );
+
+      // Create direct file with root tsconfig
+      writeFileSync(
+        path.join(monorepoDir, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(monorepoDir, 'root.ts'),
+        'export const root = "root";',
+      );
+
+      // Mix glob and direct file
+      const result = await checkFiles(['packages/*/index.ts', 'root.ts'], {
+        cwd: monorepoDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(2);
+    });
+
+    it('should handle double-star glob patterns', async () => {
+      // Create nested structure
+      const deepDir = path.join(
+        monorepoDir,
+        'packages',
+        'deep',
+        'src',
+        'components',
+      );
+      mkdirSync(deepDir, { recursive: true });
+      writeFileSync(
+        path.join(monorepoDir, 'packages', 'deep', 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: { strict: true, noEmit: true },
+        }),
+      );
+      writeFileSync(
+        path.join(deepDir, 'Button.ts'),
+        'export const Button = {};',
+      );
+      writeFileSync(
+        path.join(monorepoDir, 'packages', 'deep', 'src', 'index.ts'),
+        'export const deep = "deep";',
+      );
+
+      // Use double-star glob
+      const result = await checkFiles(['packages/deep/**/*.ts'], {
+        cwd: monorepoDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkedFiles).toHaveLength(2);
+    });
+  });
 });

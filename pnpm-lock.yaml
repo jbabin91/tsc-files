@@ -101,10 +101,10 @@ importers:
         specifier: ^63.0.0
         version: 63.0.0(eslint@9.39.3(jiti@2.6.1))
       globals:
-        specifier: ^17.3.0
+        specifier: ^17.4.0
         version: 17.4.0
       lefthook:
-        specifier: ^2.1.1
+        specifier: ^2.1.2
         version: 2.1.2
       markdownlint-cli2:
         specifier: ^0.21.0
@@ -116,7 +116,7 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0(prettier@3.8.1)
       publint:
-        specifier: ^0.3.17
+        specifier: ^0.3.18
         version: 0.3.18
       tsdown:
         specifier: 0.21.0-beta.2

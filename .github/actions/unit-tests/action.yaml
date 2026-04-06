@@ -9,7 +9,7 @@ runs:
       run: pnpm test:coverage
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       if: always()
       with:
         token: ${{ env.CODECOV_TOKEN }}

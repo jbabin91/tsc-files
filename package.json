@@ -119,7 +119,7 @@
     "publint": "^0.3.18",
     "tsdown": "0.21.3",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.57.0",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.0"

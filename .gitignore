@@ -154,3 +154,7 @@ reports/
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# review-cycle plugin state and opt-out marker
+.claude/review-cycle/
+.claude/.no-review-gate

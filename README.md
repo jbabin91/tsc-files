@@ -5,7 +5,22 @@
 [![Security](https://github.com/jbabin91/tsc-files/workflows/Security/badge.svg)](https://github.com/jbabin91/tsc-files/actions)
 [![codecov](https://codecov.io/gh/jbabin91/tsc-files/branch/main/graph/badge.svg)](https://codecov.io/gh/jbabin91/tsc-files)
 
-> A modern TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration.
+> **This project is archived and no longer maintained.**
+>
+> Checking a subset of files was a workaround for how slow full-project `tsc` runs were. TypeScript 7 ships the native Go compiler as `tsc`, which is roughly 10x faster, so a whole-project check is cheap enough for a pre-commit hook and is more accurate than a per-file check (it also catches errors in files that depend on the ones you changed).
+>
+> Replace `tsc-files` with a full check. With lint-staged, use the function form so lint-staged passes no file arguments to `tsc` (TypeScript 7 rejects file arguments when a `tsconfig.json` is present):
+>
+> ```js
+> // lint-staged.config.js
+> export default {
+>   '*.{ts,tsx}': () => 'tsc --noEmit',
+> };
+> ```
+>
+> For monorepos with project references, use `tsc -b`. It checks every package but also builds them: it writes declaration output and `.tsbuildinfo` files and rejects `--noEmit`.
+
+A modern TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration.
 
 Perfect for git hooks, lint-staged, and CI/CD workflows where you need to type-check only the files that have changed.
 
@@ -575,7 +590,7 @@ No configuration needed - it just works!
 - **All Critical Features**: ✅ Complete (monorepo, package managers, JavaScript support, error handling)
 - **Advanced Features**: ✅ Complete (tsgo integration, enhanced errors, Bun support, dependency discovery)
 - **Testing & Quality**: ✅ Complete (comprehensive test suite with 95%+ coverage)
-- **Status**: 🚀 **Production Ready** - Mature TypeScript CLI tool with advanced performance optimization
+- **Status**: 📦 **Archived** - No longer maintained; see the notice at the top of this file
 
 ## 📚 Documentation
 
@@ -589,7 +604,7 @@ No configuration needed - it just works!
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](/docs/CONTRIBUTING.md) for details.
+This project is archived and does not accept contributions. The [Contributing Guide](/docs/CONTRIBUTING.md) remains for anyone forking the code.
 
 ### Development Setup
 

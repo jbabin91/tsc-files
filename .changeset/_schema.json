@@ -1,0 +1,253 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "change-files": {
+        "const": false
+      },
+      "conventional-commits": {
+        "const": false
+      }
+    },
+    "required": [
+      "change-files",
+      "conventional-commits"
+    ]
+  },
+  "properties": {
+    "change-files": {
+      "default": true,
+      "description": "When true, the plan reads `.changeset/*.md`.",
+      "type": "boolean"
+    },
+    "commit-message": {
+      "description": "Commit message for the version commit. A string is inline; `{ file = \"path\" }` loads a repository-relative file. Templates render; they do not execute (ADR-0006).",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "minLength": 1,
+              "pattern": ".*\\S.*",
+              "type": "string"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "conventional-commits": {
+      "default": true,
+      "description": "When true, commits can feed `generate`, and the plan if change-files is off (ADR-0029).",
+      "type": "boolean"
+    },
+    "exclude": {
+      "default": [],
+      "description": "Exact package names to leave alone after include filtering (ADR-0027).",
+      "items": {
+        "minLength": 1,
+        "pattern": ".*\\S.*",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "include": {
+      "default": [],
+      "description": "Exact package names to manage. Empty means all packages; then exclude removes (ADR-0027).",
+      "items": {
+        "minLength": 1,
+        "pattern": ".*\\S.*",
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "packages": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "extra-files": {
+            "description": "Declared version writes outside the package manifest (ADR-0033).",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "format": {
+                  "description": "Document format. v1 ships json only.",
+                  "enum": [
+                    "json"
+                  ],
+                  "type": "string"
+                },
+                "key": {
+                  "description": "Dotted key path. `{field=value}` selects a unique array element (ADR-0033).",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "path": {
+                  "description": "Leading `/` is repository-root relative; otherwise relative to the package manifest directory.",
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "format",
+                "key"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "publish-command": {
+            "description": "Stored publish command for a post-v0 registry slot. Never executed in v0 (ADR-0011 / ADR-0012).",
+            "minLength": 1,
+            "pattern": ".*\\S.*",
+            "type": "string"
+          },
+          "resolves-dependencies-at": {
+            "description": "Declare that this library bundles dependencies into the published artifact. Binaries are derived; `install` is not configurable (ADR-0009).",
+            "enum": [
+              "build"
+            ],
+            "type": "string"
+          },
+          "versioning": {
+            "description": "How a breaking change file moves a version. `zero-major` (default) maps a major file to a minor bump while the package is below 1.0.0, matching SemVer 2.0 §4. `semver` is how a project releases 1.0.0: the next major file produces 1.0.0, and the key is then inert for that package. Override per package under `[packages.<name>]` so one crate can graduate without taking the rest of the workspace with it.",
+            "enum": [
+              "zero-major",
+              "semver"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Per-package overrides, keyed by the name the manifest declares.",
+      "type": "object"
+    },
+    "pr-status": {
+      "default": "both",
+      "description": "Pull-request presentation. `none` silences comment and summary; the exit-code gate is not configurable (ADR-0015).",
+      "enum": [
+        "comment",
+        "summary",
+        "both",
+        "none"
+      ],
+      "type": "string"
+    },
+    "private-packages": {
+      "additionalProperties": false,
+      "default": {
+        "tag": false,
+        "version": false
+      },
+      "description": "Opt-in to version and/or tag packages that are not registry-publishable. Axes are independent (ADR-0027).",
+      "properties": {
+        "tag": {
+          "default": false,
+          "description": "When true, unpublishable packages still receive git tags.",
+          "type": "boolean"
+        },
+        "version": {
+          "default": false,
+          "description": "When true, unpublishable packages still receive version bumps and changelogs.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "tag-format": {
+      "description": "Tag oakum writes. A string is inline; `{ file = \"path\" }` loads a repository-relative file. Existing tags are derived, not configured (ADR-0004).",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "minLength": 1,
+              "pattern": ".*\\S.*",
+              "type": "string"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "template": {
+      "description": "Changelog template. A string is inline; `{ file = \"path\" }` loads a repository-relative file. Templates render; they do not execute (ADR-0006).",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "minLength": 1,
+              "pattern": ".*\\S.*",
+              "type": "string"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "title": {
+      "description": "Title for the version pull request. A string is inline; `{ file = \"path\" }` loads a repository-relative file. One template per surface, with conditionals in the body (ADR-0015).",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "minLength": 1,
+              "pattern": ".*\\S.*",
+              "type": "string"
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "tool-version": {
+      "description": "Exact oakum version allowed to run this repository (never a range). A mismatch refuses in both directions; `upgrade` is the exception (ADR-0007).",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$",
+      "type": "string"
+    },
+    "versioning": {
+      "default": "zero-major",
+      "description": "How a breaking change file moves a version. `zero-major` (default) maps a major file to a minor bump while the package is below 1.0.0, matching SemVer 2.0 §4. `semver` is how a project releases 1.0.0: the next major file produces 1.0.0, and the key is then inert for that package. Override per package under `[packages.<name>]` so one crate can graduate without taking the rest of the workspace with it.",
+      "enum": [
+        "zero-major",
+        "semver"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "tool-version"
+  ],
+  "then": false,
+  "title": "oakum _config.toml",
+  "type": "object"
+}

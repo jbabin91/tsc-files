@@ -14,7 +14,6 @@ const coverageExclude = [
   'eslint.config.js',
   'tsdown.config.ts',
   'src/cli.ts',
-  'scripts/**',
   '**/bin/**',
   'tests/setup.ts',
 ];

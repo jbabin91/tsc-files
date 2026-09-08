@@ -36,7 +36,7 @@ export default defineConfig({
       fd: 'docs(repo): :memo: fix typos',
       ud: 'docs(repo): :memo: update documentation',
       b: 'chore(repo): :hammer: bump dependencies',
-      cs: 'chore(repo): :hammer: add changeset',
+      cs: 'chore(repo): :hammer: add bump file',
     },
     useEmoji: true,
     scopes: ['cli', 'core', 'types', 'config', 'build', 'test', 'docs', 'deps'],

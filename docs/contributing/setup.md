@@ -133,13 +133,13 @@ docs: :memo: update troubleshooting guide
 
 See [commit conventions](../../.claude/commit-conventions.md) for details.
 
-### 5. Create Changeset (for user-facing changes)
+### 5. Create Bump File (for user-facing changes)
 
 ```bash
-pnpm changeset
+pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'
 ```
 
-Select change type (patch/minor/major) and describe the change.
+Use `patch`, `minor`, or `major` for the level and describe the change in the message.
 
 ### 6. Push and Create PR
 

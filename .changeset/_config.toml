@@ -1,0 +1,5 @@
+#:schema ./_schema.json
+tool-version = "0.1.4"
+change-files = true
+conventional-commits = true
+versioning = "semver"

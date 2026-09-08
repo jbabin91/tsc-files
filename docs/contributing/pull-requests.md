@@ -21,15 +21,17 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - [ ] **Build succeeds**: `pnpm build` (clean build, no errors)
 - [ ] **Markdown linted**: `pnpm lint:md` (if docs changed)
 
-### Changeset Required
+### Bump File Required
 
-For user-facing changes, create a changeset:
+For user-facing changes, create a bump file:
 
 ```bash
-pnpm changeset
+pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'
 ```
 
-**When to create a changeset:**
+Use `patch`, `minor`, or `major` for the level. For a change that should not trigger a release, run `pnpm exec oakum add --empty`.
+
+**When to create a bump file:**
 
 - ✅ New features
 - ✅ Bug fixes
@@ -143,7 +145,7 @@ How to test these changes:
 
 - [ ] Tests added/updated
 - [ ] Documentation updated
-- [ ] Changeset created
+- [ ] Bump file created
 - [ ] All quality checks pass
 ```
 
@@ -423,12 +425,12 @@ done
 
 ### Version Bump
 
-Your changes will be included in the next release via the changesets workflow:
+Your changes reach the next release through the oakum workflow:
 
 1. PR merged to `main`
-2. Changesets bot creates "Version Packages" PR
-3. Maintainer merges version PR
-4. Automated release to npm
+2. Release workflow runs `oakum ci version-pr`, which opens or updates the "Version Packages" PR
+3. Auto-merge workflow merges the version PR, then `oakum release` tags `v<version>` and creates the GitHub release
+4. Tag push publishes to npm
 
 ### Cleanup
 
@@ -553,4 +555,4 @@ formatting
 
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [GitHub PR Best Practices](https://github.blog/2015-01-21-how-to-write-the-perfect-pull-request/)
-- [Changesets Documentation](https://github.com/changesets/changesets)
+- [oakum Documentation](https://github.com/oakoss/oakum)

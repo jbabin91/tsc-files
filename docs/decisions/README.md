@@ -19,7 +19,7 @@ Each ADR follows this structure:
 - [001: TypeScript CLI Implementation](./001-typescript-cli.md)
 - [002: tsdown vs tsc Build Tool](./002-tsdown-vs-tsc.md)
 - [003: Dual Package Support](./003-dual-package.md)
-- [004: Changesets Release Strategy](./004-changesets.md)
+- [004: Changesets Release Strategy](./004-changesets.md) (superseded by oakum, September 2026)
 - [005: Vitest Testing Framework](./005-vitest-vs-jest.md)
 
 ### Implementation Decisions (Phase 2)

@@ -146,8 +146,7 @@ tsc-files/
 │   └── fixtures/                 # Test fixtures
 ├── docs/                         # Documentation
 ├── .github/                      # GitHub workflows and templates
-├── .changeset/                   # Changeset configuration
-└── scripts/                      # Build and utility scripts
+└── .changeset/                   # oakum config and bump files
 ```
 
 ### **Planned Architecture**
@@ -504,10 +503,10 @@ pnpm run lint:md:fix
 
 2. **Update documentation** if needed
 
-3. **Add changeset** for user-facing changes:
+3. **Add a bump file** for user-facing changes:
 
    ```bash
-   pnpm changeset
+   pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'
    ```
 
 4. **Write descriptive commit messages** using conventional commits
@@ -572,26 +571,26 @@ Closes #123
 - ✅ All CI checks passing
 - ✅ Code review approval
 - ✅ No merge conflicts
-- ✅ Changeset added (if applicable)
+- ✅ Bump file added (if applicable)
 - ✅ Documentation updated
 
 ## Release Process
 
-See the [Release Management section in CLAUDE.md](../CLAUDE.md#-release-management) for release procedures and changeset workflow.
+See the [Release Management section in AGENTS.md](../AGENTS.md#-release-management) for release procedures and the bump file workflow.
 
-### **Changesets**
+### **Bump files**
 
-We use Changesets for version management:
+We use [oakum](https://github.com/oakoss/oakum) for version management. Bump files live in `.changeset/*.md`:
 
 ```bash
-# Add a changeset
-pnpm changeset
+# Add a bump file (levels: patch, minor, major)
+pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'
 
-# Check changeset status
-pnpm changeset status
+# Show the pending release plan
+pnpm exec oakum status --template summary
 
-# Version packages (maintainers only)
-pnpm changeset:version
+# Verify bump files match the branch
+pnpm exec oakum check
 ```
 
 ### **Versioning**

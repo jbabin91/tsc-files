@@ -1,4 +1,5 @@
 onlyBuiltDependencies:
+  - '@oakoss/oakum'
   - esbuild
   - lefthook
   - unrs-resolver

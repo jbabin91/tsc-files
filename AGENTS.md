@@ -91,9 +91,9 @@ This project enforces a strict zero-tolerance quality policy. All quality gates 
 
 #### Other Protected Operations
 
-- **NEVER create changesets without explicit user permission** - Do not run `pnpm changeset` unless the user explicitly asks for it
+- **NEVER create bump files without explicit user permission** - Do not run `pnpm exec oakum add` or `pnpm exec oakum generate` unless the user explicitly asks for it
 - **NEVER modify `pnpm-lock.yaml`** without explicit permission
-- **NEVER publish or release** without proper changeset workflow
+- **NEVER publish or release** outside the oakum release workflow
 
 #### Always Required
 
@@ -153,8 +153,10 @@ This is `@jbabin91/tsc-files`, a TypeScript CLI tool that enables running TypeSc
 
 ### 🚀 Release Management
 
-- `pnpm changeset` - Create a changeset manually (standard changesets CLI)
-- `pnpm changeset:auto` - Generate changesets from conventional commits
+- `pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'` - Create a bump file (levels: patch, minor, major)
+- `pnpm exec oakum generate` - Derive a bump file from conventional commits on the branch
+- `pnpm exec oakum status --template summary` - Show the pending release plan
+- `pnpm exec oakum check` - Verify bump files match the branch
 - `pnpm commit` - Interactive commit with commitizen
 
 **Note**: For complete release workflow, see [docs/contributing/release-process.md](docs/contributing/release-process.md)
@@ -230,15 +232,16 @@ The project uses a sophisticated CI/CD setup:
 - **CI** (`ci.yaml`) - Static analysis → tests → build (sequential with dependencies)
 - **Security** (`security.yaml`) - Dependency audits, secrets scanning, package integrity validation
 - **Integration** (`integration.yaml`) - Cross-platform CLI testing (Ubuntu/macOS/Windows)
-- **Release** (`release.yaml`) - Waits for CI success, uses trusted publishing with npm provenance
+- **Release** (`release.yaml`) - oakum release plan on PRs, version PR and tag on main, npm publish on `v*` tags
+- **Auto-merge Release PRs** (`auto-merge-release.yaml`) - Enables auto-merge on the oakum version PR
 - **CodeQL** (`codeql.yaml`) - Weekly security scanning
 
 ### Release Process
 
-1. Create changeset with `pnpm changeset`
-2. Push to main → CI runs
-3. CI success → Release workflow creates "Version Packages" PR
-4. Merge PR → Automatic npm publishing
+1. Create a bump file with `pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'`
+2. Merge to main → Release workflow runs `oakum ci version-pr`, which opens or updates the "Version Packages" PR
+3. Auto-merge workflow merges the version PR → `oakum release` tags `v<version>` and creates the GitHub release
+4. Tag push → publish job runs `pnpm publish` with npm provenance
 
 ### GitHub Actions Structure
 
@@ -253,7 +256,7 @@ Reusable actions in `.github/actions/`:
 
 - `tsdown.config.ts` - Build configuration for ESM bundle output
 - `vitest.config.ts` - Test configuration with coverage and CI reporting
-- `.changeset/config.json` - Release management with GitHub changelog integration
+- `.changeset/_config.toml` - oakum release configuration (bump files live alongside it as `.changeset/*.md`)
 - `package.json` - Package exports with ESM bundle and CLI binary configuration
 
 ## Documentation Structure
@@ -565,7 +568,7 @@ Key architectural decisions documented:
 - **001**: TypeScript CLI Implementation approach
 - **002**: tsdown vs tsc for build tooling
 - **003**: Distribution format strategy (dual-package evaluation; current build ships ESM-only)
-- **004**: Changesets for release management
+- **004**: Changesets for release management (superseded by oakum)
 - **005**: Vitest vs Jest for testing
 
 ### Implementation Decisions (Phase 2)

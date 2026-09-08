@@ -1,4 +1,4 @@
-# @jbabin91/tsc-files
+# Changelog
 
 ## 0.8.4
 

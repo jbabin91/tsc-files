@@ -233,14 +233,13 @@ The project uses a sophisticated CI/CD setup:
 - **Security** (`security.yaml`) - Dependency audits, secrets scanning, package integrity validation
 - **Integration** (`integration.yaml`) - Cross-platform CLI testing (Ubuntu/macOS/Windows)
 - **Release** (`release.yaml`) - oakum release plan on PRs, version PR and tag on main, npm publish on `v*` tags
-- **Auto-merge Release PRs** (`auto-merge-release.yaml`) - Enables auto-merge on the oakum version PR
 - **CodeQL** (`codeql.yaml`) - Weekly security scanning
 
 ### Release Process
 
 1. Create a bump file with `pnpm exec oakum add --packages '@jbabin91/tsc-files:patch' --message 'What changed'`
 2. Merge to main → Release workflow runs `oakum ci version-pr`, which opens or updates the "Version Packages" PR
-3. Auto-merge workflow merges the version PR → `oakum release` tags `v<version>` and creates the GitHub release
+3. Review and merge the version PR → `oakum release` tags `v<version>` and creates the GitHub release
 4. Tag push → publish job runs `pnpm publish` with npm provenance
 
 ### GitHub Actions Structure

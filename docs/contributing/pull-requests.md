@@ -429,7 +429,7 @@ Your changes reach the next release through the oakum workflow:
 
 1. PR merged to `main`
 2. Release workflow runs `oakum ci version-pr`, which opens or updates the "Version Packages" PR
-3. Auto-merge workflow merges the version PR, then `oakum release` tags `v<version>` and creates the GitHub release
+3. A maintainer reviews and merges the version PR, then `oakum release` tags `v<version>` and creates the GitHub release
 4. Tag push publishes to npm
 
 ### Cleanup

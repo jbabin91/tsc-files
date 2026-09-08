@@ -60,7 +60,7 @@ Everything after merge is automated:
 
 1. The bump file merges to `main` with the PR.
 2. The Release workflow runs `oakum ci version-pr`, which opens or updates a "Version Packages" PR on the branch `oakum/version-packages`. That PR bumps `package.json`, writes the changelog entry from oakum's built-in template, and removes the consumed bump files.
-3. The auto-merge workflow enables auto-merge on the version PR, so it merges once CI passes.
+3. Review the version PR and merge it by hand once CI passes; nothing merges it automatically.
 4. On that push to `main`, `oakum release` tags `v<version>` and creates the GitHub release.
 5. The tag push runs the publish job, which runs `pnpm publish` with npm provenance. `prepublishOnly` runs the tests and the build first.
 

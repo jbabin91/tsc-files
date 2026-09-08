@@ -5,7 +5,6 @@ import {
   executeAndParseTypeScript,
   executeTypeScriptCompiler,
 } from '@/execution/executor';
-import type { CheckOptions } from '@/types/core';
 import { logger } from '@/utils/logger';
 
 // Helper to create properly typed mock execa results for testing
@@ -418,7 +417,7 @@ describe('execution/executor', () => {
         '/tmp/tsconfig.json',
         ['test.ts'],
         '/test/cwd',
-        {} as CheckOptions,
+        {},
         startTime,
       );
 
@@ -459,7 +458,7 @@ describe('execution/executor', () => {
           '/tmp/tsconfig.json',
           ['test.ts'],
           '/test/cwd',
-          {} as CheckOptions,
+          {},
           startTime,
         ),
       ).rejects.toThrow('TypeScript compiler failed: Compilation error');
@@ -500,7 +499,7 @@ describe('execution/executor', () => {
         '/tmp/tsconfig.json',
         ['test.ts'],
         '/test/cwd',
-        {} as CheckOptions,
+        {},
         startTime,
       );
 
@@ -542,7 +541,7 @@ describe('execution/executor', () => {
           '/tmp/tsconfig.json',
           ['test.ts'],
           '/test/cwd',
-          {} as CheckOptions,
+          {},
           startTime,
         ),
       ).rejects.toThrow('TypeScript compiler failed: Some compiler output');
@@ -630,7 +629,7 @@ describe('execution/executor', () => {
         '/tmp/tsconfig.json',
         ['test.ts'],
         '/test/cwd',
-        { fallback: true, verbose: true } as CheckOptions,
+        { fallback: true, verbose: true },
         startTime,
       );
 
@@ -704,7 +703,7 @@ describe('execution/executor', () => {
           '/tmp/tsconfig.json',
           ['test.ts'],
           '/test/cwd',
-          { fallback: true } as CheckOptions,
+          { fallback: true },
           startTime,
         ),
       ).rejects.toThrow(
@@ -763,7 +762,7 @@ describe('execution/executor', () => {
           '/tmp/tsconfig.json',
           ['test.ts'],
           '/test/cwd',
-          { fallback: false } as CheckOptions,
+          { fallback: false },
           startTime,
         ),
       ).rejects.toThrow('TypeScript compiler failed: ');
@@ -833,7 +832,7 @@ describe('execution/executor', () => {
           '/tmp/tsconfig.json',
           ['test.ts'],
           '/test/cwd',
-          { fallback: false } as CheckOptions,
+          { fallback: false },
           startTime,
         ),
       ).rejects.toThrow(/TypeScript compiler failed:/);
@@ -940,7 +939,7 @@ describe('execution/executor', () => {
         '/tmp/tsconfig.json',
         ['fallback.ts'],
         '/test/cwd',
-        { fallback: true } as CheckOptions,
+        { fallback: true },
         startTime,
       );
 

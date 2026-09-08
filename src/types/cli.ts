@@ -58,10 +58,7 @@ export type CliResult = {
  * Error categories for exit code determination
  */
 export type ErrorCategory =
-  | 'CONFIG_ERROR'
-  | 'SYSTEM_ERROR'
-  | 'TYPE_ERROR'
-  | 'UNKNOWN_ERROR';
+  'CONFIG_ERROR' | 'SYSTEM_ERROR' | 'TYPE_ERROR' | 'UNKNOWN_ERROR';
 
 /**
  * Zod schema for validating CLI options

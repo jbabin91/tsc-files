@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { TempConfigHandle } from '@/config/temp-config';
 import * as tempConfigModule from '@/config/temp-config';
-import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
 import * as tsconfigResolver from '@/config/tsconfig-resolver';
 import * as tsgoCompatibility from '@/config/tsgo-compatibility';
 import { checkFiles } from '@/core/checker';
@@ -1041,7 +1040,7 @@ const other: number = "not a number";`,
         .mockReturnValue(tsconfigPath);
       const parseTsconfigSpy = vi
         .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
-        .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+        .mockReturnValue({ compilerOptions: {} });
       const resolveFilesSpy = vi
         .spyOn(fileResolverModule, 'resolveFiles')
         .mockResolvedValue(['src/runtime-error.ts']);
@@ -1077,7 +1076,7 @@ const other: number = "not a number";`,
         .mockReturnValue(tsconfigPath);
       const parseTsconfigSpy = vi
         .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
-        .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+        .mockReturnValue({ compilerOptions: {} });
       const resolveFilesSpy = vi
         .spyOn(fileResolverModule, 'resolveFiles')
         .mockResolvedValue(['src/tempconfig.ts']);
@@ -1258,15 +1257,12 @@ const other: number = "not a number";`,
 
     const parseTsConfigSpy = vi
       .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
-      .mockImplementation(
-        () =>
-          ({
-            compilerOptions: {
-              moduleResolution: 'bundler',
-              noEmit: true,
-            },
-          }) as TypeScriptConfig,
-      );
+      .mockImplementation(() => ({
+        compilerOptions: {
+          moduleResolution: 'bundler',
+          noEmit: true,
+        },
+      }));
 
     const resolveFilesSpy = vi
       .spyOn(fileResolverModule, 'resolveFiles')
@@ -1363,7 +1359,7 @@ const other: number = "not a number";`,
           paths: { '@/*': ['src/*'] },
           moduleResolution: 'node',
         },
-      } as TypeScriptConfig);
+      });
     const shouldUseTsgoSpy = vi
       .spyOn(tsgoCompatibility, 'shouldUseTsgo')
       .mockReturnValue({
@@ -1434,7 +1430,7 @@ const other: number = "not a number";`,
       .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
       .mockReturnValue({
         compilerOptions: {},
-      } as TypeScriptConfig);
+      });
     const shouldUseTsgoSpy = vi
       .spyOn(tsgoCompatibility, 'shouldUseTsgo')
       .mockReturnValue({
@@ -1498,7 +1494,7 @@ const other: number = "not a number";`,
       .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
       .mockReturnValue({
         compilerOptions: {},
-      } as TypeScriptConfig);
+      });
     const shouldUseTsgoSpy = vi
       .spyOn(tsgoCompatibility, 'shouldUseTsgo')
       .mockReturnValue({
@@ -1572,7 +1568,7 @@ const other: number = "not a number";`,
       });
     const parseTsconfigSpy = vi
       .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
-      .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+      .mockReturnValue({ compilerOptions: {} });
     const resolveFilesSpy = vi
       .spyOn(fileResolverModule, 'resolveFiles')
       .mockImplementation((_files, _cwd, tsconfigPath) =>
@@ -1637,7 +1633,7 @@ const other: number = "not a number";`,
       });
     const parseTsconfigSpy = vi
       .spyOn(tsconfigResolver, 'parseTypeScriptConfig')
-      .mockReturnValue({ compilerOptions: {} } as TypeScriptConfig);
+      .mockReturnValue({ compilerOptions: {} });
     const resolveFilesSpy = vi
       .spyOn(fileResolverModule, 'resolveFiles')
       .mockResolvedValue(['src/unmapped.ts']);

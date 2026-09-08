@@ -24,6 +24,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      # oakum's npm adapter shells out to pnpm for workspace discovery.
+      - name: Setup
+        uses: ./.github/actions/setup
+
       - uses: cargo-bins/cargo-binstall@v1.23.0
 
       - run: cargo binstall --no-confirm oakum@0.1.4
@@ -60,6 +64,9 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
+      - name: Setup
+        uses: ./.github/actions/setup
+
       - uses: cargo-bins/cargo-binstall@v1.23.0
 
       - run: cargo binstall --no-confirm oakum@0.1.4
@@ -88,6 +95,9 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
 
       - uses: cargo-bins/cargo-binstall@v1.23.0
 

@@ -16,7 +16,10 @@ import {
   createTempConfigPath,
   type TempConfigHandle,
 } from '@/config/temp-config';
-import type { TypeScriptConfig } from '@/config/tsconfig-resolver';
+import {
+  parseTypeScriptConfig,
+  type TypeScriptConfig,
+} from '@/config/tsconfig-resolver';
 import type { CheckOptions } from '@/types/core';
 
 // Mock fs module
@@ -525,6 +528,113 @@ describe('createTempConfig', () => {
     });
   });
 
+  describe('moduleResolution handling', () => {
+    it('should drop the classic moduleResolution that get-tsconfig implies', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2018',
+          module: 'es6',
+          moduleResolution: 'classic',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(
+        tempConfigContent.compilerOptions.moduleResolution,
+      ).toBeUndefined();
+      expect(tempConfigContent.compilerOptions.module).toBe('es6');
+    });
+
+    it('should keep an explicit classic moduleResolution under commonjs', async () => {
+      const originalConfig: TypeScriptConfig = {
+        compilerOptions: {
+          target: 'ES2018',
+          module: 'commonjs',
+          moduleResolution: 'classic',
+        },
+      };
+
+      tempHandle = await createTempConfig(
+        originalConfig,
+        testFiles,
+        defaultOptions,
+        testConfigDir,
+      );
+
+      const tempConfigContent = JSON.parse(
+        readFileSync(tempHandle.path, 'utf8'),
+      ) as TempConfigContent;
+
+      expect(tempConfigContent.compilerOptions.moduleResolution).toBe(
+        'classic',
+      );
+    });
+
+    it.each([
+      'none',
+      'amd',
+      'umd',
+      'system',
+      'ES6',
+      'ES2015',
+      'ES2020',
+      'ES2022',
+      'ESNext',
+    ])(
+      'should drop the classic that get-tsconfig injects for module %s',
+      async (moduleKind) => {
+        const projectDir = mkdtempSync(
+          path.join(tmpdir(), 'tsc-files-classic-'),
+        );
+        const configPath = path.join(projectDir, 'tsconfig.json');
+        writeFileSync(
+          configPath,
+          JSON.stringify({
+            compilerOptions: { module: moduleKind, strict: true },
+          }),
+        );
+
+        try {
+          const parsed = parseTypeScriptConfig(configPath);
+          expect(
+            parsed.compilerOptions?.moduleResolution,
+            'get-tsconfig no longer injects classic; CLASSIC_DEFAULT_MODULE_KINDS may be dead',
+          ).toBe('classic');
+
+          tempHandle = await createTempConfig(
+            parsed,
+            [path.join(projectDir, 'index.ts')],
+            defaultOptions,
+            projectDir,
+          );
+
+          const tempConfigContent = JSON.parse(
+            readFileSync(tempHandle.path, 'utf8'),
+          ) as TempConfigContent;
+
+          expect(
+            tempConfigContent.compilerOptions.moduleResolution,
+          ).toBeUndefined();
+          expect(tempConfigContent.compilerOptions.module).toBe(
+            parsed.compilerOptions?.module,
+          );
+        } finally {
+          rmSync(projectDir, { recursive: true, force: true });
+        }
+      },
+    );
+  });
+
   describe('User environment preservation', () => {
     it('should preserve all user compiler options including types', async () => {
       const originalConfig: TypeScriptConfig = {
@@ -856,8 +966,6 @@ describe('createTempConfig', () => {
       expect(tempConfigContent.compilerOptions.tsBuildInfoFile).toBe(
         '/test/project/node_modules/.cache/tsc-files/tsconfig.tsbuildinfo',
       );
-      // Note: We can't easily test console output in unit tests,
-      // but we verify the functionality works correctly
     });
   });
 

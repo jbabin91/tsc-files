@@ -3,7 +3,13 @@
  * Tests the packaged CLI as users would use it
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +23,7 @@ describe('CLI Package Integration', () => {
   let packFailed = false;
   let skipReason = 'npm pack failed - ensure project is built';
   let projectRoot: string;
+  let installedTsMajor = 0;
 
   beforeAll(async () => {
     // Create isolated test directory
@@ -33,7 +40,6 @@ describe('CLI Package Integration', () => {
         cwd: projectRoot,
         shell: true,
       });
-      // Extract just the .tgz filename (last line that ends with .tgz)
       const lines = stdout.trim().split('\n');
       const tgzLine = lines.find((line) => line.endsWith('.tgz'));
       if (!tgzLine) {
@@ -72,7 +78,8 @@ describe('CLI Package Integration', () => {
         [
           'install',
           path.join(projectRoot, tarball),
-          'typescript',
+          // TypeScript 7 has no JS compiler API, which dependency discovery needs
+          'typescript@6',
           '--no-audit',
           '--no-fund',
           '--ignore-scripts',
@@ -86,6 +93,14 @@ describe('CLI Package Integration', () => {
       console.error('Error:', error);
       throw error;
     }
+
+    const tsPackage = JSON.parse(
+      readFileSync(
+        path.join(testDir, 'node_modules', 'typescript', 'package.json'),
+        'utf8',
+      ),
+    ) as { version: string };
+    installedTsMajor = Number(tsPackage.version.split('.')[0]);
 
     // Create basic tsconfig
     writeFileSync(
@@ -251,6 +266,37 @@ describe('CLI Package Integration', () => {
 
       expect(exitCode).toBe(0);
     });
+
+    it('should pass when the config implies classic moduleResolution', async () => {
+      // get-tsconfig fills in classic for ES module kinds, which TypeScript 6 deprecates
+      const esmConfig = path.join(testDir, 'tsconfig.esm.json');
+      writeFileSync(
+        esmConfig,
+        JSON.stringify({
+          compilerOptions: {
+            target: 'ES2020',
+            module: 'ESNext',
+            strict: true,
+            skipLibCheck: true,
+          },
+        }),
+      );
+
+      const testFile = path.join(testDir, 'esm-test.ts');
+      writeFileSync(testFile, 'export const esm: string = "esm";');
+
+      const { exitCode } = await execa(
+        'npx',
+        ['tsc-files', '--project', 'tsconfig.esm.json', 'esm-test.ts'],
+        {
+          cwd: testDir,
+          shell: true,
+          reject: false,
+        },
+      );
+
+      expect(exitCode).toBe(0);
+    });
   });
 
   describe('Ambient Declarations', () => {
@@ -391,6 +437,7 @@ export const routes: Route[] = [];`,
             module: 'CommonJS',
             strict: true,
             skipLibCheck: true,
+            ...(installedTsMajor >= 6 ? { ignoreDeprecations: '6.0' } : {}),
             baseUrl: '.',
             paths: {
               '@/components/*': ['src/components/*'],
@@ -490,9 +537,6 @@ export const routes: Route[] = [];`,
 
       expect(exitCode).toBe(0);
     });
-
-    // Note: Testing with pnpm/yarn/bun requires them to be installed
-    // CI can test these, but locally we just test the core functionality
   });
 
   describe('Performance and Edge Cases', () => {
@@ -784,6 +828,7 @@ export const routes: Route[] = [];`,
             strict: true,
             skipLibCheck: true,
             noResolve: true,
+            ...(installedTsMajor >= 6 ? { ignoreDeprecations: '6.0' } : {}),
             moduleResolution: 'node',
           },
           files: [fileA],
@@ -899,7 +944,7 @@ export const routes: Route[] = [];`,
       );
 
       // With --no-recursive, should disable recursive discovery
-      // Note: The TypeScript fallback may still resolve some imports
+      // The TypeScript fallback may still resolve some imports
       const { exitCode, stderr } = await execa(
         'npx',
         [

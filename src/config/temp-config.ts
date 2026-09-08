@@ -41,6 +41,18 @@ function ensureCacheDirectory(
   }
 }
 
+// get-tsconfig lowercases module kinds and injects moduleResolution "classic" for these
+const CLASSIC_DEFAULT_MODULE_KINDS = new Set([
+  'es6',
+  'es2020',
+  'es2022',
+  'esnext',
+  'none',
+  'system',
+  'umd',
+  'amd',
+]);
+
 /**
  * Temporary configuration file handle
  */
@@ -157,6 +169,17 @@ export async function createTempConfig(
   // Convert relative paths to absolute paths to fix path alias resolution
   let adjustedCompilerOptions = { ...sanitizedCompilerOptions };
 
+  // get-tsconfig injects "classic" as the implied default for these module kinds;
+  // TypeScript 7 rejects it (TS5108) and omitting it is the same default on 5.
+  if (
+    adjustedCompilerOptions.moduleResolution === 'classic' &&
+    typeof adjustedCompilerOptions.module === 'string' &&
+    CLASSIC_DEFAULT_MODULE_KINDS.has(adjustedCompilerOptions.module)
+  ) {
+    const { moduleResolution: _, ...rest } = adjustedCompilerOptions;
+    adjustedCompilerOptions = rest;
+  }
+
   // TypeScript type resolution strategy:
   // - Default cache location: node_modules/.cache/tsc-files/ (within project)
   // - TypeScript walks up from cache dir and finds project's node_modules automatically
@@ -183,7 +206,6 @@ export async function createTempConfig(
   // Handle baseUrl - convert relative baseUrl to absolute path or remove if bundler mode
   // baseUrl can be used standalone (without paths) for module resolution
   // TypeScript resolves non-relative imports relative to baseUrl
-  // Note: baseUrl is removed when moduleResolution is 'bundler' (deprecated in that mode)
   if (
     sanitizedCompilerOptions.baseUrl &&
     typeof sanitizedCompilerOptions.baseUrl === 'string'

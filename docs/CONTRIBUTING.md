@@ -37,10 +37,10 @@ Thank you for your interest in contributing to tsc-files! This guide provides a 
 
 ### **Prerequisites**
 
-- **Node.js**: >=22.19.0
+- **Node.js**: >=24.20.0
 - **pnpm**: Latest version (we use pnpm as the package manager)
 - **Git**: Latest version
-- **TypeScript**: >=5.0.0 (will be installed as a peer dependency)
+- **TypeScript**: >=5.0.0 <7.0.0 (will be installed as a peer dependency)
 
 ### **Initial Setup**
 

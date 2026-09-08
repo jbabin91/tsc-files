@@ -19,6 +19,8 @@
 > ```
 >
 > For monorepos with project references, use `tsc -b`. It checks every package but also builds them: it writes declaration output and `.tsbuildinfo` files and rejects `--noEmit`.
+>
+> The final 0.8.x releases support TypeScript 5 and 6. TypeScript 7 removed the JavaScript compiler API that dependency discovery relies on.
 
 A modern TypeScript CLI tool that enables running TypeScript compiler checks on specific files while respecting existing tsconfig.json configuration.
 
